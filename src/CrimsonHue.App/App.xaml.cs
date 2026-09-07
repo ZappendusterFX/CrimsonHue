@@ -18,6 +18,7 @@ public partial class App : Application
             window.Loaded += async (_, _) =>
             {
                 window.EnableSmokePreview();
+                window.VerifyDistanceControls();
                 await Task.Delay(350);
                 window.UpdateLayout();
                 var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);

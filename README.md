@@ -3,7 +3,7 @@
 A standalone Windows companion that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**0.1.0 — early preview.** This is a source-driven lighting estimate. General
+**0.1.1 — early preview.** This is a source-driven lighting estimate. General
 ambient light is planned upstream and will be integrated separately when its API
 contract is available. This version consumes the existing local-light feed.
 
@@ -22,8 +22,8 @@ contract is available. This version consumes the existing local-light feed.
    Entertainment client key are requested automatically.
 5. Select an existing **Entertainment area**. Create and position lights in the
    Hue app first, then refresh. CrimsonHue preserves the existing layout/channels.
-6. Adjust brightness, sensitivity and radius around the player. Stop other sync
-   apps, then click **Start lighting sync**.
+6. Adjust brightness, sensitivity and the two distance-fade controls described
+   below. Stop other sync apps, then click **Start lighting sync**.
 7. **Stop**, or close the window, to release the stream and restore previously read
    on/off, brightness and color states of the selected lights, if CrimsonHue still
    owns the stream. Running effects/dynamic scenes are not resumed.
@@ -49,16 +49,44 @@ running services, not the telemetry or diyHue source repositories.
 ## Mapping and availability
 
 Only `lights.rendered` is used. Positions are transformed with the camera paired
-to the light capture. Player distance supplies a soft radius cutoff, and camera
+to the light capture. Player distance supplies a configurable fade, and camera
 direction supplies a smooth weight for each Hue channel. Hue X points right, Y
 towards the screen and Z up. The preview is top-down; cards show channel height,
 which participates in the direction calculation.
 
-Contributions are combined in linear RGB, compressed with a common HDR scale to
-preserve channel ratios, then sRGB-encoded and brightness-limited. Imported Hue
-brightness balance is applied where provided. Short configurable smoothing reduces
-jitter. This is an artistic estimate, not game pixels, physical lux, measured room
-distances or full scene lighting. Spotlight cone/occlusion is not simulated yet.
+Each source's HDR intensity is compressed with a common RGB scale before applying
+distance and direction weights, so high source intensity cannot undo that source's
+fade. Weighted contributions are combined in linear RGB; only sums above the
+output range are scaled down, preserving RGB ratios. Output is then sRGB-encoded
+and brightness-limited. Imported Hue brightness balance is applied where provided.
+Short configurable smoothing reduces jitter. This is an artistic estimate, not
+game pixels, physical lux, measured room distances or full scene lighting.
+Spotlight cone/occlusion is not simulated yet.
+
+### Distance fade
+
+- **Fade starts:** full distance strength up to this distance from the player.
+- **Off beyond:** no new contribution at or beyond this distance.
+- Between both values, strength falls smoothly to zero. Approaching a source uses
+  the same curve in reverse. Smoothing can briefly fade out the previous output
+  after crossing the cutoff.
+
+Distances are **game units, not confirmed metres**. For example, start 5 / end 15
+means full distance strength through 5, then a fade ending at 15; these example
+values are not a calibration for the game. The controls update both preview and
+active sync immediately, keep start below end, and are saved on Start or normal
+window close. The preview hides out-of-range source dots and reports an in-range
+contribution count for live input.
+
+Existing 0.1.0 settings retain their radius as **Off beyond**, with **Fade starts**
+at zero. New setups default to 0 / 35. Mapping is intentionally different from
+0.1.0: very bright distant sources now fade reliably instead of saturating the
+post-falloff HDR compressor. Multiple overlapping sources still add together.
+
+Ambient-aware suppression is **not active yet**. Once the upstream contract is
+available, actual surrounding brightness should control the contrast of local
+lights: weak in bright daylight, stronger in darkness, including dark interiors
+during daytime. See `docs/AMBIENT-INTEGRATION.md` for the integration requirements.
 
 `sampleIndex` is never a persistent ID. Authored and rendered feeds are not added.
 Gradient channel membership is preserved. The transport supports up to 160 channels
@@ -109,8 +137,9 @@ stream or change settings, and does not print keys or full API responses. Use th
 to compare the bridge's saved layout with the Hue app before changing mapping axes.
 
 The executable supports `--ui-smoke <absolute-png-path>` to render its actual WPF
-window with synthetic data, without loading credentials or connecting to devices,
-then exit. The publish script creates a standalone x64 executable and ZIP in
+window with synthetic data, exercise the distance-control bounds, without loading
+credentials or connecting to devices, then exit. The publish script creates a
+standalone x64 executable and ZIP in
 `dist/`, and refuses to overwrite existing versions.
 
 ## Distribution

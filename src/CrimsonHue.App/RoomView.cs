@@ -11,6 +11,7 @@ public sealed class RoomView : FrameworkElement
     public IReadOnlyList<ChannelColor> Colors { get; set; } = [];
     public TelemetryFrame? Frame { get; set; }
     public bool Demo { get; set; }
+    public MappingSettings Settings { get; set; } = new();
     protected override void OnRender(DrawingContext dc)
     {
         base.OnRender(dc);
@@ -33,10 +34,13 @@ public sealed class RoomView : FrameworkElement
         if (Frame != null && Area != null)
             foreach (var light in Frame.Lights.Take(512))
             {
+                var fade = LightMapper.DistanceWeight((light.Position - Frame.Player).Length, Settings);
+                if (fade <= 0) continue;
                 var d = light.Position - Frame.Camera.Position;
                 var length = Math.Max(1, d.Length);
                 var point = new Point(center.X + d.Dot(Frame.Camera.Right) / length * sx * 0.7, center.Y - d.Dot(Frame.Camera.Forward) / length * sy * 0.7);
-                dc.DrawEllipse(Brush("#9A6D59"), null, point, 1.8, 1.8);
+                var sourceBrush = Brush("#9A6D59"); sourceBrush.Opacity = fade;
+                dc.DrawEllipse(sourceBrush, null, point, 1.8, 1.8);
             }
         if (Area == null)
         {

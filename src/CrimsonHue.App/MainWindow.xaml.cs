@@ -31,6 +31,7 @@ public partial class MainWindow : Window
     private MappingSettings mapping = new();
     private string? selectedAreaId;
     private bool initialized;
+    private bool updatingSettings;
     private bool busy;
     private bool closing;
     private bool allowClose;
@@ -49,7 +50,10 @@ public partial class MainWindow : Window
                 TelemetryAddress.Text = saved.TelemetryAddress;
                 selectedAreaId = saved.AreaId;
                 var m = saved.Mapping ?? new(); LightMapper.Validate(m);
-                BrightnessSlider.Value = m.Brightness; GainSlider.Value = m.Gain; RadiusSlider.Value = m.Radius;
+                BrightnessSlider.Value = m.Brightness; GainSlider.Value = m.Gain;
+                FadeEndSlider.Maximum = Math.Max(100, m.FadeEnd);
+                FadeStartSlider.Maximum = FadeEndSlider.Maximum - 0.5;
+                FadeEndSlider.Value = m.FadeEnd; FadeStartSlider.Value = m.FadeStart;
                 SpreadSlider.Value = m.Spread; SmoothingSlider.Value = m.SmoothingMs;
                 var credentials = store.LoadCredentials();
                 if (credentials != null)
@@ -171,11 +175,24 @@ public partial class MainWindow : Window
     }
     private void SettingsChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (!initialized) return;
-        mapping = new(GainSlider.Value, BrightnessSlider.Value, RadiusSlider.Value, SpreadSlider.Value, SmoothingSlider.Value);
+        if (!initialized || updatingSettings) return;
+        updatingSettings = true;
+        try
+        {
+            if (FadeStartSlider.Value >= FadeEndSlider.Value)
+            {
+                if (ReferenceEquals(sender, FadeStartSlider)) FadeEndSlider.Value = FadeStartSlider.Value + 0.5;
+                else FadeStartSlider.Value = Math.Max(0, FadeEndSlider.Value - 0.5);
+            }
+            var next = new MappingSettings(GainSlider.Value, BrightnessSlider.Value, FadeEndSlider.Value, SpreadSlider.Value, SmoothingSlider.Value, FadeStartSlider.Value);
+            LightMapper.Validate(next);
+            Volatile.Write(ref mapping, next);
+        }
+        finally { updatingSettings = false; }
         BrightnessValue.Text = $"{mapping.Brightness:P0}";
         GainValue.Text = $"{mapping.Gain:F2}×";
-        RadiusValue.Text = $"{mapping.Radius:F0} game units";
+        FadeStartValue.Text = $"{mapping.FadeStart:F1}";
+        FadeEndValue.Text = $"{mapping.FadeEnd:F1}";
     }
     private void DemoChanged(object sender, RoutedEventArgs e) { if (initialized) { previewMapper.Reset(); UpdateButtons(); } }
     private void RefreshPreview()
@@ -184,7 +201,7 @@ public partial class MainWindow : Window
         TelemetryStatus.Text = message;
         TelemetryStatus.Foreground = frame == null ? new SolidColorBrush(Color.FromRgb(175, 182, 198)) : new SolidColorBrush(Color.FromRgb(145, 215, 185));
         CaptureInfo.Text = frame == null ? "Requires CrimsonDesertTelemetry 2.0.0 with light capture enabled." :
-            $"{frame.Lights.Count} contributions · capture {frame.CaptureSequence} · age {Math.Max(0, (DateTimeOffset.UtcNow - frame.LightCapturedAt).TotalMilliseconds):F0} ms";
+            $"{frame.Lights.Count} contributions · {frame.Lights.Count(l => (l.Position - frame.Player).Length < mapping.FadeEnd)} in range · capture {frame.CaptureSequence} · age {Math.Max(0, (DateTimeOffset.UtcNow - frame.LightCapturedAt).TotalMilliseconds):F0} ms";
         var demo = DemoCheck.IsChecked == true;
         var area = demo ? DemoData.Area : SelectedArea;
         if (demo) frame = DemoData.Frame(uptime.Elapsed.TotalSeconds);
@@ -195,7 +212,7 @@ public partial class MainWindow : Window
             else if (frame != null) colors = previewMapper.Map(frame, area, mapping, 0.1);
             else previewMapper.Reset();
         }
-        Room.Area = area; Room.Colors = colors; Room.Frame = frame; Room.Demo = demo; Room.InvalidateVisual();
+        Room.Area = area; Room.Colors = colors; Room.Frame = frame; Room.Demo = demo; Room.Settings = mapping; Room.InvalidateVisual();
         ChannelCards.ItemsSource = area?.Channels.Select(c => new
         {
             Name = c.Label,
@@ -254,5 +271,23 @@ public partial class MainWindow : Window
         BridgeStatus.Text = "Demo preview · no bridge connected";
         StreamStatus.Text = "Demo preview · physical lamp output disabled";
         RefreshPreview();
+    }
+    internal void VerifyDistanceControls()
+    {
+        if (!smoke) throw new InvalidOperationException("Control self-test requires isolated smoke mode.");
+        var start = FadeStartSlider.Value; var end = FadeEndSlider.Value;
+        try
+        {
+            FadeStartSlider.Value = 45;
+            if (mapping.FadeStart != 45 || mapping.FadeEnd != 45.5) throw new InvalidOperationException("Fade-end control did not follow start.");
+            FadeEndSlider.Value = 2;
+            if (mapping.FadeStart != 1.5 || mapping.FadeEnd != 2) throw new InvalidOperationException("Fade-start control did not follow end.");
+            FadeStartSlider.Value = 99.5;
+            if (mapping.FadeEnd != 100) throw new InvalidOperationException("Upper fade limit is inconsistent.");
+            FadeEndSlider.Value = 1;
+            if (mapping.FadeStart != 0.5) throw new InvalidOperationException("Lower fade limit is inconsistent.");
+            LightMapper.Validate(mapping);
+        }
+        finally { FadeEndSlider.Value = end; FadeStartSlider.Value = start; }
     }
 }

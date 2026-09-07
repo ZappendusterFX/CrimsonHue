@@ -1,9 +1,62 @@
-# Current checkpoint — CrimsonHue 0.1.0, 2026-09-07, Codex
+# Current checkpoint — CrimsonHue 0.1.1, 2026-09-07, Codex
 
-First standalone Windows application implemented, packaged and opened for the
-user's real-lamp acceptance. Product lives entirely in this repository. The initial
-0.1.0 work did not modify neighboring products. The subsequent, user-authorized
-diyHue placement repair is recorded below; telemetry remains unchanged.
+The new distance-fade release is built, tested, packaged and open for user testing.
+Product lives entirely in this repository. Telemetry remains unchanged; its ambient
+feed is still being developed. Historical 0.1.0 and diyHue work is retained below.
+
+## Distance fade — 0.1.1
+
+User reports real lamps reacting to distant in-game light colors and asks for
+adjustable fade distances. There was already a radius falloff, but its attenuation
+preceded HDR compression. Extremely bright sources could therefore saturate output
+despite a tiny distance weight. The new mapping bounds each source's HDR intensity
+before distance/direction weights. Weighted linear sources are summed and only
+overflow is scaled down; there is no post-fade amplification. Multiple overlapping
+sources still add together. This is an artistic model, not physical photometry.
+
+- **Fade starts / Off beyond** sliders control a player-relative full-strength
+  zone and a smooth fade to zero contribution. The same squared-smoothstep curve
+  applies approaching/leaving. Existing smoothing releases residual old output.
+- Both controls affect preview and active sync immediately. WPF events keep the
+  interval valid; settings are saved on Start/normal close. Stored `Radius` remains
+  the end distance for backward compatibility; new `FadeStart` defaults to zero.
+  Existing user cutoff 35 was retained. Distances are game units, not known metres.
+- Preview dots use the same distance envelope; live capture status reports the
+  number of contributions inside the cutoff.
+- Future ambient-relative contrast requirements are in
+  `docs/AMBIENT-INTEGRATION.md`. Actual environment brightness should suppress
+  ordinary local effects in bright daylight but retain them in dark daytime
+  interiors. No ambient field, fake time-of-day rule or upstream modification was
+  introduced. Ambient mixing is not implemented until its contract is available.
+
+Verification for 0.1.1:
+
+- Release build: zero warnings/errors. **46/46 non-live tests pass**, including ten
+  new distance/HDR/boundary/player-vs-camera/smoothing/settings regressions and the
+  existing real loopback OpenSSL DTLS, mock HTTPS/WS and DPAPI checks.
+- Actual WPF slider event self-tests cover both crossed bounds and control limits
+  in isolated smoke mode. Source-build and packaged EXE smoke runs exit 0. Render
+  inspected at `artifacts/ui-distance-fade-packaged.png`; both fade controls and
+  their explanation are visible at the default window size. Smoke uses synthetic
+  data and does not load credentials or contact devices.
+- Optional `--live` run: **46/47 passed**. Bridge HTTPS probe succeeded; zero live
+  frames arrived. A read-only OS check found no listener on port 27311 at that time,
+  so current live-input and real-lamp appearance acceptance remain outstanding.
+  Do not mistake earlier 0.1.0 live evidence below for 0.1.1 lamp acceptance.
+- Old package process 28084 was closed normally. New package opened as PID 31784;
+  path, window handle/title and responsiveness verified. Protected credential file
+  hash stayed unchanged and saved area selection was retained. No new physical
+  sync was started; the user must press Start when telemetry is available.
+
+Package: `dist/CrimsonHue-0.1.1-win-x64/CrimsonHue.exe`, 166899483 bytes.
+ZIP `dist/CrimsonHue-0.1.1-win-x64.zip`, 68180244 bytes.
+SHA256 `6FDBD7D93A3AFA25AC8591F333E051509DF3524203BFFE827FD07311FC92073C`.
+All five ZIP entries match on-disk package hashes; no settings, secrets or game
+files are included. The old 0.1.0 ZIP hash remains unchanged. No public upload.
+
+Next: user adjusts both distances and walks towards/away from local sources in the
+game. Record real-lamp results separately; calibration and future ambient-relative
+mixing still require live evidence. Preserve both immutable packages.
 
 ## Resolved — diyHue placement save/recovery (2026-09-07)
 

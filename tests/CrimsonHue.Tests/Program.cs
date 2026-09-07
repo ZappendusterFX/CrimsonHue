@@ -158,6 +158,103 @@ Add("Mapper reset clears smoothing history", () =>
     Assert(mapper.Map(frame with { Lights = [] }, area, new(), 0.1).All(c => c.Rgb.Length == 0));
     Reject(() => LightMapper.Validate(new(Gain: double.NaN)));
 });
+var fadeArea = new EntertainmentArea(Fixtures.Id, "Distance fixture", false,
+    [new(9, default, [new("synthetic-distance", 0)], "Center")]);
+TelemetryFrame DistanceFrame(double distance, Vec3 rgb) => TelemetryParser.Parse(Fixtures.Snapshot(), out _)! with
+    { Player = default, Lights = [new(new(distance, 0, 0), rgb)] };
+var fadeSettings = new MappingSettings(Gain: 1, Brightness: 1, Radius: 15, SmoothingMs: 0, FadeStart: 5);
+Add("Distance fade has a full near zone, smooth tail and exact cutoff", () =>
+{
+    Assert(LightMapper.DistanceWeight(0, fadeSettings) == 1);
+    Assert(LightMapper.DistanceWeight(5, fadeSettings) == 1);
+    Assert(LightMapper.DistanceWeight(10, fadeSettings) == 0.25);
+    Assert(LightMapper.DistanceWeight(15, fadeSettings) == 0);
+    Assert(LightMapper.DistanceWeight(999, fadeSettings) == 0);
+    var weights = Enumerable.Range(0, 1501).Select(i => LightMapper.DistanceWeight(i / 100.0, fadeSettings)).ToArray();
+    Assert(weights.All(w => w is >= 0 and <= 1));
+    Assert(weights.Zip(weights.Skip(1)).All(p => p.First >= p.Second));
+    Assert(1 - LightMapper.DistanceWeight(5.001, fadeSettings) < 1e-6);
+    Assert(LightMapper.DistanceWeight(14.999, fadeSettings) < 1e-12);
+});
+Add("Approach and departure use the same continuous distance envelope", () =>
+{
+    double Sample(double d) => new LightMapper().Map(DistanceFrame(d, new(2, 0.5, 0.1)), fadeArea, fadeSettings, 0.1)[0].Rgb.X;
+    var distances = Enumerable.Range(0, 31).Select(i => i * 0.5).ToArray();
+    var outward = distances.Select(Sample).ToArray();
+    var inward = distances.Reverse().Select(Sample).Reverse().ToArray();
+    Assert(outward.SequenceEqual(inward));
+    Assert(outward.Zip(outward.Skip(1)).All(p => p.First >= p.Second));
+});
+Add("Very bright HDR sources cannot cancel their individual distance fade", () =>
+{
+    Vec3 Sample(double d) => new LightMapper().Map(DistanceFrame(d, new(1e8, 0, 0)), fadeArea, fadeSettings, 0.1)[0].Rgb;
+    Assert(Sample(5).X > 0.99);
+    Assert(Sample(10).X is > 0.53 and < 0.54, "HDR compression undid the half-distance fade");
+    Assert(Sample(14.5).X < 0.001);
+    Assert(Sample(15).Length == 0 && Sample(100).Length == 0);
+});
+Add("A distant bright color cannot overpower an equally bright nearby source", () =>
+{
+    var frame = DistanceFrame(2, new(1e8, 0, 0));
+    frame = frame with { Lights = [.. frame.Lights, new(new(14, 0, 0), new(0, 0, 1e8))] };
+    var rgb = new LightMapper().Map(frame, fadeArea, fadeSettings, 0.1)[0].Rgb;
+    Assert(rgb.X > 0.99 && rgb.Z < 0.02);
+});
+Add("Distance is measured from the player independently of camera position", () =>
+{
+    var near = DistanceFrame(2, new(1, 0, 0));
+    near = near with { Camera = near.Camera with { Position = new(100, 0, 0) } };
+    Assert(new LightMapper().Map(near, fadeArea, fadeSettings, 0.1)[0].Rgb.X > 0.5);
+    var far = near with { Player = new(100, 0, 0), Camera = near.Camera with { Position = new(2, 0, 0) } };
+    Assert(new LightMapper().Map(far, fadeArea, fadeSettings, 0.1)[0].Rgb.Length == 0);
+});
+Add("Fade slider settings take effect without restarting the mapper", () =>
+{
+    var mapper = new LightMapper(); var frame = DistanceFrame(10, new(1, 0.2, 0.1));
+    Assert(mapper.Map(frame, fadeArea, fadeSettings, 0.1)[0].Rgb.Length > 0);
+    Assert(mapper.Map(frame, fadeArea, fadeSettings with { Radius = 8 }, 0.1)[0].Rgb.Length == 0);
+    Assert(mapper.Map(frame, fadeArea, fadeSettings with { FadeStart = 12 }, 0.1)[0].Rgb.X > 0.8);
+});
+Add("Distance attenuation preserves a single source's linear color ratios", () =>
+{
+    var rgb = new LightMapper().Map(DistanceFrame(10, new(4, 2, 1)), fadeArea, fadeSettings, 0.1)[0].Rgb;
+    double Decode(double v) => v <= 0.04045 ? v / 12.92 : Math.Pow((v + 0.055) / 1.055, 2.4);
+    Assert(Math.Abs(Decode(rgb.X) / Decode(rgb.Z) - 4) < 1e-9);
+    Assert(Math.Abs(Decode(rgb.Y) / Decode(rgb.Z) - 2) < 1e-9);
+});
+Add("Invalid fade intervals are rejected and invalid distances contribute nothing", () =>
+{
+    foreach (var start in new[] { -1, 15, 16, double.NaN, double.PositiveInfinity })
+        Reject(() => LightMapper.Validate(fadeSettings with { FadeStart = start }));
+    foreach (var distance in new[] { -1, double.NaN, double.PositiveInfinity })
+        Assert(LightMapper.DistanceWeight(distance, fadeSettings) == 0);
+    LightMapper.Validate(fadeSettings with { FadeStart = 0 });
+});
+Add("Smoothing releases the previous color after leaving the fade range", () =>
+{
+    var mapper = new LightMapper(); var smooth = fadeSettings with { SmoothingMs = 100 };
+    var near = mapper.Map(DistanceFrame(2, new(1e8, 0, 0)), fadeArea, smooth, 1)[0].Rgb.X;
+    var released = mapper.Map(DistanceFrame(15, new(1e8, 0, 0)), fadeArea, smooth, 0.1)[0].Rgb.X;
+    Assert(released > 0 && released < near);
+    for (var i = 0; i < 10; i++) released = mapper.Map(DistanceFrame(15, new(1e8, 0, 0)), fadeArea, smooth, 0.1)[0].Rgb.X;
+    Assert(released < 0.0001);
+});
+Add("Legacy radius migrates to fade end and new fade settings round-trip", () =>
+{
+    const string legacy = "{\"BridgeAddress\":\"192.168.2.1\",\"AreaId\":\"saved-area\",\"Mapping\":{\"Gain\":2,\"Brightness\":0.4,\"Radius\":47.5,\"Spread\":3,\"SmoothingMs\":250}}";
+    var saved = JsonSerializer.Deserialize<AppSettings>(legacy)!;
+    Assert(saved.Mapping is { FadeStart: 0, FadeEnd: 47.5, Gain: 2, Brightness: 0.4, Spread: 3, SmoothingMs: 250 });
+    var directory = Path.Combine(Path.GetTempPath(), "CrimsonHue-fade-test-" + Guid.NewGuid().ToString("N"));
+    var store = new SettingsStore(directory);
+    try
+    {
+        store.SaveSettings(saved with { Mapping = saved.Mapping! with { FadeStart = 5.5, Radius = 12.5 } });
+        var restored = store.LoadSettings();
+        Assert(restored.AreaId == "saved-area" && restored.Mapping is { FadeStart: 5.5, FadeEnd: 12.5 });
+        Assert(!File.ReadAllText(Path.Combine(directory, "settings.json")).Contains("FadeEnd"), "Alias was serialized instead of the compatible Radius key");
+    }
+    finally { File.Delete(Path.Combine(directory, "settings.json")); Directory.Delete(directory); }
+});
 Add("HueStream v2 wire golden: UUID, RGB and noncontiguous channels", () =>
 {
     var bytes = EntertainmentPacket.Build(area.Id, 254, [new(2, new(1, 0, 0.5)), new(5, new(0, 1, 0))]);

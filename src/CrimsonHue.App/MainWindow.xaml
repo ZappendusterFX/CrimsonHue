@@ -8,7 +8,7 @@
         <Border Background="#CE3E5D" Width="42" Height="42" CornerRadius="12" Margin="0,0,13,0"><TextBlock Text="C" FontSize="27" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
         <StackPanel><TextBlock Text="CrimsonHue" FontSize="26" FontWeight="SemiBold" /><TextBlock Text="Bring Pywel into your room" Foreground="{StaticResource Muted}" FontSize="12" /></StackPanel>
       </StackPanel>
-      <Border Grid.Column="1" Background="#211923" CornerRadius="6" Padding="11,7" VerticalAlignment="Center"><TextBlock Text="EARLY PREVIEW  /  0.1.0" Foreground="#EF9BAC" FontSize="11" FontWeight="SemiBold" /></Border>
+      <Border Grid.Column="1" Background="#211923" CornerRadius="6" Padding="11,7" VerticalAlignment="Center"><TextBlock Text="EARLY PREVIEW  /  0.1.1" Foreground="#EF9BAC" FontSize="11" FontWeight="SemiBold" /></Border>
     </Grid>
     <Grid Grid.Row="1">
       <Grid.ColumnDefinitions><ColumnDefinition Width="330" /><ColumnDefinition Width="20" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
@@ -43,12 +43,15 @@
           <Border Background="{StaticResource Surface}" CornerRadius="12" Padding="18">
             <StackPanel>
               <TextBlock Text="03  /  TUNE THE FEEL" Foreground="#9CA6BE" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,14" />
+              <DockPanel><TextBlock Text="Fade starts" /><TextBlock x:Name="FadeStartValue" HorizontalAlignment="Right" /></DockPanel>
+              <Slider x:Name="FadeStartSlider" Minimum="0" Maximum="99.5" Value="0" TickFrequency="0.5" SmallChange="0.5" IsSnapToTickEnabled="True" ValueChanged="SettingsChanged" AutomationProperties.Name="Distance fade start" ToolTip="Full distance strength up to this distance from the player." />
+              <DockPanel><TextBlock Text="Off beyond" /><TextBlock x:Name="FadeEndValue" HorizontalAlignment="Right" /></DockPanel>
+              <Slider x:Name="FadeEndSlider" Minimum="1" Maximum="100" Value="35" TickFrequency="0.5" SmallChange="0.5" IsSnapToTickEnabled="True" ValueChanged="SettingsChanged" AutomationProperties.Name="Distance fade end" ToolTip="No new contribution at or beyond this distance. Smoothing still applies." />
+              <TextBlock Text="Distance from player · game units&#x0a;Smooth fade out and back in between both values." TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="11" Margin="0,0,0,12" />
               <DockPanel><TextBlock Text="Maximum brightness" /><TextBlock x:Name="BrightnessValue" HorizontalAlignment="Right" /></DockPanel>
               <Slider x:Name="BrightnessSlider" Minimum="0" Maximum="1" Value="0.6" ValueChanged="SettingsChanged" AutomationProperties.Name="Maximum brightness" />
               <DockPanel><TextBlock Text="Light sensitivity" /><TextBlock x:Name="GainValue" HorizontalAlignment="Right" /></DockPanel>
               <Slider x:Name="GainSlider" Minimum="0.05" Maximum="10" Value="1.5" ValueChanged="SettingsChanged" AutomationProperties.Name="Light sensitivity" />
-              <DockPanel><TextBlock Text="Game radius" /><TextBlock x:Name="RadiusValue" HorizontalAlignment="Right" /></DockPanel>
-              <Slider x:Name="RadiusSlider" Minimum="1" Maximum="100" Value="35" ValueChanged="SettingsChanged" AutomationProperties.Name="Game light radius" />
               <Expander Header="Advanced settings">
                 <StackPanel Margin="0,12,0,0">
                   <TextBlock Text="Directional focus · broad → narrow" /><Slider x:Name="SpreadSlider" Minimum="0.1" Maximum="8" Value="2" ValueChanged="SettingsChanged" />
@@ -64,7 +67,7 @@
       <Grid Grid.Column="2">
         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" MinHeight="230" /><RowDefinition Height="160" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
         <Border Background="{StaticResource Surface}" CornerRadius="10" Padding="16,12" Margin="0,0,0,14">
-          <StackPanel><TextBlock x:Name="TelemetryStatus" Text="Waiting for CrimsonDesertTelemetry" FontWeight="SemiBold" /><TextBlock x:Name="CaptureInfo" Text="Start the game with CrimsonDesertTelemetry 2.0.0 installed." Foreground="{StaticResource Muted}" FontSize="12" Margin="0,4,0,0" /></StackPanel>
+          <StackPanel><TextBlock x:Name="TelemetryStatus" Text="Waiting for CrimsonDesertTelemetry" FontWeight="SemiBold" /><TextBlock x:Name="CaptureInfo" Text="Start the game with CrimsonDesertTelemetry 2.0.0 installed." TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,4,0,0" /></StackPanel>
         </Border>
         <Border Grid.Row="1" Background="#141720" CornerRadius="12" BorderBrush="#2A2E3C" BorderThickness="1">
           <Grid Margin="16">

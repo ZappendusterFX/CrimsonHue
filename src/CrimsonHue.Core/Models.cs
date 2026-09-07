@@ -36,7 +36,11 @@ public sealed record EntertainmentArea(string Id, string Name, bool Active, IRea
     public override string ToString() => Description;
 }
 public sealed record BridgeCredentials(string Address, string ApplicationKey, string ClientKey, string? CertificateSha256);
-public sealed record MappingSettings(double Gain = 1.5, double Brightness = 0.6, double Radius = 35, double Spread = 2, double SmoothingMs = 100);
+public sealed record MappingSettings(double Gain = 1.5, double Brightness = 0.6, double Radius = 35, double Spread = 2, double SmoothingMs = 100, double FadeStart = 0)
+{
+    // Retain Radius in stored settings and the constructor for 0.1.0 compatibility.
+    [JsonIgnore] public double FadeEnd => Radius;
+}
 public sealed record ChannelColor(byte Id, Vec3 Rgb);
 
 public sealed class CrimsonHueException(string message) : Exception(message);
