@@ -4,6 +4,43 @@ First standalone Windows application implemented, packaged and opened for the
 user's real-lamp acceptance. Product lives entirely in this repository. Neither
 CrimsonDesertTelemetry nor diyHue sources/configuration were modified by this work.
 
+## Follow-up — Hue app placement mismatch (2026-09-07)
+
+User's Hue screenshot shows lamp_003 left of the monitor, lamp_002 right of it,
+and lamp_001 behind the seat. User confirmed the arrangement was saved with Done.
+An authenticated, certificate-pinned **GET-only** query of the paired bridge's
+area "Spieltisch" instead returned the following raw channel positions:
+
+| Channel | Light | X | Y | Z |
+| --- | --- | ---: | ---: | ---: |
+| 0 | LEDVANCE lamp_001 | 0.5404710514918292 | -1 | 0.5052717571578196 |
+| 1 | LEDVANCE lamp_002 | 0.22516372352075176 | 1 | -0.3940484143872304 |
+| 2 | LEDVANCE lamp_003 | -0.3793345270304169 | -1 | 0.7054737741448802 |
+
+The area was inactive. These agree with diyHue's on-disk group configuration, but
+put lamp_003 behind the viewer instead of next to the screen. CrimsonHue imports
+them verbatim. Its convention (+X right, +Y front, +Z up) agrees with the primary
+[HueApi coordinate implementation](https://github.com/michielpost/Q42.HueApi/blob/master/src/HueApi/Models/HuePosition.cs).
+No axes were flipped and no physical output was sent during this investigation.
+
+Concrete defect in the neighboring source:
+`C:\DEV\DiyHue\BridgeEmulator\flaskUI\v2restapi.py`,
+`ClipV2ResourceId.put`, entertainment_configuration branch (line 634), handles
+only action start/stop. A PUT with locations/service_locations does nothing but
+still returns the resource as a successful response. The POST branch does import
+positions. This is a strong explanation for edits appearing saved in the Hue app
+while the bridge retains the area's original positions. No request capture from
+the phone or deployed-source comparison was performed, so the exact phone request
+path remains unverified. A fix belongs in diyHue, not a compensating mirror here;
+request user authorization before editing/deploying that neighboring project.
+
+Added `--inspect-layout` to the test executable for repeatable, sanitized, read-only
+diagnostics using the paired account's DPAPI store, plus a six-cardinal-direction
+regression covering front/back and height independently. **36/36 non-live tests
+pass** after these additions (the earlier 36-test run below included `--live`).
+No new app package was needed; immutable 0.1.0 remains unchanged. Physical-lamp
+acceptance and the upstream ambient-light feed remain pending.
+
 ## Result
 
 - WPF desktop UI: HTTPS bridge identity probe, link-button pairing requesting both

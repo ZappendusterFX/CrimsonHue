@@ -102,6 +102,12 @@ Windows' `C:\Program Files\Git\usr\bin\openssl.exe`; pass `--openssl <path>` aft
 the `dotnet run` argument separator to override. `--live` adds read-only checks
 against the local telemetry and the development bridge; it never changes lamps.
 
+`--inspect-layout` instead reads the paired user's protected credentials and prints
+only area names, channel names/IDs and raw Hue XYZ positions. Run it as the same
+Windows user who paired the app. It performs GET requests only, does not start a
+stream or change settings, and does not print keys or full API responses. Use this
+to compare the bridge's saved layout with the Hue app before changing mapping axes.
+
 The executable supports `--ui-smoke <absolute-png-path>` to render its actual WPF
 window with synthetic data, without loading credentials or connecting to devices,
 then exit. The publish script creates a standalone x64 executable and ZIP in

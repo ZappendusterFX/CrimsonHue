@@ -13,6 +13,22 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
+// Explicit read-only diagnostic: use the paired user's protected store in memory.
+// Never print credentials, full API responses or stream ownership tokens.
+if (args.Contains("--inspect-layout"))
+{
+    var store = new SettingsStore();
+    var credentials = store.LoadCredentials() ?? throw new Exception("Pair CrimsonHue first.");
+    using var bridge = new BridgeClient(credentials);
+    foreach (var layout in await bridge.GetAreasAsync())
+    {
+        Console.WriteLine($"Area: {layout.Name}; active: {layout.Active}");
+        foreach (var channel in layout.Channels)
+            Console.WriteLine($"  Channel {channel.Id}: {channel.Label}; position {channel.Position}");
+    }
+    return 0;
+}
+
 var tests = new List<(string Name, Func<Task> Run)>();
 void Add(string name, Action run) => tests.Add((name, () => { run(); return Task.CompletedTask; }));
 void Async(string name, Func<Task> run) => tests.Add((name, run));
@@ -105,6 +121,28 @@ Add("Camera yaw rotates world lights into room directions", () =>
     var reversed = frame with { Camera = frame.Camera with { Right = new(-1, 0, 0), Forward = new(0, 0, -1) } };
     var colors = new LightMapper().Map(reversed, area, new(1, 1, 35, 8, 0), 0.1);
     Assert(colors[0].Rgb.Z > colors[0].Rgb.X);
+});
+Add("Hue axes preserve front/back and height independently", () =>
+{
+    // Hue x = right, y = front, z = up; game camera basis is right/up/forward.
+    // Explicit independent cardinal pairs catch both mirroring and y/z swaps.
+    var directions = new (Vec3 Hue, Vec3 World)[]
+    {
+        (new(1, 0, 0), new(5, 0, 0)), (new(-1, 0, 0), new(-5, 0, 0)),
+        (new(0, 1, 0), new(0, 0, 5)), (new(0, -1, 0), new(0, 0, -5)),
+        (new(0, 0, 1), new(0, 5, 0)), (new(0, 0, -1), new(0, -5, 0))
+    };
+    var layout = new EntertainmentArea(Fixtures.Id, "Cardinal axes", false,
+        directions.Select((d, i) => new EntertainmentChannel((byte)i, d.Hue, [new("test-" + i, 0)], "Axis " + i)).ToArray());
+    var source = TelemetryParser.Parse(Fixtures.Snapshot(), out _)!;
+    for (var i = 0; i < directions.Length; i++)
+    {
+        var frame = source with { Camera = source.Camera with { Position = default },
+            Lights = [new(directions[i].World, new(1, 0, 0))] };
+        var colors = new LightMapper().Map(frame, layout, new(1, 1, 35, 8, 0), 0.1);
+        Assert(colors[i].Rgb.X > 0.5);
+        Assert(colors.Where((_, j) => j != i).All(c => c.Rgb.X < colors[i].Rgb.X * 0.1));
+    }
 });
 Add("Empty feed, cutoff and brightness cap", () =>
 {
