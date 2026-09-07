@@ -1,8 +1,44 @@
 # Current checkpoint — CrimsonHue 0.1.0, 2026-09-07, Codex
 
 First standalone Windows application implemented, packaged and opened for the
-user's real-lamp acceptance. Product lives entirely in this repository. Neither
-CrimsonDesertTelemetry nor diyHue sources/configuration were modified by this work.
+user's real-lamp acceptance. Product lives entirely in this repository. The initial
+0.1.0 work did not modify neighboring products. The subsequent, user-authorized
+diyHue placement repair is recorded below; telemetry remains unchanged.
+
+## Resolved — diyHue placement save/recovery (2026-09-07)
+
+User authorized fixing the neighboring diyHue project. The running container's
+two affected Python files matched the old checkout byte-for-byte. Its log showed
+the exact ignored Hue-app PUT, confirming the cause (no longer only an inference).
+The repair now applies validated v2 placements, saves groups synchronously and
+publishes the updated layout. Twelve isolated placement tests pass; the key
+regression fails against the original container image.
+
+The development container was gracefully restarted with the two fixed files.
+Its original, still-inactive layout was checked before replaying the exact discarded
+user request. Corrected positions were verified through API and disk, then verified
+again after a second graceful restart. The paired CrimsonHue diagnostic independently
+read these values over pinned HTTPS:
+
+| Channel | Light | X | Y | Z |
+| --- | --- | ---: | ---: | ---: |
+| 0 | LEDVANCE lamp_001 | 0.31291532926158294 | -0.9982087856556487 | 0.5052717571578222 |
+| 1 | LEDVANCE lamp_002 | 0.6081610035675666 | 1 | -0.3940484143872305 |
+| 2 | LEDVANCE lamp_003 | -0.9011899756747147 | 1 | -0.8866089323712685 |
+
+This gives rear, front-right and front-left respectively, matching the screenshot's
+floor arrangement. Pairings, client keys, certificate and lamp backend settings
+were checked unchanged against the ignored local backup. No physical output was
+sent. The open CrimsonHue window needs **Refresh areas** to replace its cached
+old layout; no CrimsonHue code or package change was required.
+
+Implementation/deployment details and recreate-image caveat are in
+`C:\DEV\DiyHue\docs\ENTERTAINMENT-PLACEMENT-FIX.md`.
+The local fixed image is `diyhue-ledvance-tuya:placement-fix-20260907`; the existing
+container was patched in place. Old images/packages are unchanged. User asked
+whether upstream contribution is possible; answered yes via their existing fork
+and a focused PR. The public upstream master still contains the bug. No remote
+push or PR is authorized/created yet.
 
 ## Follow-up — Hue app placement mismatch (2026-09-07)
 
