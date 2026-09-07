@@ -37,8 +37,18 @@ Implementation/deployment details and recreate-image caveat are in
 The local fixed image is `diyhue-ledvance-tuya:placement-fix-20260907`; the existing
 container was patched in place. Old images/packages are unchanged. User asked
 whether upstream contribution is possible; answered yes via their existing fork
-and a focused PR. The public upstream master still contains the bug. No remote
-push or PR is authorized/created yet.
+and a focused PR. The user subsequently authorized submission:
+[diyHue PR #1119](https://github.com/diyhue/diyHue/pull/1119) is open against `dev`.
+Fork branch `fabianviol:fix/entertainment-placement-v2`, commit
+`e631fd767518e5f89b7079e2d353e87535527d8b`, contains one focused commit/four files.
+It was prepared in `C:\DEV\DiyHue-pr-entertainment-placement` from upstream dev
+`daf917799850dfee1bf94719756f80dfface83a0`, without unrelated fork changes.
+
+The dev port uses that branch's existing save API and includes a device-ID lookup
+fix in the Entertainment configuration reload path. Twelve tests pass against the
+PR source; independent PUT and real Config.load_config regressions both fail on
+the unmodified dev base. This submission did not replace the local working bridge
+with dev code. Merge/maintainer review remains pending; no monitoring was scheduled.
 
 ## Follow-up — Hue app placement mismatch (2026-09-07)
 
