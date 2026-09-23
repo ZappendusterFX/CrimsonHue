@@ -16,5 +16,8 @@ preview must never send physical output. Preserve all existing work and immutabl
 release packages. Separate synthetic, live telemetry and real-lamp evidence.
 
 Test requested changes proportionately and commit completed work in this repository.
+If user action or input is needed, end the turn immediately. Do not keep a
+session open, poll, sleep, or spend tokens waiting; resume only on the owner's
+next message. Keep handoffs short.
 Keep this file and CLAUDE.md byte-identical. Previous workspace files remain preserved
 in the telemetry repository's archive/crimsonhue-workspace-20260906.
