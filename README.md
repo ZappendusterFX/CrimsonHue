@@ -3,7 +3,11 @@
 A standalone Windows companion that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**0.3.0 — early preview.** CrimsonHue shows the raw CDT light and Ambient values
+**0.3.1 — early preview.** Local sources use a bounded 2D disc around their
+camera-relative direction. Strict left/right and front/rear boundaries are on by
+default: an enlarged source cannot light the opposite side. Sources outside the
+image still reach matching room lamps. Disc radius, soft edge and both boundaries
+are visible in the Space tab. CrimsonHue shows the raw CDT light and Ambient values
 beside the mapped lamp output. Sliders and numeric inputs expose the brightness,
 Ambient response, color and spatial adjustments. **Extra background light**
 defaults to 0% and color adjustments are neutral: zero Ambient plus no confirmed-clear
@@ -66,10 +70,26 @@ output instead of switching silently to view-filtered sources. If upstream captu
 is disabled, schema 1.6 can use the rendered feed with the same clear-only rule.
 Older schema 1.4/1.5 uses the original rendered-only behavior.
 
-Player distance supplies a configurable fade, and camera direction supplies a
-smooth weight for each Hue channel. **Strongest-channel compensation** controls
-how much each source is normalized against its strongest imported channel; 0%
-uses the absolute angular weight and 100% gives that channel its full spatial peak.
+Player distance supplies a configurable fade. Each camera-relative source has a
+2D circular footprint whose size is **Source disc radius** in degrees. A lamp's
+direction must intersect this disc and remain on the source's side of every
+enabled boundary. **Strict left / right** and **Strict front / rear** are on by
+default and clip the disc at the room center lines, before any weighting.
+Opposite-side contributions are exactly zero, even at Directional focus 0.
+If no lamp matches, that source contributes nothing; it is never reassigned to a
+forbidden side. A source or lamp exactly on a center line can use either adjoining
+half. Height participates in the circular footprint and angular weighting.
+
+**Source disc soft edge** controls the outer fraction that fades to zero; all
+directions outside the disc are zero. This is a planar angular footprint, not a
+volume or a simulated reflection. It works around all camera directions,
+including outside the game image, without a screen-frustum filter.
+**Directional focus** weights the allowed channels within the disc.
+**Strongest-channel compensation** controls normalization against the strongest
+allowed channel; it does not undo the disc's soft edge or either boundary.
+Both boundaries and the disc defaults are loaded for older saved configurations;
+existing numeric choices are retained. Ambient is a separate, non-directional
+layer controlled in the Ambient tab; it does not represent reflected local light.
 Hue X points right, Y towards the screen and
 Z up. The preview is top-down; cards show channel height, which participates in
 the direction calculation. A clear physics ray is a sampled geometry verdict,
@@ -83,16 +103,18 @@ colors; no fire color is detected or specially recolored. Weighted contributions
 are combined in linear RGB and overflow is scaled down. Output is sRGB-encoded,
 corrected by the displayed gamma control and brightness-limited. Imported Hue
 brightness balance is applied where provided.
-Short configurable smoothing reduces jitter on the legacy rendered feed. The
-confirmed-visible mode updates channel colors immediately so a previous clear
-light cannot linger after becoming blocked or unknown. This is an artistic estimate, not
+Short configurable smoothing reduces jitter on the legacy rendered feed when
+both strict boundaries are off. Confirmed-visible mode and either strict boundary
+update channel colors immediately so a previous source cannot linger after
+becoming hidden or moving to another side. This is an artistic estimate, not
 game pixels, physical lux, measured room distances or full scene lighting.
 Spotlight cones are not simulated. CDT supplies the separate source visibility
 decision; CrimsonHue does not perform its own occlusion test.
 
 ### Controls and raw values
 
-Every tuning control has a slider and numeric input. Adjustments affect preview
+Numeric tuning controls have a slider and numeric input; the two strict boundaries
+have on/off switches. Adjustments affect preview
 and active sync immediately. **Reset this tab** restores that tab's defaults;
 **Save settings** stores the current configuration. Settings are also saved on
 Start and normal window close. Existing saved brightness is retained as entered; the 85% default
@@ -103,7 +125,7 @@ applies to new or reset settings only.
 | Output | Maximum brightness (85%; 0–100%), Light sensitivity (1.5×; 0–10×), Local light mix (100%; 0–400%), Output gamma (1; 0.1–4), Legacy smoothing (100 ms; 0–1000 ms) |
 | Ambient | Ambient exposure (1×; 0–10×), Ambient reference level (4; 0.01–100 raw units), Ambient mix (40%; 0–100%), Extra background light (0%; 0–100%), Ambient black threshold (0; 0–100 raw units), Local mix in bright Ambient (100%; 0–200%), Ambient transition (400 ms; 0–5000 ms) |
 | Color | Local hue shift (0°; −180–180°), Local saturation (100%; 0–200%), Red balance / Green balance / Blue balance (each 1×; 0–4×), Ambient tint hue (0°; 0–360°), Ambient tint saturation (0%; 0–100%) |
-| Space | Fade starts (0; below Off beyond, up to just under 1000 game units), Off beyond (35; 1–1000 game units), Distance falloff (2; 0.1–8), Directional focus (2; 0–16), Strongest-channel compensation (100%; 0–100%), Room direction offset (0°; −180–180°) |
+| Space | Strict left / right (On), Strict front / rear (On), Fade starts (0; below Off beyond, up to just under 1000 game units), Off beyond (35; 1–1000 game units), Distance falloff (2; 0.1–8), Source disc radius (60°; 1–89°), Source disc soft edge (25%; 0–100%), Directional focus (2; 0–16), Strongest-channel compensation (100%; 0–100%), Room direction offset (0°; −180–180°) |
 | Setup | Bridge pairing, imported Entertainment area and local telemetry address |
 
 The raw readout shows CDT's global sky RGB, camera sky visibility, camera-local
@@ -211,7 +233,8 @@ CDT light WebSocket control, `--live-bridge` probes the development bridge, and
 
 `--live-ambient` adds a read-only Ambient WebSocket control. `--live-mapping`
 reads the protected saved area and fresh CDT streams, then prints calculated
-channel RGB for the actual camera, a simulated 180° turn and no local lights;
+channel RGB for the actual camera, a simulated 180° turn, Ambient only and local
+lights only, plus the active boundary and disc settings;
 it never starts an Entertainment stream. `--live-lamps` is a
 separate, explicitly requested physical test. It reads the
 paired current-user credentials and saved area, refuses to take over any active
@@ -227,7 +250,7 @@ stream or change settings, and does not print keys or full API responses. Use th
 to compare the bridge's saved layout with the Hue app before changing mapping axes.
 
 The executable supports `--ui-smoke <absolute-png-path>` to render its actual WPF
-window with synthetic data, exercise the distance-control bounds, without loading
+window with synthetic data, exercise numeric controls and boundary switches, without loading
 credentials or connecting to devices, then exit. The publish script creates a
 standalone x64 executable and ZIP in
 `dist/`, and refuses to overwrite existing versions.

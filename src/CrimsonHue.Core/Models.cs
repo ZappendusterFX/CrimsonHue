@@ -47,7 +47,9 @@ public sealed record MappingSettings(double Gain = 1.5, double Brightness = 0.85
     double AmbientSmoothingMs = 400, double HueShiftDegrees = 0, double Saturation = 1,
     double RedGain = 1, double GreenGain = 1, double BlueGain = 1, double OutputGamma = 1,
     double DirectionNormalization = 1, double CameraYawOffset = 0, double FadeExponent = 2,
-    double AmbientTintHue = 0, double AmbientTintSaturation = 0)
+    double AmbientTintHue = 0, double AmbientTintSaturation = 0,
+    bool SeparateLeftRight = true, bool SeparateFrontRear = true,
+    double SourceDiscRadiusDegrees = 60, double SourceDiscSoftness = 0.25)
 {
     // Retain Radius in stored settings and the constructor for 0.1.0 compatibility.
     [JsonIgnore] public double FadeEnd => Radius;

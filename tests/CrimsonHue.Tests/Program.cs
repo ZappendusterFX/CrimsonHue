@@ -36,6 +36,7 @@ void Assert(bool condition, string message = "Assertion failed") { if (!conditio
 void Reject(Action action) { try { action(); } catch { return; } throw new Exception("Expected rejection"); }
 async Task RejectAsync(Func<Task> action) { try { await action(); } catch { return; } throw new Exception("Expected rejection"); }
 var area = Fixtures.Area();
+var rearArea = area with { Channels = area.Channels.Select(c => c with { Position = new(c.Position.X, -c.Position.Y, c.Position.Z) }).ToArray() };
 Add("Parse current rendered feed without depending on authored availability", () =>
 {
     var frame = TelemetryParser.Parse(Fixtures.Snapshot(), out _);
@@ -77,8 +78,9 @@ Add("Schema 1.6 uses paired all-around lights and only fresh clear physics verdi
     Assert(frame.Feed == "all-around" && frame.SourceCount == 4 && frame.Lights.Count == 1);
     Assert(frame.Lights[0].Position == new Vec3(0, 2, -8), "Behind-camera clear source was lost");
     Assert(frame.Lights[0].VisibilityAgeMs == 100);
-    var mapped = new LightMapper().Map(frame, area, new(Radius: 35, SmoothingMs: 0), 0.1);
+    var mapped = new LightMapper().Map(frame, rearArea, new(Radius: 35, SmoothingMs: 0), 0.1);
     Assert(mapped.Any(c => c.Rgb.Length > 0), "All-around source did not reach the mapper");
+    Assert(new LightMapper().Map(frame, area, new(), 0.1).All(c => c.Rgb == default), "Rear source reached the front-only layout");
 });
 Add("Schema 1.6 never falls back to rendered when all-around input is unavailable", () =>
 {
@@ -116,11 +118,11 @@ Add("Confirmed-visible mapping drops hidden color without an EMA tail", () =>
 {
     var frame = TelemetryParser.Parse(Fixtures.CurrentSnapshot(), out _)!;
     var mapper = new LightMapper();
-    var clear = mapper.Map(frame, area, new(), 0.01);
+    var clear = mapper.Map(frame, rearArea, new(), 0.01);
     Assert(clear.Any(c => c.Rgb.X > 0));
-    var hidden = mapper.Map(frame with { Lights = [] }, area, new(), 0.01);
+    var hidden = mapper.Map(frame with { Lights = [] }, rearArea, new(), 0.01);
     Assert(hidden.All(c => c.Rgb.Length == 0));
-    var blue = mapper.Map(frame with { Lights = [new(frame.Lights[0].Position, new(0, 0, 2), 100)] }, area, new(), 0.01);
+    var blue = mapper.Map(frame with { Lights = [new(frame.Lights[0].Position, new(0, 0, 2), 100)] }, rearArea, new(), 0.01);
     Assert(blue.All(c => c.Rgb.X == 0) && blue.Any(c => c.Rgb.Z > 0));
 });
 Add("Ambient contract requires a fresh camera-local estimate", () =>
@@ -153,18 +155,18 @@ Add("Ambient provides room fill without erasing a nearby local light", () =>
     var settings = new MappingSettings(Brightness: 1, SmoothingMs: 0);
     var daylight = new LightMapper();
     IReadOnlyList<ChannelColor> bright = [];
-    for (var i = 0; i < 3; i++) bright = daylight.Map(frame, area, settings, 1, new(42, DateTimeOffset.UtcNow, 0, 0, 8));
+    for (var i = 0; i < 3; i++) bright = daylight.Map(frame, rearArea, settings, 1, new(42, DateTimeOffset.UtcNow, 0, 0, 8));
     Assert(bright.All(c => c.Rgb.Y > 0.5), "Daylight fill is too dim");
-    var dark = new LightMapper().Map(frame, area, settings, 1, new(42, DateTimeOffset.UtcNow, 0, 0, 0.02));
+    var dark = new LightMapper().Map(frame, rearArea, settings, 1, new(42, DateTimeOffset.UtcNow, 0, 0, 0.02));
     Assert(dark.Any(c => c.Rgb.X > c.Rgb.Y * 1.5), "Dark surroundings lost the local red light");
-    var hidden = daylight.Map(frame with { Lights = [] }, area, settings, 1, new(42, DateTimeOffset.UtcNow, 0, 0, 8));
+    var hidden = daylight.Map(frame with { Lights = [] }, rearArea, settings, 1, new(42, DateTimeOffset.UtcNow, 0, 0, 8));
     Assert(hidden.All(c => c.Rgb.Y > 0.5 && Math.Abs(c.Rgb.X - c.Rgb.Y) < 1e-9), "Hidden red leaked into the ambient baseline");
     Assert(bright.Any(c => c.Rgb.X > hidden.First(h => h.Id == c.Id).Rgb.X + 0.08), "Daylight erased nearby local contrast");
-    var disabled = new LightMapper().Map(frame, area, settings with { AmbientSensitivity = 0 }, 1,
+    var disabled = new LightMapper().Map(frame, rearArea, settings with { AmbientSensitivity = 0 }, 1,
         new(42, DateTimeOffset.UtcNow, 0, 0, 8));
-    var localOnly = new LightMapper().Map(frame, area, settings, 1);
+    var localOnly = new LightMapper().Map(frame, rearArea, settings, 1);
     Assert(disabled.Zip(localOnly).All(pair => pair.First.Rgb == pair.Second.Rgb), "Zero influence changed local-only output");
-    for (var i = 0; i < 5; i++) bright = daylight.Map(frame, area, settings, 1);
+    for (var i = 0; i < 5; i++) bright = daylight.Map(frame, rearArea, settings, 1);
     Assert(bright.Zip(localOnly).All(pair => (pair.First.Rgb - pair.Second.Rgb).Length < 0.001), "Stale ambient was retained indefinitely");
 });
 Add("Unmodified orange source follows camera yaw while zero Ambient stays black", () =>
@@ -189,6 +191,7 @@ Add("Unmodified orange source follows camera yaw while zero Ambient stays black"
     var unlit = mapper.Map(frame with { Lights = [] }, layout, settings, 1, night);
     Assert(unlit.All(c => c.Rgb.Length == 0), "A black Ambient estimate lit the empty night scene");
     Assert(ahead[0].Rgb.X > ahead[2].Rgb.X + 0.25, "Fire did not concentrate on the left-front lamp");
+    Assert(ahead[1].Rgb == default && ahead[2].Rgb == default, "Left-front fire crossed a room boundary");
     double Decode(double v) => v <= 0.04045 ? v / 12.92 : Math.Pow((v + 0.055) / 1.055, 2.4);
     Assert(Math.Abs(Decode(ahead[0].Rgb.Y / settings.Brightness) / Decode(ahead[0].Rgb.X / settings.Brightness) - 0.63 / 1.58) < 1e-9,
         "Neutral color controls changed the orange source's linear RGB ratio");
@@ -282,15 +285,170 @@ Add("Directional mapping keeps left red and right blue", () =>
 {
     var frame = TelemetryParser.Parse(Fixtures.Snapshot(), out _)!;
     var colors = new LightMapper().Map(frame, area, new(1, 1, 35, 8, 0), 0.1);
-    Assert(colors[0].Rgb.X > colors[0].Rgb.Z * 2);
-    Assert(colors[1].Rgb.Z > colors[1].Rgb.X * 2);
+    Assert(colors[0].Rgb.X > 0 && colors[0].Rgb.Z == 0);
+    Assert(colors[1].Rgb.Z > 0 && colors[1].Rgb.X == 0);
 });
-Add("Camera yaw rotates world lights into room directions", () =>
+Add("Camera yaw keeps off-screen sources on matching rear channels", () =>
 {
     var frame = TelemetryParser.Parse(Fixtures.Snapshot(), out _)!;
     var reversed = frame with { Camera = frame.Camera with { Right = new(-1, 0, 0), Forward = new(0, 0, -1) } };
-    var colors = new LightMapper().Map(reversed, area, new(1, 1, 35, 8, 0), 0.1);
-    Assert(colors[0].Rgb.Z > colors[0].Rgb.X);
+    var rear = area with { Channels = area.Channels.Select(c => c with { Position = new(c.Position.X, -c.Position.Y, c.Position.Z) }).ToArray() };
+    var colors = new LightMapper().Map(reversed, rear, new(1, 1, 35, 8, 0), 0.1);
+    Assert(colors[0].Rgb.Z > 0 && colors[0].Rgb.X == 0);
+});
+Add("Strict boundaries keep every opposite quadrant exactly black while the camera turns", () =>
+{
+    var layout = new EntertainmentArea(Fixtures.Id, "Four corners", false,
+    [
+        new(0, new(-1, 1, -0.7), [], "Front left"), new(1, new(1, 1, 0.2), [], "Front right"),
+        new(2, new(1, -1, 0.8), [], "Rear right"), new(3, new(-1, -1, -0.3), [], "Rear left")
+    ]);
+    var frame = TelemetryParser.Parse(Fixtures.Snapshot(), out _)! with
+    {
+        Camera = new(default, new(1, 0, 0), new(0, 1, 0), new(0, 0, 1)),
+        Lights = [new(new(-5, 0, 5), new(5, 1, .1))]
+    };
+    foreach (var focus in new[] { 0.0, 2, 16 })
+    foreach (var normalization in new[] { 0.0, 1 })
+    {
+        var mapper = new LightMapper();
+        var settings = new MappingSettings(Spread: focus, DirectionNormalization: normalization, SmoothingMs: 1000, OutputGamma: 4);
+        for (var corner = 0; corner < 4; corner++)
+        {
+            var yaw = -corner * Math.PI / 2;
+            var camera = frame.Camera with { Right = new(Math.Cos(yaw), 0, -Math.Sin(yaw)), Forward = new(Math.Sin(yaw), 0, Math.Cos(yaw)) };
+            var colors = mapper.Map(frame with { Camera = camera }, layout, settings, .001);
+            Assert(colors[corner].Rgb.X > 0, "Allowed corner lost its source");
+            Assert(colors.Where((_, i) => i != corner).All(c => c.Rgb == default), "Excluded corner retained color after camera rotation");
+        }
+    }
+});
+Add("Recorded left brazier has zero right and rear contribution at the owner's broad focus", () =>
+{
+    // Read-only CDT capture from the reported forest scene; replay is synthetic evidence.
+    var layout = new EntertainmentArea(Fixtures.Id, "Recorded room", false,
+    [
+        new(0, new(.31291532926158294, -.9982087856556487, .5052717571578222), [], "Rear"),
+        new(1, new(.6081610035675666, 1, -.3940484143872305), [], "Front right"),
+        new(2, new(-.9011899756747147, 1, -.8866089323712685), [], "Front left")
+    ]);
+    var frame = TelemetryParser.Parse(Fixtures.CurrentSnapshot(), out _)! with
+    {
+        Player = new(-10496.66, 605.3306, -4445.196),
+        Camera = new(new(-10500.002, 609.24884, -4440.6255), new(-.88250196, 0, -.47030807),
+            new(.12906933, .9616054, -.2421901), new(.45225078, -.27443567, -.84861875)),
+        Lights = [new(new(-10492.55, 606.8549, -4446.793), new(.3535532, .108926825, .026889712)),
+            new(new(-10492.526, 606.91095, -4446.793), new(1.9406164, .59905326, .14772636))]
+    };
+    var settings = new MappingSettings(Brightness: .6, Radius: 20, FadeStart: 6, FadeExponent: 1.2);
+    var strict = new LightMapper().Map(frame, layout, settings, 1);
+    var broad = new LightMapper().Map(frame, layout, settings with { SeparateLeftRight = false, SeparateFrontRear = false,
+        SourceDiscRadiusDegrees = 89, SourceDiscSoftness = 0 }, 1);
+    Assert(strict[0].Rgb == default && strict[1].Rgb == default, "Recorded left fire still reaches right/rear");
+    Assert(strict[2].Rgb == broad[2].Rgb && strict[2].Rgb.X > .5, "Boundary unnecessarily changed left fire output");
+    Assert(broad[1].Rgb.X > .5, "Replay no longer reproduces the reported broad spill");
+});
+Add("A missing matching lamp never redirects sources across a boundary", () =>
+{
+    var frame = TelemetryParser.Parse(Fixtures.Snapshot(), out _)! with
+    {
+        Camera = new(default, new(1, 0, 0), new(0, 1, 0), new(0, 0, 1)),
+        Lights = [new(new(-2, 0, 5), new(1e8, 1e7, 1e6))]
+    };
+    var rightOnly = area with { Channels = [area.Channels[1]] };
+    foreach (var focus in new[] { 0.0, 16 })
+    {
+        var colors = new LightMapper().Map(frame, rightOnly, new(Spread: focus, OutputGamma: 4, LocalStrength: 4), 1);
+        Assert(colors.Single().Rgb == default, "Normalization revived a forbidden channel");
+    }
+    Assert(new LightMapper().Map(frame, area with { Channels = [] }, new(), 1).Count == 0);
+});
+Add("Center lines are shared but sources immediately either side are strictly separated", () =>
+{
+    var frame = TelemetryParser.Parse(Fixtures.Snapshot(), out _)! with
+    {
+        Camera = new(default, new(1, 0, 0), new(0, 1, 0), new(0, 0, 1))
+    };
+    var layout = area with { Channels = [.. area.Channels, new(8, new(0, 1, 0), [], "Center")] };
+    foreach (var x in new[] { -1e-12, 0, 1e-12 })
+    {
+        var colors = new LightMapper().Map(frame with { Lights = [new(new(x, 0, 5), new(1, 0, 0))] }, layout, new(Spread: 0), 1);
+        Assert((colors[0].Rgb.X > 0) == (x <= 0) && (colors[1].Rgb.X > 0) == (x >= 0));
+        Assert(colors[2].Rgb.X > 0, "A lamp exactly on the center line lost an adjacent source");
+    }
+});
+Add("Boundary switches and room offset act immediately without altering Ambient or raw input", () =>
+{
+    var layout = new EntertainmentArea(Fixtures.Id, "Corners", false,
+    [
+        new(0, new(-1, 1, 0), [], "Front left"), new(1, new(1, 1, 0), [], "Front right"),
+        new(2, new(-1, -1, 0), [], "Rear left"), new(3, new(1, -1, 0), [], "Rear right")
+    ]);
+    var frame = TelemetryParser.Parse(Fixtures.Snapshot(), out _)! with
+    {
+        Camera = new(default, new(1, 0, 0), new(0, 1, 0), new(0, 0, 1)),
+        Lights = [new(new(-2, 0, 5), new(1, 0, 0))]
+    };
+    var settings = new MappingSettings(Spread: 0, AmbientSmoothingMs: 0, SourceDiscRadiusDegrees: 89, SourceDiscSoftness: 0);
+    var mapper = new LightMapper();
+    var broad = mapper.Map(frame, layout, settings with { SeparateLeftRight = false, SeparateFrontRear = false }, 1);
+    Assert(broad.Take(2).All(c => c.Rgb.X > 0));
+    var strict = mapper.Map(frame, layout, settings, .001);
+    Assert(strict[0].Rgb.X > 0 && strict.Skip(1).All(c => c.Rgb == default), "Enabling boundaries retained previous spread");
+    var frontOnly = mapper.Map(frame, layout, settings with { SeparateLeftRight = false }, .001);
+    Assert(frontOnly.Take(2).All(c => c.Rgb.X > 0) && frontOnly.Skip(2).All(c => c.Rgb == default));
+    var beside = frame with { Lights = [new(new(-5, 0, 2), new(1, 0, 0))] };
+    var leftOnly = mapper.Map(beside, layout, settings with { SeparateFrontRear = false }, .001);
+    Assert(leftOnly[0].Rgb.X > 0 && leftOnly[2].Rgb.X > 0 && leftOnly[1].Rgb == default && leftOnly[3].Rgb == default);
+    var offset = mapper.Map(frame, layout, settings with { CameraYawOffset = -90 }, .001);
+    Assert(offset[1].Rgb.X > 0 && offset.Where((_, i) => i != 1).All(c => c.Rgb == default));
+    var ambient = new AmbientFrame(42, DateTimeOffset.UtcNow, 0, 0, .01);
+    var mixed = mapper.Map(frame, layout, settings, .001, ambient);
+    var ambientOnly = mapper.Map(frame with { Lights = [] }, layout, settings, .001, ambient);
+    Assert(mixed.Skip(1).Zip(ambientOnly.Skip(1)).All(p => p.First.Rgb == p.Second.Rgb), "Forbidden local light changed the Ambient baseline");
+    Assert(frame.Lights.Single() == new LightContribution(new(-2, 0, 5), new(1, 0, 0)), "Mapping changed raw CDT data");
+});
+Add("The source footprint is a bounded 2D circle with equal horizontal and vertical radius", () =>
+{
+    Vec3 Ray(double angle, double around)
+    {
+        var a = angle * Math.PI / 180; var b = around * Math.PI / 180;
+        return new(Math.Sin(a) * Math.Cos(b), Math.Cos(a), Math.Sin(a) * Math.Sin(b));
+    }
+    var layout = new EntertainmentArea(Fixtures.Id, "Disc probes", false,
+        new[] { Ray(30, 0), Ray(30, 90), Ray(30, 180), Ray(30, 270), Ray(45, 0), Ray(60, 0) }
+            .Select((p, i) => new EntertainmentChannel((byte)i, p, [], "Probe " + i)).ToArray());
+    var frame = TelemetryParser.Parse(Fixtures.Snapshot(), out _)! with
+    {
+        Camera = new(default, new(1, 0, 0), new(0, 1, 0), new(0, 0, 1)),
+        Lights = [new(new(0, 0, 5), new(1, 0, 0))]
+    };
+    var settings = new MappingSettings(Spread: 0, SourceDiscRadiusDegrees: 40, SourceDiscSoftness: 0);
+    var small = new LightMapper().Map(frame, layout, settings, 1);
+    Assert(small.Take(4).All(c => c.Rgb == small[0].Rgb && c.Rgb.X > 0), "Footprint is not circular in its projection plane");
+    Assert(small.Skip(4).All(c => c.Rgb == default), "Disc has an infinite tail");
+    var larger = new LightMapper().Map(frame, layout, settings with { SourceDiscRadiusDegrees = 50 }, 1);
+    Assert(larger[4].Rgb.X > 0 && larger[5].Rgb == default, "Visible source radius did not resize its footprint");
+    var soft = new LightMapper().Map(frame, layout, settings with { SourceDiscRadiusDegrees = 50, SourceDiscSoftness = 1 }, 1);
+    Assert(soft[4].Rgb.X > 0 && soft[4].Rgb.X < larger[4].Rgb.X, "Compensation undid the soft disc edge");
+    var single = layout with { Channels = [layout.Channels[4]] };
+    Assert(new LightMapper().Map(frame, single, settings with { SourceDiscRadiusDegrees = 50, SourceDiscSoftness = 1 }, 1)[0].Rgb == soft[4].Rgb,
+        "A lone edge channel was boosted to full intensity");
+});
+Add("An enlarged off-screen source disc is still clipped at every enabled side boundary", () =>
+{
+    var layout = new EntertainmentArea(Fixtures.Id, "Side probes", false,
+    [new(0, new(-1, .1, 0), [], "Left front"), new(1, new(-1, -.1, 0), [], "Left rear"), new(2, new(1, .1, 0), [], "Right front")]);
+    var frame = TelemetryParser.Parse(Fixtures.Snapshot(), out _)! with
+    {
+        Camera = new(default, new(1, 0, 0), new(0, 1, 0), new(0, 0, 1)),
+        Lights = [new(new(-5, 0, .1), new(1, 0, 0))]
+    };
+    var settings = new MappingSettings(Spread: 0, SourceDiscRadiusDegrees: 89, SourceDiscSoftness: 0);
+    var strict = new LightMapper().Map(frame, layout, settings, 1);
+    Assert(strict[0].Rgb.X > 0 && strict.Skip(1).All(c => c.Rgb == default), "Off-screen disc crossed a boundary");
+    var withoutFrontRear = new LightMapper().Map(frame, layout, settings with { SeparateFrontRear = false }, 1);
+    Assert(withoutFrontRear[1].Rgb.X > 0, "Boundary switch did not expose the adjacent part of the disc");
 });
 Add("Hue axes preserve front/back and height independently", () =>
 {
@@ -424,13 +582,14 @@ Add("Spatial normalization, yaw offset and fade curve are explicit controls", ()
         Camera = new(default, new(1, 0, 0), new(0, 1, 0), new(0, 0, 1)),
         Lights = [new(new(-3, 0, 5), new(1, 0, 0))]
     };
-    IReadOnlyList<ChannelColor> Sample(MappingSettings s) => new LightMapper().Map(frame, area, s, 1);
+    IReadOnlyList<ChannelColor> Sample(MappingSettings s) => new LightMapper().Map(frame, area,
+        s with { SourceDiscRadiusDegrees = 89, SourceDiscSoftness = 0 }, 1);
     var focused = Sample(fadeSettings with { Spread = 4 });
     var absolute = Sample(fadeSettings with { Spread = 4, DirectionNormalization = 0 });
     Assert(focused.Max(c => c.Rgb.X) > absolute.Max(c => c.Rgb.X));
-    var unfocused = Sample(fadeSettings with { Spread = 0 });
+    var unfocused = Sample(fadeSettings with { Spread = 0, SeparateLeftRight = false });
     Assert(unfocused[0].Rgb == unfocused[1].Rgb);
-    var rotated = Sample(fadeSettings with { Spread = 4, CameraYawOffset = 180 });
+    var rotated = Sample(fadeSettings with { Spread = 4, CameraYawOffset = -90 });
     Assert(focused[0].Rgb.X > focused[1].Rgb.X && rotated[1].Rgb.X > rotated[0].Rgb.X);
     Assert(LightMapper.DistanceWeight(10, fadeSettings with { FadeExponent = 1 }) > LightMapper.DistanceWeight(10, fadeSettings));
     foreach (var exponent in new[] { 0.1, 0.5, 2.0, 8.0 })
@@ -462,7 +621,7 @@ Add("Invalid fade intervals are rejected and invalid distances contribute nothin
 });
 Add("Smoothing releases the previous color after leaving the fade range", () =>
 {
-    var mapper = new LightMapper(); var smooth = fadeSettings with { SmoothingMs = 100 };
+    var mapper = new LightMapper(); var smooth = fadeSettings with { SmoothingMs = 100, SeparateLeftRight = false, SeparateFrontRear = false };
     var near = mapper.Map(DistanceFrame(2, new(1e8, 0, 0)), fadeArea, smooth, 1)[0].Rgb.X;
     var released = mapper.Map(DistanceFrame(15, new(1e8, 0, 0)), fadeArea, smooth, 0.1)[0].Rgb.X;
     Assert(released > 0 && released < near);
@@ -474,6 +633,8 @@ Add("Legacy radius migrates to fade end and new fade settings round-trip", () =>
     const string legacy = "{\"BridgeAddress\":\"192.168.2.1\",\"AreaId\":\"saved-area\",\"Mapping\":{\"Gain\":2,\"Brightness\":0.4,\"Radius\":47.5,\"Spread\":3,\"SmoothingMs\":250}}";
     var saved = JsonSerializer.Deserialize<AppSettings>(legacy)!;
     Assert(saved.Mapping is { FadeStart: 0, FadeEnd: 47.5, Gain: 2, Brightness: 0.4, Spread: 3, SmoothingMs: 250, AmbientSensitivity: 1 });
+    Assert(saved.Mapping is { SeparateLeftRight: true, SeparateFrontRear: true, SourceDiscRadiusDegrees: 60, SourceDiscSoftness: 0.25 },
+        "Older settings must load with the visible strict boundaries and bounded disc defaults");
     var directory = Path.Combine(Path.GetTempPath(), "CrimsonHue-fade-test-" + Guid.NewGuid().ToString("N"));
     var store = new SettingsStore(directory);
     try
@@ -499,7 +660,8 @@ Add("Saved settings retain every explicit control and do not silently migrate br
         var custom = oldDefault with { AmbientOutput = 0.25, AmbientFloor = 0.05, AmbientCutoff = 0.02, DaylightLocalStrength = 0.3,
             LocalStrength = 2, AmbientReferenceLevel = 5, AmbientSmoothingMs = 700, HueShiftDegrees = -15, Saturation = 0.8,
             RedGain = 0.9, GreenGain = 1.2, BlueGain = 0.7, OutputGamma = 1.3, DirectionNormalization = 0.5,
-            CameraYawOffset = 20, FadeExponent = 1.6, AmbientTintHue = 210, AmbientTintSaturation = 0.2 };
+            CameraYawOffset = 20, FadeExponent = 1.6, AmbientTintHue = 210, AmbientTintSaturation = 0.2,
+            SeparateLeftRight = false, SeparateFrontRear = false, SourceDiscRadiusDegrees = 42, SourceDiscSoftness = 0.6 };
         store.SaveSettings(restored with { Mapping = custom });
         Assert(store.LoadSettings().Mapping == custom, "An explicit mapping value did not round-trip");
         File.WriteAllText(Path.Combine(directory, "settings.json"), JsonSerializer.Serialize(new AppSettings(Mapping: oldDefault with { Radius = 50 })));
@@ -711,20 +873,22 @@ if (args.Contains("--live-mapping")) Async("LIVE read-only saved-layout mapping 
         var frame = telemetry.Read(out _)!;
         var ambientFrame = ambient.Read(out _)!;
         var mapping = saved.Mapping ?? new();
-        IReadOnlyList<ChannelColor> Map(TelemetryFrame f)
+        IReadOnlyList<ChannelColor> Map(TelemetryFrame f, bool includeAmbient = true)
         {
             var mapper = new LightMapper();
             IReadOnlyList<ChannelColor> output = [];
-            for (var i = 0; i < 3; i++) output = mapper.Map(f, layout, mapping, 1, ambientFrame);
+            for (var i = 0; i < 3; i++) output = mapper.Map(f, layout, mapping, 1, includeAmbient ? ambientFrame : null);
             return output;
         }
         var ahead = Map(frame);
         var turned = Map(frame with { Camera = frame.Camera with { Right = frame.Camera.Right * -1, Forward = frame.Camera.Forward * -1 } });
         var baseline = Map(frame with { Lights = [] });
+        var localOnly = Map(frame, includeAmbient: false);
         Console.WriteLine($"  {frame.Lights.Count} clear sources; raw Ambient W={ambientFrame.WorkingLevel:G9}; max brightness={mapping.Brightness:P0}");
+        Console.WriteLine($"  Strict left/right={mapping.SeparateLeftRight}; front/rear={mapping.SeparateFrontRear}; disc radius={mapping.SourceDiscRadiusDegrees:G} deg; soft edge={mapping.SourceDiscSoftness:P0}");
         Console.WriteLine($"  Raw Ambient working RGB={ambientFrame.WorkingRgb}; sky RGB={ambientFrame.SkyRgb}; visibility={ambientFrame.SkyVisibility:G9}");
         for (var i = 0; i < layout.Channels.Count; i++)
-            Console.WriteLine($"  CH {layout.Channels[i].Id}: actual {ahead[i].Rgb}, yaw +180° {turned[i].Rgb}, no local lights {baseline[i].Rgb}");
+            Console.WriteLine($"  CH {layout.Channels[i].Id}: actual {ahead[i].Rgb}, yaw +180° {turned[i].Rgb}, no local lights {baseline[i].Rgb}, local only {localOnly[i].Rgb}");
         Assert(ahead.All(c => c.Rgb.IsFinite) && turned.All(c => c.Rgb.IsFinite));
     }
     finally { await cancel.CancelAsync(); await telemetryTask; await ambientTask; }

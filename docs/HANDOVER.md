@@ -1,4 +1,65 @@
-# Current checkpoint — CrimsonHue 0.3.0, 2026-09-28, Codex
+# Current checkpoint — CrimsonHue 0.3.1, 2026-09-28, Codex
+
+Owner requires strict spatial separation: a source on one side must never light
+lamps on the opposite side. Off-screen sources remain relevant to the room. The
+owner clarified that source enlargement must be a 2D circle, not a world-space
+sphere. The old exponential distribution had an infinite tail: at the reported
+left brazier (roughly 22 degrees left), focus 2 assigned ~66% angular weight to
+the front-right channel. That was broad directional mixing, not a reflection.
+
+The mapper now applies visible Strict left / right and Strict front / rear
+switches, both On by default (including old settings). Opposite-sign camera/room
+X or Y contributions are exactly zero before normalization. A source with no
+matching lamp is dropped, never redirected across a boundary. Positions exactly
+on a center line belong to both adjacent halves. Room direction offset rotates
+the source first. Height still participates in matching, with no height boundary.
+
+Each source has a finite circular footprint in the plane normal to its camera
+bearing. Channel rays intersect that 2D plane; Source disc radius controls its
+angular radius (60 degrees default, 1–89 range), and Source disc soft edge controls
+the outer fading fraction (25% default, 0–100%). The footprint is clipped at
+enabled side boundaries. Outside the circle is zero; its edge is applied after
+angular compensation so compensation cannot revive it. Off-screen and rear
+sources use the same mapping without a screen-frustum filter. All four new
+controls are visible in Space with reset/persistence. Preview shows boundaries
+and their states. Raw CDT input and the independently controlled Ambient layer
+keep their meanings; local spill does not stand in for reflected illumination.
+
+Strict boundaries also bypass the old channel EMA, including the legacy feed,
+so a camera turn cannot retain color on the wrong side. The immediate path now
+assigns the target RGB directly, avoiding floating-point residue from an EMA
+formula with alpha one. This restriction is labelled beside Legacy smoothing.
+
+Verification: Release build zero warnings/errors; 69/69 non-live tests passed.
+Tests cover the recorded brazier/three-lamp layout, exact black across quadrants
+through camera rotations, unmatched layouts, center lines, independent switches,
+offset, finite circular footprint in both dimensions, radius/edge adjustment,
+off-screen coverage, Ambient independence and persistence of all new settings.
+Read-only live saved-layout mapping passed 70/70. At the owner's forest scene,
+40 clear sources and raw Ambient W=0.000968932153 produced local-only RGB zero
+for CH0 rear and CH1 front-right; CH2 front-left was approximately
+(0.6000, 0.3548, 0.1834). Combined right/rear output equalled Ambient alone,
+approximately (0.000742932, 0.000742932, 0.000742932), at the saved 60% cap.
+A simulated 180-degree camera turn moved the fire contribution to CH0 rear.
+These are computed outputs, not observations of physical lamp appearance.
+
+Source and packaged WPF smoke runs exited 0. All 27 numeric controls and both
+boolean controls are checked for UI coverage and live state changes; six panels
+were rendered. All five ZIP entries match package files. AGENTS.md and CLAUDE.md
+are byte-identical. No physical output session was started or taken over.
+
+Package: `dist/CrimsonHue-0.3.1-win-x64/CrimsonHue.exe` (166969115 bytes),
+`dist/CrimsonHue-0.3.1-win-x64.zip`, SHA-256
+`F74658AC6316E947ECF8689069D28080840E00AF73F11098E91493543D16FAFC`.
+All previous packages and pre-existing untracked codex_check_hdr.obj are preserved.
+No credentials/settings/game files are packaged and no upload occurred.
+
+Next: owner switches from the still-running 0.3.0 to this exact 0.3.1 package,
+then starts sync and checks the left brazier and camera turns. Strict switches
+start enabled; source radius and edge can be tuned in Space. Tiny genuine Ambient
+remains independently adjustable with the existing Ambient black threshold.
+
+# Previous checkpoint — CrimsonHue 0.3.0, 2026-09-28, Codex
 
 Owner rejected 0.2.2's artificial night fill: live CDT had zero confirmed-clear
 sources and practically zero Ambient, yet that version generated ~0.188 neutral

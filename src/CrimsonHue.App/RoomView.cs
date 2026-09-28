@@ -26,6 +26,11 @@ public sealed class RoomView : FrameworkElement
             dc.DrawLine(new Pen(Brush("#202735"), 1), new Point(x, center.Y - sy + 12), new Point(x, center.Y + sy - 12));
             dc.DrawLine(new Pen(Brush("#202735"), 1), new Point(center.X - sx + 12, y), new Point(center.X + sx - 12, y));
         }
+        var boundary = new Pen(Brush("#507682"), 1) { DashStyle = DashStyles.Dash };
+        if (Settings.SeparateLeftRight)
+            dc.DrawLine(boundary, new Point(center.X, center.Y - sy + 8), new Point(center.X, center.Y + sy - 8));
+        if (Settings.SeparateFrontRear)
+            dc.DrawLine(boundary, new Point(center.X - sx + 8, center.Y), new Point(center.X + sx - 8, center.Y));
         dc.DrawRoundedRectangle(Brush("#4B566C"), null, new Rect(center.X - 60, center.Y - sy - 8, 120, 5), 2, 2);
         Label(dc, "SCREEN", new Point(center.X, center.Y - sy - 27), 10, "#9AA7BE");
         dc.DrawEllipse(Brush("#C1C8D8"), null, center, 5, 5);

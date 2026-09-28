@@ -49,18 +49,27 @@ public sealed class LightMapper
         foreach (var contribution in contributions)
         {
             var angular = new double[directions.Length];
+            var coverage = new double[directions.Length];
             var strongest = 0.0;
             for (var i = 0; i < directions.Length; i++)
             {
                 // Hue axes: x right, y towards screen, z up. Normalized room
-                // coordinates, not metres. The visible normalization setting
-                // blends absolute angular falloff with focus among the layout.
-                angular[i] = directions[i].Length < 0.01 ? 1 :
-                    Math.Exp(settings.Spread * (Math.Clamp(directions[i].Dot(contribution.Direction), -1, 1) - 1));
+                // coordinates, not metres. Reject the opposite side before
+                // normalization: no available channel may redirect a source
+                // across an enabled boundary. A position exactly on an axis
+                // belongs to both adjoining halves; height is still weighted.
+                if ((settings.SeparateLeftRight && OppositeSides(directions[i].X, contribution.Direction.X)) ||
+                    (settings.SeparateFrontRear && OppositeSides(directions[i].Y, contribution.Direction.Y))) continue;
+                var dot = Math.Clamp(directions[i].Dot(contribution.Direction), -1, 1);
+                var centered = directions[i].Length < 0.01;
+                coverage[i] = centered ? 1 : SourceDiscWeight(dot, settings);
+                if (coverage[i] == 0) continue;
+                angular[i] = centered ? 1 : Math.Exp(settings.Spread * (dot - 1));
                 strongest = Math.Max(strongest, angular[i]);
             }
+            if (strongest == 0) continue;
             for (var i = 0; i < sums.Length; i++)
-                sums[i] += contribution.Rgb * (angular[i] * (1 - settings.DirectionNormalization) +
+                sums[i] += contribution.Rgb * coverage[i] * (angular[i] * (1 - settings.DirectionNormalization) +
                     angular[i] / strongest * settings.DirectionNormalization);
         }
         var result = new List<ChannelColor>(area.Channels.Count);
@@ -78,17 +87,35 @@ public sealed class LightMapper
             var rgb = new Vec3(Math.Pow(Encode(linear.X), 1 / settings.OutputGamma),
                 Math.Pow(Encode(linear.Y), 1 / settings.OutputGamma), Math.Pow(Encode(linear.Z), 1 / settings.OutputGamma)) *
                 (settings.Brightness * channel.Brightness);
-            // A channel-level EMA can retain RGB from a source that just became
-            // blocked/unknown. Without stable source identities, the clear-only
-            // feed must replace channel colors immediately.
-            var alpha = frame.ConfirmedVisibleOnly || settings.SmoothingMs <= 0 ? 1 :
+            // A channel-level EMA can retain RGB after a source becomes hidden
+            // or crosses a strict boundary. Replace colors immediately in those
+            // modes; Ambient still has its own exposed transition control.
+            var alpha = frame.ConfirmedVisibleOnly || settings.SeparateLeftRight || settings.SeparateFrontRear || settings.SmoothingMs <= 0 ? 1 :
                 1 - Math.Exp(-Math.Clamp(deltaSeconds, 0, 1) * 1000 / settings.SmoothingMs);
-            var old = previous.GetValueOrDefault(channel.Id);
-            rgb = old + (rgb - old) * alpha;
+            if (alpha < 1)
+            {
+                var old = previous.GetValueOrDefault(channel.Id);
+                rgb = old + (rgb - old) * alpha;
+            }
             previous[channel.Id] = rgb;
             result.Add(new(channel.Id, rgb));
         }
         return result;
+    }
+    private static bool OppositeSides(double a, double b) => (a < 0 && b > 0) || (a > 0 && b < 0);
+    private static double SourceDiscWeight(double dot, MappingSettings settings)
+    {
+        // Intersect a channel ray with the 2D plane normal to the source's
+        // camera-relative bearing at unit depth. Its radial coordinate is
+        // tan(angle). This bounded circle is an angular footprint, not a
+        // sphere in the game world, and also works for off-screen sources.
+        if (dot <= 0) return 0;
+        var radius = Math.Tan(settings.SourceDiscRadiusDegrees * Math.PI / 180);
+        var radial = Math.Sqrt(Math.Max(0, 1 - dot * dot)) / dot / radius;
+        if (radial >= 1) return 0;
+        if (settings.SourceDiscSoftness == 0 || radial <= 1 - settings.SourceDiscSoftness) return 1;
+        var t = (radial - (1 - settings.SourceDiscSoftness)) / settings.SourceDiscSoftness;
+        return 1 - t * t * (3 - 2 * t);
     }
     /// <summary>Player-relative fade, identical when approaching or leaving.
     /// Call with validated settings. Distances are game units, not room metres.</summary>
@@ -114,7 +141,8 @@ public sealed class LightMapper
             !InRange(s.RedGain, 0, 4) || !InRange(s.GreenGain, 0, 4) || !InRange(s.BlueGain, 0, 4) ||
             !InRange(s.OutputGamma, 0.1, 4) || !InRange(s.DirectionNormalization, 0, 1) ||
             !InRange(s.CameraYawOffset, -180, 180) || !InRange(s.FadeExponent, 0.1, 8) ||
-            !InRange(s.AmbientTintHue, 0, 360) || !InRange(s.AmbientTintSaturation, 0, 1))
+            !InRange(s.AmbientTintHue, 0, 360) || !InRange(s.AmbientTintSaturation, 0, 1) ||
+            !InRange(s.SourceDiscRadiusDegrees, 1, 89) || !InRange(s.SourceDiscSoftness, 0, 1))
             throw new CrimsonHueException("Invalid lighting settings.");
     }
     private static bool InRange(double value, double minimum, double maximum) =>
