@@ -1,4 +1,44 @@
-# Current checkpoint — CrimsonHue 0.1.1, 2026-09-07, Codex
+# Current checkpoint — CrimsonHue 0.1.3, 2026-09-28, Codex
+
+CrimsonHue now consumes CDT's schema 1.6 all-around `lights.upstream` input from
+the neutral `/v1/stream` API. It requires the input's capture sequence, frame and
+timestamp to match the rendered sample, then uses that sample's paired camera.
+Each input source must have `sourceVisibility.status=clear`, method
+`physics-ray-fan`, and a measurement no older than 500 ms including client time.
+Blocked, unknown, missing and stale verdicts produce no Hue contribution.
+When upstream is advertised but unavailable, output clears instead of switching
+to a partial rendered view. With upstream disabled, schema 1.6 applies the same
+clear-only rule to rendered sources. Schema 1.4/1.5 retains the old rendered path.
+The confirmed-visible mapper bypasses the old channel-level EMA, which otherwise
+retained color after a light became blocked or unknown; legacy smoothing remains.
+Demo preview remains synthetic and never sends physical output. No telemetry code
+was added here; CDT and its packages were unchanged.
+
+Verification: Release app build had zero warnings/errors; 52/52 non-live tests
+passed, including paired-capture, behind-camera, blocked/unknown, unavailable and
+visibility-expiry checks and immediate removal of hidden color. A read-only CDT
+WebSocket run during live gameplay passed 53/53 with 40 progressing all-around
+captures and up to six confirmed-clear
+sources. This proves input parsing and finite mapping, not real-lamp appearance or
+visibility accuracy. A separate `--live` run could not reach the old development
+diyHue address `192.168.2.109:443`; the telemetry-only run passed independently.
+Source and packaged WPF demo smoke modes exited 0 with no bridge connection or
+lamp output. The ZIP's five entries match the on-disk package hashes. Existing
+0.1.0 and 0.1.1 packages remain untouched. An earlier local 0.1.2 package from
+this work is retained but superseded because it still smoothed hidden color.
+
+Package: `dist/CrimsonHue-0.1.3-win-x64/CrimsonHue.exe` (166902555 bytes),
+`dist/CrimsonHue-0.1.3-win-x64.zip`, SHA-256
+`9109E559B445980E1F9619F84CD3AF6BD43A2239A7F31490CBE0C55D310BBF02`.
+No credentials, settings, ASI or game files are included; no public upload.
+CDT's separate Ambient API exists, but its working RGB has no calibrated relation
+to local-light RGB or Hue output, so ambient mixing remains pending.
+
+Next: when the Hue bridge is reachable, the owner checks preview and Start/Stop
+near visible and blocked lights, including a source behind the camera. Record
+real-lamp evidence separately before claiming physical acceptance.
+
+# Previous checkpoint — CrimsonHue 0.1.1, 2026-09-07, Codex
 
 The new distance-fade release is built, tested, packaged and open for user testing.
 Product lives entirely in this repository. Telemetry remains unchanged; its ambient

@@ -200,8 +200,8 @@ public partial class MainWindow : Window
         var frame = telemetry.Read(out var message);
         TelemetryStatus.Text = message;
         TelemetryStatus.Foreground = frame == null ? new SolidColorBrush(Color.FromRgb(175, 182, 198)) : new SolidColorBrush(Color.FromRgb(145, 215, 185));
-        CaptureInfo.Text = frame == null ? "Requires CrimsonDesertTelemetry 2.0.0 with light capture enabled." :
-            $"{frame.Lights.Count} contributions · {frame.Lights.Count(l => (l.Position - frame.Player).Length < mapping.FadeEnd)} in range · capture {frame.CaptureSequence} · age {Math.Max(0, (DateTimeOffset.UtcNow - frame.LightCapturedAt).TotalMilliseconds):F0} ms";
+        CaptureInfo.Text = frame == null ? "Requires fresh CDT light capture. For all-around lighting, enable upstream lights and source visibility." :
+            $"{frame.Feed} · {frame.Lights.Count}/{frame.SourceCount} usable lights · {frame.Lights.Count(l => (l.Position - frame.Player).Length < mapping.FadeEnd)} in range · capture {frame.CaptureSequence} · age {Math.Max(0, (DateTimeOffset.UtcNow - frame.LightCapturedAt).TotalMilliseconds):F0} ms";
         var demo = DemoCheck.IsChecked == true;
         var area = demo ? DemoData.Area : SelectedArea;
         if (demo) frame = DemoData.Frame(uptime.Elapsed.TotalSeconds);

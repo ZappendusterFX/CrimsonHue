@@ -3,14 +3,16 @@
 A standalone Windows companion that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**0.1.1 — early preview.** This is a source-driven lighting estimate. General
-ambient light is planned upstream and will be integrated separately when its API
-contract is available. This version consumes the existing local-light feed.
+**0.1.3 — early preview.** This is a source-driven lighting estimate. With the
+current CDT API, CrimsonHue uses the all-around ManyLights input and emits only
+lights with a fresh, confirmed clear physics visibility result. CDT's separate
+Ambient feed is not yet mixed into Hue output; its working RGB is not calibrated
+against local-light RGB or display color.
 
 ## Start
 
-1. Install **CrimsonDesertTelemetry 2.0.0** with its server and rendered light
-   capture enabled, following its own installation instructions. Start the game.
+1. Install **CrimsonDesertTelemetry 2.2.1** with its server, rendered and upstream
+   ManyLights capture, and source visibility enabled. Start the game.
 2. Extract the complete CrimsonHue ZIP anywhere and run `CrimsonHue.exe`.
    The package includes its .NET runtime. No administrator rights or installation
    into the game directory are needed.
@@ -35,7 +37,9 @@ Streaming never starts automatically on application launch.
 ## Requirements and scope
 
 - Windows 10/11 x64.
-- CrimsonDesertTelemetry 2.0.0, schema 1.4 rendered lights, on the same PC.
+- CrimsonDesertTelemetry 2.2.1, schema 1.6, on the same PC for all-around,
+  confirmed-visible lights. Older schema 1.4/1.5 installations still use the
+  original rendered-only feed without physics visibility filtering.
 - A Hue-compatible bridge with HTTPS API v2, Entertainment DTLS 1.2/PSK on UDP 2100,
   color lights and an existing Entertainment area.
 - Development target: diyHue. Physical Philips Hue bridges remain untested.
@@ -48,20 +52,33 @@ running services, not the telemetry or diyHue source repositories.
 
 ## Mapping and availability
 
-Only `lights.rendered` is used. Positions are transformed with the camera paired
-to the light capture. Player distance supplies a configurable fade, and camera
-direction supplies a smooth weight for each Hue channel. Hue X points right, Y
-towards the screen and Z up. The preview is top-down; cards show channel height,
-which participates in the direction calculation.
+For schema 1.6, `lights.upstream` provides the all-around input, including sources
+behind the camera. CrimsonHue requires its capture sequence, frame and timestamp
+to match `lights.rendered`, then uses the rendered capture's paired camera. Only
+sources with `sourceVisibility.status=clear`, method `physics-ray-fan` and a fresh
+measurement reach the mapper. Blocked, unknown, missing or stale verdicts do not
+light the room. If CDT marks the upstream feed unavailable, CrimsonHue clears
+output instead of switching silently to view-filtered sources. If upstream capture
+is disabled, schema 1.6 can use the rendered feed with the same clear-only rule.
+Older schema 1.4/1.5 uses the original rendered-only behavior.
+
+Player distance supplies a configurable fade, and camera direction supplies a
+smooth weight for each Hue channel. Hue X points right, Y towards the screen and
+Z up. The preview is top-down; cards show channel height, which participates in
+the direction calculation. A clear physics ray is a sampled geometry verdict,
+not a guarantee of optical visibility through every material or at every instant.
 
 Each source's HDR intensity is compressed with a common RGB scale before applying
 distance and direction weights, so high source intensity cannot undo that source's
 fade. Weighted contributions are combined in linear RGB; only sums above the
 output range are scaled down, preserving RGB ratios. Output is then sRGB-encoded
 and brightness-limited. Imported Hue brightness balance is applied where provided.
-Short configurable smoothing reduces jitter. This is an artistic estimate, not
+Short configurable smoothing reduces jitter on the legacy rendered feed. The
+confirmed-visible mode updates channel colors immediately so a previous clear
+light cannot linger after becoming blocked or unknown. This is an artistic estimate, not
 game pixels, physical lux, measured room distances or full scene lighting.
-Spotlight cone/occlusion is not simulated yet.
+Spotlight cones are not simulated. CDT supplies the separate source visibility
+decision; CrimsonHue does not perform its own occlusion test.
 
 ### Distance fade
 
@@ -83,10 +100,11 @@ at zero. New setups default to 0 / 35. Mapping is intentionally different from
 0.1.0: very bright distant sources now fade reliably instead of saturating the
 post-falloff HDR compressor. Multiple overlapping sources still add together.
 
-Ambient-aware suppression is **not active yet**. Once the upstream contract is
-available, actual surrounding brightness should control the contrast of local
-lights: weak in bright daylight, stronger in darkness, including dark interiors
-during daytime. See `docs/AMBIENT-INTEGRATION.md` for the integration requirements.
+Ambient-aware suppression is **not active yet**. CDT now publishes camera-local
+visibility and a working sky estimate through a separate `/v1/ambient` API. Its
+RGB is not in a documented, directly comparable scale with local-light RGB, so
+adding it to Hue output or deriving daylight contrast would be uncalibrated.
+See `docs/AMBIENT-INTEGRATION.md` for the remaining integration requirements.
 
 `sampleIndex` is never a persistent ID. Authored and rendered feeds are not added.
 Gradient channel membership is preserved. The transport supports up to 160 channels
@@ -94,8 +112,9 @@ in one datagram; actual bridges and the Hue app may impose lower limits. There i
 no additional hardcoded ten-lamp restriction in CrimsonHue.
 
 Missing, malformed, loading, stopped, disconnected or stale data clears calculated
-output. Rendered data must be no older than 500 ms, including transport/client
-time; duplicate envelopes never refresh freshness. After one second without valid
+output. Light captures and clear visibility measurements each expire after 500 ms,
+including transport/client time; duplicate envelopes never refresh freshness.
+After one second without valid
 input, the app releases the stream and restores normal states. While still armed,
 it can resume when data returns and the bridge is free. A bridge error or another
 app's takeover ends the session and requires a new Start. Hard crashes or an
@@ -127,8 +146,9 @@ powershell -ExecutionPolicy Bypass -File scripts/Publish.ps1
 
 The tests need OpenSSL for real DTLS interoperability. By default they use Git for
 Windows' `C:\Program Files\Git\usr\bin\openssl.exe`; pass `--openssl <path>` after
-the `dotnet run` argument separator to override. `--live` adds read-only checks
-against the local telemetry and the development bridge; it never changes lamps.
+the `dotnet run` argument separator to override. `--live-telemetry` adds a read-only
+CDT WebSocket control, `--live-bridge` probes the development bridge, and `--live`
+runs both. None changes lamps.
 
 `--inspect-layout` instead reads the paired user's protected credentials and prints
 only area names, channel names/IDs and raw Hue XYZ positions. Run it as the same

@@ -1,18 +1,23 @@
-# Ambient integration requirements — pending upstream contract
+# Ambient integration requirements — calibration pending
 
 User requirement, 2026-09-07: the room should reflect general environment light,
 and distant fires/lamps must not dominate it. In bright daylight, ordinary local
 lights should have little or no visible influence. In dark surroundings, nearby
 lights should remain pronounced. The distance-fade controls ship in 0.1.1;
-ambient input and ambient-relative mixing do not.
+ambient input and ambient-relative mixing do not. CDT now documents the separate
+`/v1/ambient` feed: camera-local sky visibility and a working RGB sky estimate.
+The estimate uses relative shader units and AP1-like RGB, and is not calibrated
+against local-light RGB or display color. Do not combine them as if the numbers
+were directly comparable.
 
 ## Inputs and ownership
 
 CrimsonDesertTelemetry owns capture and its neutral HTTP/WebSocket contract.
-Do not infer, invent or add ambient fields in CrimsonHue until the producer
-documents their availability, units, color space, exposure handling, timestamps
-and sampling/reference location. The existing rendered RGB values alone do not
-establish environment brightness. Clock time is not a substitute.
+The producer documents availability, units, color space, timestamps and sampling
+location in `C:\DEV\CrimsonDesertTelemetry\docs\AMBIENT_STREAM.md`. It does not
+provide a calibrated conversion to local-light RGB or output brightness. The
+existing rendered RGB values alone do not establish environment brightness.
+Clock time is not a substitute.
 
 ## Intended mapping
 

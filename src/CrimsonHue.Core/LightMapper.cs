@@ -39,7 +39,11 @@ public sealed class LightMapper
             // attenuated sum. Mixing and ratio preservation stay in linear RGB.
             var linear = sum / Math.Max(1, peak);
             var rgb = new Vec3(Encode(linear.X), Encode(linear.Y), Encode(linear.Z)) * (settings.Brightness * channel.Brightness);
-            var alpha = settings.SmoothingMs <= 0 ? 1 : 1 - Math.Exp(-Math.Clamp(deltaSeconds, 0, 1) * 1000 / settings.SmoothingMs);
+            // A channel-level EMA can retain RGB from a source that just became
+            // blocked/unknown. Without stable source identities, the clear-only
+            // feed must replace channel colors immediately.
+            var alpha = frame.ConfirmedVisibleOnly || settings.SmoothingMs <= 0 ? 1 :
+                1 - Math.Exp(-Math.Clamp(deltaSeconds, 0, 1) * 1000 / settings.SmoothingMs);
             var old = previous.GetValueOrDefault(channel.Id);
             rgb = old + (rgb - old) * alpha;
             previous[channel.Id] = rgb;

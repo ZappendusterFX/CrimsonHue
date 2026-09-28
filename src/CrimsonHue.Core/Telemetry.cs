@@ -46,20 +46,56 @@ public static class TelemetryParser
                 throw new FormatException("Invalid camera basis.");
             var age = rendered.GetProperty("ageMilliseconds").GetDouble();
             if (!double.IsFinite(age) || age < 0 || age > 500) throw new FormatException("Light capture is stale.");
-            var sources = rendered.GetProperty("sources");
+            // Schema 1.6 pairs the all-around input with this rendered capture and
+            // its camera. Never mix the two arrays or use the newer envelope camera.
+            var allAround = minor >= 6 && capabilities.Contains("lights.upstream");
+            var selected = rendered;
+            var feed = "rendered";
+            if (allAround)
+            {
+                var upstream = root.GetProperty("lights").GetProperty("upstream");
+                if (upstream.GetProperty("status").GetString() != "available")
+                {
+                    status = "All-around lights: " + (upstream.TryGetProperty("unavailableReason", out var why) ? why.GetString() : "unavailable");
+                    return null;
+                }
+                if (upstream.GetProperty("source").GetString() != "manylights-input" ||
+                    upstream.GetProperty("captureSequence").GetInt64() != rendered.GetProperty("captureSequence").GetInt64() ||
+                    upstream.GetProperty("frameNumber").GetInt64() != rendered.GetProperty("frameNumber").GetInt64() ||
+                    upstream.GetProperty("capturedAt").GetDateTimeOffset() != rendered.GetProperty("capturedAt").GetDateTimeOffset())
+                    throw new FormatException("Unpaired all-around light capture.");
+                selected = upstream;
+                feed = "all-around";
+            }
+            var selectedAge = selected.GetProperty("ageMilliseconds").GetDouble();
+            if (!double.IsFinite(selectedAge) || selectedAge < 0 || selectedAge > 500)
+                throw new FormatException("Light capture is stale.");
+            var sources = selected.GetProperty("sources");
             if (sources.GetArrayLength() > 32768) throw new FormatException("Light sample exceeds capacity.");
             var lights = new List<LightContribution>(sources.GetArrayLength());
+            var requireVisibility = minor >= 6;
             foreach (var source in sources.EnumerateArray())
             {
                 var rgb = Vec3.Read(source.GetProperty("colorLinear"));
                 if (rgb.X < 0 || rgb.Y < 0 || rgb.Z < 0) throw new FormatException("Negative light RGB.");
-                lights.Add(new(Vec3.Read(source.GetProperty("position")), rgb));
+                var position = Vec3.Read(source.GetProperty("position"));
+                if (requireVisibility)
+                {
+                    if (!source.TryGetProperty("sourceVisibility", out var visibility) || visibility.ValueKind != JsonValueKind.Object ||
+                        !visibility.TryGetProperty("status", out var verdict) || verdict.GetString() != "clear" ||
+                        !visibility.TryGetProperty("method", out var method) || method.GetString() != "physics-ray-fan")
+                        continue;
+                    var visibilityAge = visibility.GetProperty("volumeAgeMillisecondsAtCapture").GetDouble();
+                    if (!double.IsFinite(visibilityAge) || visibilityAge < 0 || visibilityAge > 500) continue;
+                    lights.Add(new(position, rgb, visibilityAge));
+                }
+                else lights.Add(new(position, rgb));
             }
-            var capture = rendered.GetProperty("captureSequence").GetInt64();
+            var capture = selected.GetProperty("captureSequence").GetInt64();
             if (sequence < 0 || capture < 0) throw new FormatException("Invalid sequence.");
-            status = $"Live · {lights.Count} contributions";
+            status = requireVisibility ? $"Live · {lights.Count}/{sources.GetArrayLength()} confirmed visible" : $"Live · {lights.Count} contributions";
             return new(sequence, capture, root.GetProperty("capturedAt").GetDateTimeOffset(),
-                rendered.GetProperty("capturedAt").GetDateTimeOffset(), age, player, pose, lights);
+                selected.GetProperty("capturedAt").GetDateTimeOffset(), selectedAge, player, pose, lights, sources.GetArrayLength(), feed, requireVisibility);
         }
         catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or FormatException or OverflowException)
         {
@@ -109,7 +145,14 @@ public sealed class TelemetryState
                 message = "Telemetry stale · output paused";
                 return null;
             }
-            return frame;
+            // A clear ray result can expire before its paired light capture does.
+            // Repeated host publications must not renew the ray's measured age.
+            if (!frame.ConfirmedVisibleOnly) return frame;
+            var visibilityElapsed = Math.Max(elapsed, Math.Max(envelopeAge, 0));
+            var freshLights = frame.Lights.Where(light => light.VisibilityAgeMs is null ||
+                light.VisibilityAgeMs.Value + visibilityElapsed <= 500).ToArray();
+            message = $"Live · {freshLights.Length}/{frame.SourceCount} confirmed visible";
+            return freshLights.Length == frame.Lights.Count ? frame : frame with { Lights = freshLights };
         }
     }
 }

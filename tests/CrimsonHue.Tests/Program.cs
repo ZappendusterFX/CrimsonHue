@@ -44,10 +44,10 @@ Add("Parse current rendered feed without depending on authored availability", ()
 });
 Add("Accept additive schema fields and ignore authored RGB", () =>
 {
-    var node = JsonNode.Parse(Fixtures.Snapshot())!;
+    var node = JsonNode.Parse(Fixtures.CurrentSnapshot())!;
     node["schemaVersion"] = "1.9"; node["futureAmbientField"] = 123;
     node["lights"]!["sources"] = new JsonArray(new JsonObject { ["colorLinear"] = new JsonObject { ["x"] = 99999, ["y"] = 99999, ["z"] = 99999 } });
-    Assert(TelemetryParser.Parse(Encoding.UTF8.GetBytes(node.ToJsonString()), out _)!.Lights.Count == 2);
+    Assert(TelemetryParser.Parse(Encoding.UTF8.GetBytes(node.ToJsonString()), out _)!.Lights.Count == 1);
 });
 foreach (var (name, change) in new (string, Action<JsonNode>)[]
 {
@@ -70,6 +70,58 @@ Add("Valid empty feed remains available", () =>
 {
     var node = JsonNode.Parse(Fixtures.Snapshot())!; node["lights"]!["rendered"]!["sources"] = new JsonArray();
     Assert(TelemetryParser.Parse(Encoding.UTF8.GetBytes(node.ToJsonString()), out _)?.Lights.Count == 0);
+});
+Add("Schema 1.6 uses paired all-around lights and only fresh clear physics verdicts", () =>
+{
+    var frame = TelemetryParser.Parse(Fixtures.CurrentSnapshot(), out _)!;
+    Assert(frame.Feed == "all-around" && frame.SourceCount == 4 && frame.Lights.Count == 1);
+    Assert(frame.Lights[0].Position == new Vec3(0, 2, -8), "Behind-camera clear source was lost");
+    Assert(frame.Lights[0].VisibilityAgeMs == 100);
+    var mapped = new LightMapper().Map(frame, area, new(Radius: 35, SmoothingMs: 0), 0.1);
+    Assert(mapped.Any(c => c.Rgb.Length > 0), "All-around source did not reach the mapper");
+});
+Add("Schema 1.6 never falls back to rendered when all-around input is unavailable", () =>
+{
+    var node = JsonNode.Parse(Fixtures.CurrentSnapshot())!;
+    node["lights"]!["upstream"]!["status"] = "unavailable";
+    Assert(TelemetryParser.Parse(Encoding.UTF8.GetBytes(node.ToJsonString()), out _) == null);
+});
+Add("Schema 1.6 rejects unpaired all-around captures", () =>
+{
+    var node = JsonNode.Parse(Fixtures.CurrentSnapshot())!;
+    node["lights"]!["upstream"]!["frameNumber"] = 56;
+    Assert(TelemetryParser.Parse(Encoding.UTF8.GetBytes(node.ToJsonString()), out _) == null);
+});
+Add("Confirmed visibility expires independently of a fresh light capture", () =>
+{
+    var node = JsonNode.Parse(Fixtures.CurrentSnapshot())!;
+    node["lights"]!["upstream"]!["sources"]![0]!["sourceVisibility"]!["volumeAgeMillisecondsAtCapture"] = 490;
+    var state = new TelemetryState(); state.Accept(Encoding.UTF8.GetBytes(node.ToJsonString()));
+    Assert(state.Read(out _)!.Lights.Count == 1);
+    Assert(state.Read(out var message, DateTimeOffset.UtcNow.AddMilliseconds(40))!.Lights.Count == 0);
+    Assert(message.Contains("0/4 confirmed visible"));
+});
+Add("Schema 1.6 treats missing or non-physics visibility as unconfirmed", () =>
+{
+    var node = JsonNode.Parse(Fixtures.CurrentSnapshot())!;
+    node["lights"]!["upstream"]!["sources"]![0]!["sourceVisibility"] = null;
+    Assert(TelemetryParser.Parse(Encoding.UTF8.GetBytes(node.ToJsonString()), out _)!.Lights.Count == 0);
+    node["lights"]!["upstream"]!["sources"]![0]!["sourceVisibility"] = new JsonObject
+    {
+        ["status"] = "clear", ["method"] = "unrecognized", ["volumeAgeMillisecondsAtCapture"] = 0
+    };
+    Assert(TelemetryParser.Parse(Encoding.UTF8.GetBytes(node.ToJsonString()), out _)!.Lights.Count == 0);
+});
+Add("Confirmed-visible mapping drops hidden color without an EMA tail", () =>
+{
+    var frame = TelemetryParser.Parse(Fixtures.CurrentSnapshot(), out _)!;
+    var mapper = new LightMapper();
+    var clear = mapper.Map(frame, area, new(), 0.01);
+    Assert(clear.Any(c => c.Rgb.X > 0));
+    var hidden = mapper.Map(frame with { Lights = [] }, area, new(), 0.01);
+    Assert(hidden.All(c => c.Rgb.Length == 0));
+    var blue = mapper.Map(frame with { Lights = [new(frame.Lights[0].Position, new(0, 0, 2), 100)] }, area, new(), 0.01);
+    Assert(blue.All(c => c.Rgb.X == 0) && blue.Any(c => c.Rgb.Z > 0));
 });
 Add("Malformed JSON is unavailable", () => Assert(TelemetryParser.Parse("{"u8.ToArray(), out _) == null));
 Add("Envelope duplicates cannot refresh light freshness", () =>
@@ -404,22 +456,26 @@ Add("DPAPI secrets roundtrip without plaintext in settings", () =>
     // Only delete the exact synthetic files created by this test.
     File.Delete(Path.Combine(directory, "bridge.secrets")); File.Delete(Path.Combine(directory, "settings.json")); Directory.Delete(directory);
 });
-if (args.Contains("--live")) Async("LIVE read-only bridge and progressing game WebSocket", async () =>
+if (args.Contains("--live") || args.Contains("--live-bridge")) Async("LIVE read-only bridge identity", async () =>
 {
     var probe = await BridgeClient.ProbeAsync("192.168.2.109");
     Console.WriteLine($"  Bridge: {probe.Name}; HTTPS certificate received: {probe.CertificateSha256?.Length == 64}");
+});
+if (args.Contains("--live") || args.Contains("--live-telemetry")) Async("LIVE progressing CDT WebSocket and mapping", async () =>
+{
     var state = new TelemetryState(); using var cancel = new CancellationTokenSource(10000);
     var task = new TelemetryClient(state).RunAsync(TelemetryClient.ValidateEndpoint("ws://127.0.0.1:27311/v1/stream"), cancel.Token);
-    var captures = new HashSet<long>(); var sequences = new HashSet<long>(); var maxLights = 0;
+    var captures = new HashSet<long>(); var sequences = new HashSet<long>(); var maxLights = 0; var allAroundFrames = 0;
     for (var i = 0; i < 40; i++)
     {
         await Task.Delay(100); var f = state.Read(out _); if (f == null) continue;
         captures.Add(f.CaptureSequence); sequences.Add(f.Sequence); maxLights = Math.Max(maxLights, f.Lights.Count);
+        if (f.Feed == "all-around") allAroundFrames++;
         var mapped = new LightMapper().Map(f, area, new(), 0.1); Assert(mapped.All(c => c.Rgb.IsFinite));
     }
     cancel.Cancel(); await task;
-    Console.WriteLine($"  Live control: {sequences.Count} envelopes; {captures.Count} captures; up to {maxLights} contributions");
-    Assert(captures.Count > 10 && sequences.Count > 10, "No progressing live control");
+    Console.WriteLine($"  Live control: {sequences.Count} envelopes; {captures.Count} captures; {allAroundFrames} all-around frames; up to {maxLights} confirmed clear lights");
+    Assert(captures.Count > 10 && sequences.Count > 10 && allAroundFrames > 0, "No progressing all-around control");
 });
 
 var failures = 0;
@@ -449,6 +505,33 @@ static class Fixtures
                 capturedAt = now, ageMilliseconds = 0, camera = pose,
                 sources = new[] { new { position = new Vec3(-5, 2, 5), colorLinear = new Vec3(2, 0, 0) }, new { position = new Vec3(5, 2, 5), colorLinear = new Vec3(0, 0, 2) } } } }
         }, Options);
+    }
+    public static byte[] CurrentSnapshot()
+    {
+        var node = JsonNode.Parse(Snapshot())!;
+        node["schemaVersion"] = "1.6";
+        node["capabilities"] = new JsonArray("lights.rendered", "lights.upstream", "player.position", "camera.transform");
+        var rendered = node["lights"]!["rendered"]!;
+        rendered["frameNumber"] = 55;
+        JsonObject Light(Vec3 position, string status, string? method = "physics-ray-fan") => new()
+        {
+            ["position"] = JsonSerializer.SerializeToNode(position, Options),
+            ["colorLinear"] = JsonSerializer.SerializeToNode(new Vec3(2, 0.2, 0.1), Options),
+            ["sourceVisibility"] = new JsonObject
+            {
+                ["status"] = status, ["method"] = method, ["volumeAgeMillisecondsAtCapture"] = 100
+            }
+        };
+        node["lights"]!["upstream"] = new JsonObject
+        {
+            ["status"] = "available", ["source"] = "manylights-input",
+            ["captureSequence"] = rendered["captureSequence"]!.DeepClone(),
+            ["frameNumber"] = rendered["frameNumber"]!.DeepClone(),
+            ["capturedAt"] = rendered["capturedAt"]!.DeepClone(), ["ageMilliseconds"] = 0,
+            ["sources"] = new JsonArray(Light(new(0, 2, -8), "clear"), Light(new(0, 2, 8), "blocked"),
+                Light(new(4, 2, 5), "unknown"), Light(new(-4, 2, 5), "clear", "other-method"))
+        };
+        return Encoding.UTF8.GetBytes(node.ToJsonString());
     }
     public static string AreaJson(bool active = false, string owner = "test-app") => JsonSerializer.Serialize(new
     {
