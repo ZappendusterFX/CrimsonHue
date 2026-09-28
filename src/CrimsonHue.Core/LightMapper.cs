@@ -4,7 +4,8 @@ public sealed class LightMapper
 {
     private readonly Dictionary<byte, Vec3> previous = [];
     private double ambientLevel;
-    public void Reset() { previous.Clear(); ambientLevel = 0; }
+    private double ambientPresence;
+    public void Reset() { previous.Clear(); ambientLevel = 0; ambientPresence = 0; }
 
     public IReadOnlyList<ChannelColor> Map(TelemetryFrame frame, EntertainmentArea area, MappingSettings settings, double deltaSeconds,
         AmbientFrame? ambient = null)
@@ -16,7 +17,11 @@ public sealed class LightMapper
         var targetAmbient = ambient is null ? 0 : 1 - Math.Exp(-Math.Max(0, ambient.WorkingLevel) * settings.AmbientSensitivity / 4);
         var ambientAlpha = 1 - Math.Exp(-Math.Clamp(deltaSeconds, 0, 1) / 0.4);
         ambientLevel = settings.AmbientSensitivity == 0 ? 0 : ambientLevel + (targetAmbient - ambientLevel) * ambientAlpha;
-        var localContrast = Math.Max(0.05, Math.Pow(1 - ambientLevel, 1.5));
+        ambientPresence = settings.AmbientSensitivity == 0 ? 0 : ambientPresence + ((ambient is null ? 0 : 1) - ambientPresence) * ambientAlpha;
+        // A dark but valid Ambient estimate still needs a little room fill. Keep
+        // it neutral because the upstream working RGB is not a display color.
+        var neutralFill = 0.08 * ambientPresence + 0.4 * ambientLevel;
+        var localContrast = 1 - 0.3 * ambientLevel;
         // Bound each source's HDR intensity before spatial attenuation. Applying
         // tone mapping afterwards can turn a tiny distant HDR contribution back
         // into a saturated output, effectively undoing the fade.
@@ -29,25 +34,37 @@ public sealed class LightMapper
             if (peak <= 0) continue;
             var d = light.Position - frame.Camera.Position;
             var local = new Vec3(d.Dot(frame.Camera.Right), d.Dot(frame.Camera.Forward), d.Dot(frame.Camera.Up)).Unit;
-            var bounded = light.Rgb * ((1 - Math.Exp(-peak * settings.Gain)) / peak);
+            var bounded = WarmLightColor(light.Rgb) * ((1 - Math.Exp(-peak * settings.Gain)) / peak);
             contributions.Add((local, bounded * fade));
         }
-        var result = new List<ChannelColor>(area.Channels.Count);
-        foreach (var channel in area.Channels)
+        var directions = area.Channels.Select(channel => channel.Position.Unit).ToArray();
+        var sums = new Vec3[area.Channels.Count];
+        foreach (var contribution in contributions)
         {
-            // Hue axes: x right, y towards screen, z up. Normalized room coordinates, not metres.
-            var direction = channel.Position.Unit;
-            Vec3 sum = default;
-            foreach (var contribution in contributions)
+            var angular = new double[directions.Length];
+            var strongest = 0.0;
+            for (var i = 0; i < directions.Length; i++)
             {
-                var angular = direction.Length < 0.01 ? 1 : Math.Exp(settings.Spread * (Math.Clamp(direction.Dot(contribution.Direction), -1, 1) - 1));
-                sum += contribution.Rgb * angular;
+                // Hue axes: x right, y towards screen, z up. Normalized room
+                // coordinates, not metres. Focus each light among the actual
+                // imported channels so a sparse layout never loses its peak.
+                angular[i] = directions[i].Length < 0.01 ? 1 :
+                    Math.Exp(2 * settings.Spread * (Math.Clamp(directions[i].Dot(contribution.Direction), -1, 1) - 1));
+                strongest = Math.Max(strongest, angular[i]);
             }
+            for (var i = 0; i < sums.Length; i++)
+                sums[i] += contribution.Rgb * (angular[i] / strongest);
+        }
+        var result = new List<ChannelColor>(area.Channels.Count);
+        for (var i = 0; i < area.Channels.Count; i++)
+        {
+            var channel = area.Channels[i];
+            var sum = sums[i];
             var peak = Math.Max(sum.X, Math.Max(sum.Y, sum.Z));
             // Normalize only overflow from overlapping sources; never boost the
             // attenuated sum. Mixing and ratio preservation stay in linear RGB.
             var local = sum / Math.Max(1, peak);
-            var combined = new Vec3(ambientLevel * 0.8, ambientLevel * 0.8, ambientLevel * 0.8) + local * localContrast;
+            var combined = new Vec3(neutralFill, neutralFill, neutralFill) + local * localContrast;
             var combinedPeak = Math.Max(combined.X, Math.Max(combined.Y, combined.Z));
             var linear = combined / Math.Max(1, combinedPeak);
             var rgb = new Vec3(Encode(linear.X), Encode(linear.Y), Encode(linear.Z)) * (settings.Brightness * channel.Brightness);
@@ -82,6 +99,19 @@ public sealed class LightMapper
             !double.IsFinite(s.FadeStart) || s.FadeStart < 0 || s.FadeStart >= s.FadeEnd ||
             !double.IsFinite(s.AmbientSensitivity) || s.AmbientSensitivity is < 0 or > 3)
             throw new CrimsonHueException("Invalid lighting settings.");
+    }
+    // CDT's local-light RGB is linear scene data, not the appearance of a fire
+    // pixel after the game's exposure and tone mapping. Preserve pure red and
+    // other hues, but lift green in the orange family toward visible amber.
+    private static Vec3 WarmLightColor(Vec3 rgb)
+    {
+        if (rgb.X <= 0 || rgb.Y <= 0 || rgb.Y >= rgb.X || rgb.Z >= rgb.Y) return rgb;
+        var greenRatio = rgb.Y / rgb.X;
+        var blueRatio = rgb.Z / rgb.Y;
+        var warm = Math.Clamp((greenRatio - 0.1) / 0.2, 0, 1) *
+            Math.Clamp((0.9 - greenRatio) / 0.25, 0, 1) *
+            Math.Clamp((0.8 - blueRatio) / 0.4, 0, 1);
+        return new(rgb.X, rgb.Y + Math.Max(0, 0.8 * rgb.X - rgb.Y) * warm, rgb.Z);
     }
     private static double Encode(double linear) => linear <= 0.0031308 ? 12.92 * linear : 1.055 * Math.Pow(linear, 1 / 2.4) - 0.055;
 }

@@ -1,3 +1,45 @@
+# Current checkpoint — CrimsonHue 0.2.2, 2026-09-28, Codex
+
+Owner tested 0.2.1 in game and found the lamps too dark, with weak camera-turn
+response and an orangered lamp beside a visibly yellow fire. Ingame HUD and
+read-only CDT API agreed on nearby linear engine-light RGB around
+`(1.582, 0.636, 0.173)` and `(1.122, 0.340, 0.085)`: the source data are
+orange/red even though the rendered flame looks yellower. No CDT code or API
+was changed. The correction here is artistic, not evidence of a telemetry bug.
+
+0.2.2 keeps the clear-only upstream filter. Each source now focuses on the
+strongest imported Hue channel and uses twice the previous angular exponent;
+this makes camera yaw materially change a sparse room layout. Orange-family
+source RGB raises green smoothly toward 0.8 of red; pure red, blue, green and
+near-white stay unchanged. The valid Ambient signal now supplies
+`0.08 × presence + 0.4 × level` neutral linear fill, while local contribution
+retains `1 - 0.3 × level` contrast. Missing/stale Ambient fades back to the
+local-only mapper. The untouched old 60% brightness preset migrates once to
+85%; custom brightness and later deliberate 60% settings are preserved.
+
+Verification: Release app build zero warnings/errors; 57/57 non-live tests pass,
+including fire hue, three-channel camera yaw, dark Ambient fill, old preset
+migration and preservation of deliberate brightness choices. Read-only live
+saved-layout mapping passed 58/58: 50 clear sources, Ambient W≈0.001 and
+computed RGB for actual/yaw+180°/no-local cases. At that moment rear channel
+red moved 0.43→0.85 on the simulated turn; one front channel moved 0.85→0.37;
+no-local neutral output was about 0.27 per component. These are calculated
+colors, not physical lamp observations. The packaged WPF demo smoke exited 0,
+its preview rendered, and all five ZIP entries match package files. The real
+area was active during the read-only inspection, so no 0.2.2 physical run was
+attempted and no active stream was interrupted.
+
+Package: `dist/CrimsonHue-0.2.2-win-x64/CrimsonHue.exe` (166917915 bytes),
+`dist/CrimsonHue-0.2.2-win-x64.zip`, SHA-256
+`812F6FA6E59F762E86AF22A998DE3C1CA11330CB90F0712331BFD387C19EB07C`.
+Prior packages are preserved. No credentials/settings/game files are in the ZIP
+and no public upload occurred. AGENTS.md and CLAUDE.md remain byte-identical.
+
+Next: owner stops the 0.2.1 stream, opens the exact 0.2.2 package and checks
+the left fire lamp's hue, brightness, and response to camera turning at the same
+game point. Also compare a bright outdoor scene and blocked source. Record
+actual visible lamp behavior separately from the computed values.
+
 # Current checkpoint — CrimsonHue 0.2.1, 2026-09-28, Codex
 
 The owner observed all three lamps turning red together outdoors in bright

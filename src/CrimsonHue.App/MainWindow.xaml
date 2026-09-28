@@ -8,7 +8,7 @@
         <Border Background="#CE3E5D" Width="42" Height="42" CornerRadius="12" Margin="0,0,13,0"><TextBlock Text="C" FontSize="27" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
         <StackPanel><TextBlock Text="CrimsonHue" FontSize="26" FontWeight="SemiBold" /><TextBlock Text="Bring Pywel into your room" Foreground="{StaticResource Muted}" FontSize="12" /></StackPanel>
       </StackPanel>
-      <Border Grid.Column="1" Background="#211923" CornerRadius="6" Padding="11,7" VerticalAlignment="Center"><TextBlock Text="EARLY PREVIEW  /  0.2.1" Foreground="#EF9BAC" FontSize="11" FontWeight="SemiBold" /></Border>
+      <Border Grid.Column="1" Background="#211923" CornerRadius="6" Padding="11,7" VerticalAlignment="Center"><TextBlock Text="EARLY PREVIEW  /  0.2.2" Foreground="#EF9BAC" FontSize="11" FontWeight="SemiBold" /></Border>
     </Grid>
     <Grid Grid.Row="1">
       <Grid.ColumnDefinitions><ColumnDefinition Width="330" /><ColumnDefinition Width="20" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
@@ -52,7 +52,7 @@
               <Slider x:Name="FadeEndSlider" Minimum="1" Maximum="100" Value="35" TickFrequency="0.5" SmallChange="0.5" IsSnapToTickEnabled="True" ValueChanged="SettingsChanged" AutomationProperties.Name="Distance fade end" ToolTip="No new contribution at or beyond this distance. Smoothing still applies." />
               <TextBlock Text="Distance from player · game units&#x0a;Smooth fade out and back in between both values." TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="11" Margin="0,0,0,12" />
               <DockPanel><TextBlock Text="Maximum brightness" /><TextBlock x:Name="BrightnessValue" HorizontalAlignment="Right" /></DockPanel>
-              <Slider x:Name="BrightnessSlider" Minimum="0" Maximum="1" Value="0.6" ValueChanged="SettingsChanged" AutomationProperties.Name="Maximum brightness" />
+              <Slider x:Name="BrightnessSlider" Minimum="0" Maximum="1" Value="0.85" ValueChanged="SettingsChanged" AutomationProperties.Name="Maximum brightness" />
               <DockPanel><TextBlock Text="Light sensitivity" /><TextBlock x:Name="GainValue" HorizontalAlignment="Right" /></DockPanel>
               <Slider x:Name="GainSlider" Minimum="0.05" Maximum="10" Value="1.5" ValueChanged="SettingsChanged" AutomationProperties.Name="Light sensitivity" />
               <Expander Header="Advanced settings">

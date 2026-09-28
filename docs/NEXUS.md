@@ -19,7 +19,7 @@ Install: extract the portable ZIP anywhere, run CrimsonHue.exe, pair the bridge,
 select an area, then Start. Keep the telemetry mod installed separately. Do not
 deploy this application into the game with a mod manager.
 
-Version 0.2.1 uses the current all-around ManyLights input and emits only sources
+Version 0.2.2 uses the current all-around ManyLights input and emits only sources
 with a fresh confirmed-clear physics verdict. Older CDT schema 1.4/1.5 uses the
 legacy renderer-only path. The separate CDT Ambient feed supplies a relative
 brightness signal: bright surroundings make the room neutral and reduce local

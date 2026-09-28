@@ -39,7 +39,7 @@ public sealed record EntertainmentArea(string Id, string Name, bool Active, IRea
     public override string ToString() => Description;
 }
 public sealed record BridgeCredentials(string Address, string ApplicationKey, string ClientKey, string? CertificateSha256);
-public sealed record MappingSettings(double Gain = 1.5, double Brightness = 0.6, double Radius = 35, double Spread = 2,
+public sealed record MappingSettings(double Gain = 1.5, double Brightness = 0.85, double Radius = 35, double Spread = 2,
     double SmoothingMs = 100, double FadeStart = 0, double AmbientSensitivity = 1)
 {
     // Retain Radius in stored settings and the constructor for 0.1.0 compatibility.

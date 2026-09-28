@@ -3,12 +3,14 @@
 A standalone Windows companion that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**0.2.1 — early preview.** This is a source-driven lighting estimate. With the
+**0.2.2 — early preview.** This is a source-driven lighting estimate. With the
 current CDT API, CrimsonHue uses the all-around ManyLights input, emits only
 lights with a fresh confirmed-clear physics visibility result, and uses CDT's
-separate camera-local Ambient estimate to reduce local-light contrast in bright
-surroundings. Its working RGB is not calibrated to local-light RGB or display
-color; the Ambient mapping is deliberately artistic and adjustable.
+separate camera-local Ambient estimate for neutral room fill. Bright surroundings
+still soften local colors, but nearby lights retain a visible effect. Orange
+engine lights receive an artistic amber correction because the game's displayed
+fire can look yellower than its source RGB. Neither feed is calibrated to display
+color; the mapping remains adjustable.
 
 ## Start
 
@@ -64,14 +66,17 @@ is disabled, schema 1.6 can use the rendered feed with the same clear-only rule.
 Older schema 1.4/1.5 uses the original rendered-only behavior.
 
 Player distance supplies a configurable fade, and camera direction supplies a
-smooth weight for each Hue channel. Hue X points right, Y towards the screen and
+smooth weight for each Hue channel. Each source is normalized against its
+strongest imported channel, sharpening camera rotation in sparse room layouts.
+Hue X points right, Y towards the screen and
 Z up. The preview is top-down; cards show channel height, which participates in
 the direction calculation. A clear physics ray is a sampled geometry verdict,
 not a guarantee of optical visibility through every material or at every instant.
 
 Each source's HDR intensity is compressed with a common RGB scale before applying
 distance and direction weights, so high source intensity cannot undo that source's
-fade. Weighted contributions are combined in linear RGB; only sums above the
+fade. Orange-family source RGB is shifted toward amber; pure red and other hues
+retain their source ratios. Weighted contributions are combined in linear RGB; only sums above the
 output range are scaled down, preserving RGB ratios. Output is then sRGB-encoded
 and brightness-limited. Imported Hue brightness balance is applied where provided.
 Short configurable smoothing reduces jitter on the legacy rendered feed. The
@@ -107,9 +112,9 @@ CrimsonHue reads CDT's separate `/v1/ambient/stream` on the same loopback port.
 It requires a fresh global sky sample, fresh measured camera sky visibility and
 the available local product estimate. The three working RGB channels provide a
 **relative brightness proxy**, not display color. CrimsonHue turns that proxy
-into a neutral room baseline and reduces local-light contrast as the measured
-surroundings brighten. Daylight can therefore overpower ordinary red firelight;
-a dark daytime interior can still show it. The default **Ambient influence** is
+into a neutral room baseline and moderately reduces local-light contrast as the measured
+surroundings brighten. A valid dark Ambient estimate also adds a small neutral
+floor, keeping the room visible without inventing sky color. The default **Ambient influence** is
 1×; 0 disables this mapping, while higher values react more strongly. Ambient
 changes fade over about 0.4 seconds. This is a tunable visual model, not a claim
 that CDT exposes physical lux or pixel-accurate room illumination.
@@ -120,6 +125,10 @@ back to the existing local-light mapping; the status line names that fallback.
 Invalid or missing local-light telemetry still clears output and releases the
 Entertainment stream as before. See `docs/AMBIENT-INTEGRATION.md` for limits and
 acceptance checks.
+
+The new default maximum brightness is 85%. An untouched 0.2.1 preset at 60%
+is upgraded once; custom values, including a deliberate 60% choice in 0.2.2,
+remain unchanged. The brightness slider still caps output at its displayed value.
 
 `sampleIndex` is never a persistent ID. Authored and rendered feeds are not added.
 Gradient channel membership is preserved. The transport supports up to 160 channels
@@ -165,7 +174,10 @@ the `dotnet run` argument separator to override. `--live-telemetry` adds a read-
 CDT light WebSocket control, `--live-bridge` probes the development bridge, and
 `--live` runs those plus the Ambient WebSocket control. None changes lamps.
 
-`--live-ambient` adds a read-only Ambient WebSocket control. `--live-lamps` is a
+`--live-ambient` adds a read-only Ambient WebSocket control. `--live-mapping`
+reads the protected saved area and fresh CDT streams, then prints calculated
+channel RGB for the actual camera, a simulated 180° turn and no local lights;
+it never starts an Entertainment stream. `--live-lamps` is a
 separate, explicitly requested physical test. It reads the
 paired current-user credentials and saved area, refuses to take over any active
 Entertainment stream, sends a bounded five-second session at 25% maximum
