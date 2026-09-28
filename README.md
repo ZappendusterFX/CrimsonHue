@@ -3,8 +3,11 @@
 A standalone Windows companion that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**0.3.1 — early preview.** Local sources use a bounded 2D disc around their
-camera-relative direction. Strict left/right and front/rear boundaries are on by
+**0.3.2 — early preview.** **Direction origin** blends the room's game-space
+reference point between the player (0%) and camera lens (100%), starting at 50%.
+Viewing axes always follow the paired camera. This lets you choose where nearby
+sources belong around a third-person view. Local sources use a bounded 2D disc
+around their direction from that origin. Strict left/right and front/rear boundaries are on by
 default: an enlarged source cannot light the opposite side. Sources outside the
 image still reach matching room lamps. Disc radius, soft edge and both boundaries
 are visible in the Space tab. CrimsonHue shows the raw CDT light and Ambient values
@@ -70,7 +73,15 @@ output instead of switching silently to view-filtered sources. If upstream captu
 is disabled, schema 1.6 can use the rendered feed with the same clear-only rule.
 Older schema 1.4/1.5 uses the original rendered-only behavior.
 
-Player distance supplies a configurable fade. Each camera-relative source has a
+Player distance supplies a configurable fade. **Direction origin** selects the
+point used to calculate source directions: `player + blend × (camera - player)`.
+The percentage interpolates all three coordinates with no additional height
+offset. At 100%, a source between the character and the third-person camera can
+be classified as in front; at 0% it can be behind. At 50%, the origin is halfway.
+The camera's right/up/forward axes supply orientation at every percentage.
+Changing the origin does not change the player-relative distance cutoff.
+
+Each source has a
 2D circular footprint whose size is **Source disc radius** in degrees. A lamp's
 direction must intersect this disc and remain on the source's side of every
 enabled boundary. **Strict left / right** and **Strict front / rear** are on by
@@ -87,7 +98,7 @@ including outside the game image, without a screen-frustum filter.
 **Directional focus** weights the allowed channels within the disc.
 **Strongest-channel compensation** controls normalization against the strongest
 allowed channel; it does not undo the disc's soft edge or either boundary.
-Both boundaries and the disc defaults are loaded for older saved configurations;
+Both boundaries, the disc defaults and the 50% origin are loaded for older saved configurations;
 existing numeric choices are retained. Ambient is a separate, non-directional
 layer controlled in the Ambient tab; it does not represent reflected local light.
 Hue X points right, Y towards the screen and
@@ -125,7 +136,7 @@ applies to new or reset settings only.
 | Output | Maximum brightness (85%; 0–100%), Light sensitivity (1.5×; 0–10×), Local light mix (100%; 0–400%), Output gamma (1; 0.1–4), Legacy smoothing (100 ms; 0–1000 ms) |
 | Ambient | Ambient exposure (1×; 0–10×), Ambient reference level (4; 0.01–100 raw units), Ambient mix (40%; 0–100%), Extra background light (0%; 0–100%), Ambient black threshold (0; 0–100 raw units), Local mix in bright Ambient (100%; 0–200%), Ambient transition (400 ms; 0–5000 ms) |
 | Color | Local hue shift (0°; −180–180°), Local saturation (100%; 0–200%), Red balance / Green balance / Blue balance (each 1×; 0–4×), Ambient tint hue (0°; 0–360°), Ambient tint saturation (0%; 0–100%) |
-| Space | Strict left / right (On), Strict front / rear (On), Fade starts (0; below Off beyond, up to just under 1000 game units), Off beyond (35; 1–1000 game units), Distance falloff (2; 0.1–8), Source disc radius (60°; 1–89°), Source disc soft edge (25%; 0–100%), Directional focus (2; 0–16), Strongest-channel compensation (100%; 0–100%), Room direction offset (0°; −180–180°) |
+| Space | Strict left / right (On), Strict front / rear (On), Direction origin (50%; 0% player–100% camera), Fade starts (0; below Off beyond, up to just under 1000 game units), Off beyond (35; 1–1000 game units), Distance falloff (2; 0.1–8), Source disc radius (60°; 1–89°), Source disc soft edge (25%; 0–100%), Directional focus (2; 0–16), Strongest-channel compensation (100%; 0–100%), Room direction offset (0°; −180–180°) |
 | Setup | Bridge pairing, imported Entertainment area and local telemetry address |
 
 The raw readout shows CDT's global sky RGB, camera sky visibility, camera-local
@@ -234,7 +245,8 @@ CDT light WebSocket control, `--live-bridge` probes the development bridge, and
 `--live-ambient` adds a read-only Ambient WebSocket control. `--live-mapping`
 reads the protected saved area and fresh CDT streams, then prints calculated
 channel RGB for the actual camera, a simulated 180° turn, Ambient only and local
-lights only, plus the active boundary and disc settings;
+lights only, plus local-only comparisons at 0% player and 100% camera origin,
+and the active boundary, disc and origin settings;
 it never starts an Entertainment stream. `--live-lamps` is a
 separate, explicitly requested physical test. It reads the
 paired current-user credentials and saved area, refuses to take over any active

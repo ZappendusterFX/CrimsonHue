@@ -8,7 +8,7 @@
     <Border Background="#CE3E5D" Width="42" Height="42" CornerRadius="12" Margin="0,0,13,0"><TextBlock Text="C" FontSize="27" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
     <StackPanel><TextBlock Text="CrimsonHue" FontSize="26" FontWeight="SemiBold"/><TextBlock Text="Live lighting mixer · see the input, shape the output" Foreground="{StaticResource Muted}" FontSize="12"/></StackPanel>
    </StackPanel>
-   <Border Grid.Column="1" Background="#211923" CornerRadius="6" Padding="11,7" VerticalAlignment="Center"><TextBlock Text="EARLY PREVIEW  /  0.3.1" Foreground="#EF9BAC" FontSize="11" FontWeight="SemiBold"/></Border>
+   <Border Grid.Column="1" Background="#211923" CornerRadius="6" Padding="11,7" VerticalAlignment="Center"><TextBlock Text="EARLY PREVIEW  /  0.3.2" Foreground="#EF9BAC" FontSize="11" FontWeight="SemiBold"/></Border>
   </Grid>
   <Grid Grid.Row="1">
    <Grid.ColumnDefinitions><ColumnDefinition Width="420"/><ColumnDefinition Width="18"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -62,7 +62,7 @@
         <Grid Margin="16"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
          <DockPanel><TextBlock Text="MAPPED LAMP OUTPUT" FontSize="11" FontWeight="SemiBold" Foreground="#9CA6BE"/><CheckBox x:Name="DemoCheck" Content="Demo preview only" HorizontalAlignment="Right" Checked="DemoChanged" Unchecked="DemoChanged"/></DockPanel>
          <local:RoomView x:Name="Room" Grid.Row="1" Margin="0,8"/>
-         <StackPanel Grid.Row="2" HorizontalAlignment="Center"><TextBlock Text="Top view · screen ahead · imported Hue positions" HorizontalAlignment="Center" Foreground="#7E889E" FontSize="11"/><TextBlock x:Name="SpatialBoundaryStatus" HorizontalAlignment="Center" Foreground="#A6C9CF" FontSize="11" Margin="0,4,0,0"/></StackPanel>
+         <StackPanel Grid.Row="2" HorizontalAlignment="Center"><TextBlock Text="Top view · screen ahead · imported Hue positions" HorizontalAlignment="Center" Foreground="#7E889E" FontSize="11"/><TextBlock x:Name="SpatialBoundaryStatus" HorizontalAlignment="Center" TextAlignment="Center" Foreground="#A6C9CF" FontSize="11" Margin="0,4,0,0"/></StackPanel>
         </Grid>
        </Border>
        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">

@@ -1,4 +1,4 @@
-# Ambient and mapping controls — CrimsonHue 0.3.1
+# Ambient and mapping controls — CrimsonHue 0.3.2
 
 CrimsonHue consumes CDT's independent `/v1/ambient/stream` and local-light feed.
 CDT owns capture and the neutral contracts. CrimsonHue shows the received values
@@ -85,7 +85,19 @@ zero at Off beyond. With normalized interval `t`, the weight is
 exponent; the default is 2. The curve preview plots remaining contribution in
 percent against game-unit distance and updates with all three distance controls.
 
-**Room direction offset** rotates the source direction in camera-local coordinates.
+**Direction origin** chooses the positional reference for the room:
+`origin = player + blend × (pairedCameraPosition - player)`.
+The visible percentage ranges from 0% (raw player position) to 100% (camera lens),
+defaulting to 50%, including old configurations that lack this setting. All three
+coordinates interpolate along the same line, without a height offset or inferred
+eye position. The paired camera's right/forward/up axes still orient the source
+vector. Thus third-person sources behind the character but in front of the lens
+can map to different room sides depending on this explicit choice. Distance
+attenuation remains measured from the player. Preview source dots and the mapper
+use the same shared direction function; the origin percentage is displayed below
+the room preview. CDT's visibility measurement remains producer-owned.
+
+**Room direction offset** rotates that source direction in camera-local coordinates.
 **Strict left / right** and **Strict front / rear** default to On, including when
 loading older settings. They reject channels whose X or Y sign, respectively,
 opposes the source's sign. These hard boundaries act before normalization.
@@ -95,7 +107,7 @@ contribution, with no fallback to another side. The preview draws the active
 center lines and labels both switches' state.
 
 Each source is expanded into a bounded **2D circular footprint** on the plane
-normal to its camera-relative direction at unit depth. A channel ray with angle
+normal to its direction from the selected origin at unit depth. A channel ray with angle
 `theta` to that direction intersects this plane at radius `tan(theta)`. Divide
 that radius by `tan(Source disc radius)` to obtain normalized radius `r`.
 Rays with nonpositive dot product or `r >= 1` contribute zero. The default radius

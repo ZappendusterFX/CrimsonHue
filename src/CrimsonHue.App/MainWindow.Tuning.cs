@@ -42,6 +42,7 @@ public partial class MainWindow
         new("BlueGain", "Color", "Blue balance", "×", "Local-source blue multiplier before exposure. 1 is unchanged.", 0, 4, .01, 1, m => m.BlueGain, (m,v) => m with { BlueGain=v }),
         new("AmbientTintHue", "Color", "Ambient tint hue", "°", "Your chosen tint; this is not a conversion of CDT sky RGB.", 0, 360, 1, 1, m => m.AmbientTintHue, (m,v) => m with { AmbientTintHue=v }),
         new("AmbientTintSaturation", "Color", "Ambient tint saturation", "%", "0 keeps Ambient neutral white. Increase to apply the chosen tint.", 0, 100, 1, 100, m => m.AmbientTintSaturation, (m,v) => m with { AmbientTintSaturation=v }),
+        new("DirectionOriginBlend", "Space", "Direction origin", "% camera", "0% = player position; 100% = camera position. In between moves the origin along that line. Viewing axes always follow the camera.", 0, 100, 1, 100, m => m.DirectionOriginBlend, (m,v) => m with { DirectionOriginBlend=v }),
         new("SourceDiscRadiusDegrees", "Space", "Source disc radius", "°", "Size of a 2D circle around each source direction, including off-screen sources. Strict boundaries clip the circle.", 1, 89, 1, 1, m => m.SourceDiscRadiusDegrees, (m,v) => m with { SourceDiscRadiusDegrees=v }),
         new("SourceDiscSoftness", "Space", "Source disc soft edge", "%", "Outer fraction of the circle that fades to zero. 0 is a hard edge; outside the circle is always zero.", 0, 100, 1, 100, m => m.SourceDiscSoftness, (m,v) => m with { SourceDiscSoftness=v }),
         new("FadeStart", "Space", "Fade starts", "game units", "Sources keep full distance strength inside this player-relative distance.", 0, Math.BitDecrement(1000), .5, 1, m => m.FadeStart, (m,v) => m with { FadeStart=v }),
@@ -76,7 +77,7 @@ public partial class MainWindow
             tuningSwitches.Add(p.Key, control);
             panels[p.Group].Children.Add(panel);
         }
-        SpatialControls.Children.Add(new TextBlock { Text = "Boundaries use camera direction and the imported room center. Lamps exactly on a center line can receive either adjacent side. Ambient has its own controls.",
+        SpatialControls.Children.Add(new TextBlock { Text = "Camera orientation sets front/right/up. The origin sets which side a source is on. Lamps exactly on a center line can receive either adjacent side. Ambient has its own controls.",
             TextWrapping = TextWrapping.Wrap, FontSize = 11, Foreground = (System.Windows.Media.Brush)FindResource("Muted"), Margin = new Thickness(0, 0, 0, 8) });
         foreach (var p in parameters)
         {
@@ -117,7 +118,8 @@ public partial class MainWindow
         {
             foreach (var p in parameters) tuningControls[p.Key].SetDisplayValue(p.Get(mapping) * p.Scale);
             foreach (var p in switches) tuningSwitches[p.Key].IsChecked = p.Get(mapping);
-            SpatialBoundaryStatus.Text = $"Local boundaries: left/right {(mapping.SeparateLeftRight ? "ON" : "OFF")} · front/rear {(mapping.SeparateFrontRear ? "ON" : "OFF")}";
+            SpatialBoundaryStatus.Text = $"Direction origin: {mapping.DirectionOriginBlend * 100:G}% toward camera · view: camera\n" +
+                $"Local boundaries: left/right {(mapping.SeparateLeftRight ? "ON" : "OFF")} · front/rear {(mapping.SeparateFrontRear ? "ON" : "OFF")}";
             distanceCurve.Settings = mapping;
             distanceCurve.InvalidateVisual();
         }
@@ -166,6 +168,12 @@ public partial class MainWindow
                 var value = (p.Min + p.Max) / 2;
                 tuningControls[p.Key].SetUserValue(value);
                 if (Math.Abs(p.Get(mapping) * p.Scale - value) > 1e-8) throw new InvalidOperationException(p.Key + " did not update live mapping.");
+            }
+            foreach (var percent in new[] { 0.0, 25, 100 })
+            {
+                tuningControls["DirectionOriginBlend"].SetUserValue(percent);
+                if (mapping.DirectionOriginBlend != percent / 100 || !SpatialBoundaryStatus.Text.Contains($"{percent:G}%"))
+                    throw new InvalidOperationException("Origin percentage did not update the mapper and preview label.");
             }
             tuningControls["FadeStart"].SetUserValue(999.5);
             if (mapping.FadeEnd != 1000) throw new InvalidOperationException("Distance end did not follow start.");

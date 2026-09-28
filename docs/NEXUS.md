@@ -23,7 +23,12 @@ Install: extract the portable ZIP anywhere, run CrimsonHue.exe, pair the bridge,
 select an area, then Start. Keep the telemetry mod installed separately. Do not
 deploy this application into the game with a mod manager.
 
-Version 0.3.1 uses a bounded 2D source disc with editable radius and soft edge.
+Version 0.3.2 adds a Direction origin slider from player position (0%) to camera
+lens (100%), starting halfway at 50%. Camera axes supply orientation throughout;
+the preview shows the chosen percentage. This makes the third-person positional
+reference explicit. Distance cutoff remains player-relative.
+
+It uses a bounded 2D source disc with editable radius and soft edge.
 Strict left/right and front/rear boundaries default to On and clip that disc;
 a local source never reaches the opposite side of an enabled boundary.
 Off-screen sources can reach matching room lamps. Room center lines are shown

@@ -36,11 +36,7 @@ public sealed class LightMapper
             var adjusted = AdjustColor(light.Rgb, settings);
             var peak = Math.Max(adjusted.X, Math.Max(adjusted.Y, adjusted.Z));
             if (peak <= 0) continue;
-            var d = light.Position - frame.Camera.Position;
-            var local = new Vec3(d.Dot(frame.Camera.Right), d.Dot(frame.Camera.Forward), d.Dot(frame.Camera.Up)).Unit;
-            var yaw = settings.CameraYawOffset * Math.PI / 180;
-            local = new(local.X * Math.Cos(yaw) - local.Y * Math.Sin(yaw),
-                local.X * Math.Sin(yaw) + local.Y * Math.Cos(yaw), local.Z);
+            var local = SourceDirection(light.Position, frame, settings);
             var bounded = adjusted * ((1 - Math.Exp(-peak * settings.Gain)) / peak);
             contributions.Add((local, bounded * fade));
         }
@@ -102,6 +98,20 @@ public sealed class LightMapper
         }
         return result;
     }
+    /// <summary>0 is the raw player position; 1 is the paired camera position.
+    /// Intermediate values interpolate all three coordinates without offsets.</summary>
+    public static Vec3 DirectionOrigin(TelemetryFrame frame, MappingSettings settings) =>
+        frame.Player + (frame.Camera.Position - frame.Player) * settings.DirectionOriginBlend;
+    /// <summary>Room direction shared by mapping and preview. Position follows
+    /// the selected blend; viewing axes always come from the paired camera.</summary>
+    public static Vec3 SourceDirection(Vec3 position, TelemetryFrame frame, MappingSettings settings)
+    {
+        var d = position - DirectionOrigin(frame, settings);
+        var local = new Vec3(d.Dot(frame.Camera.Right), d.Dot(frame.Camera.Forward), d.Dot(frame.Camera.Up)).Unit;
+        var yaw = settings.CameraYawOffset * Math.PI / 180;
+        return new(local.X * Math.Cos(yaw) - local.Y * Math.Sin(yaw),
+            local.X * Math.Sin(yaw) + local.Y * Math.Cos(yaw), local.Z);
+    }
     private static bool OppositeSides(double a, double b) => (a < 0 && b > 0) || (a > 0 && b < 0);
     private static double SourceDiscWeight(double dot, MappingSettings settings)
     {
@@ -142,7 +152,8 @@ public sealed class LightMapper
             !InRange(s.OutputGamma, 0.1, 4) || !InRange(s.DirectionNormalization, 0, 1) ||
             !InRange(s.CameraYawOffset, -180, 180) || !InRange(s.FadeExponent, 0.1, 8) ||
             !InRange(s.AmbientTintHue, 0, 360) || !InRange(s.AmbientTintSaturation, 0, 1) ||
-            !InRange(s.SourceDiscRadiusDegrees, 1, 89) || !InRange(s.SourceDiscSoftness, 0, 1))
+            !InRange(s.SourceDiscRadiusDegrees, 1, 89) || !InRange(s.SourceDiscSoftness, 0, 1) ||
+            !InRange(s.DirectionOriginBlend, 0, 1))
             throw new CrimsonHueException("Invalid lighting settings.");
     }
     private static bool InRange(double value, double minimum, double maximum) =>

@@ -343,10 +343,64 @@ Add("Recorded left brazier has zero right and rear contribution at the owner's b
     var settings = new MappingSettings(Brightness: .6, Radius: 20, FadeStart: 6, FadeExponent: 1.2);
     var strict = new LightMapper().Map(frame, layout, settings, 1);
     var broad = new LightMapper().Map(frame, layout, settings with { SeparateLeftRight = false, SeparateFrontRear = false,
-        SourceDiscRadiusDegrees = 89, SourceDiscSoftness = 0 }, 1);
+        SourceDiscRadiusDegrees = 89, SourceDiscSoftness = 0, DirectionOriginBlend = 1 }, 1);
     Assert(strict[0].Rgb == default && strict[1].Rgb == default, "Recorded left fire still reaches right/rear");
     Assert(strict[2].Rgb == broad[2].Rgb && strict[2].Rgb.X > .5, "Boundary unnecessarily changed left fire output");
     Assert(broad[1].Rgb.X > .5, "Replay no longer reproduces the reported broad spill");
+});
+Add("Direction origin interpolates player and camera positions exactly and preserves camera axes", () =>
+{
+    var frame = TelemetryParser.Parse(Fixtures.Snapshot(), out _)! with
+    {
+        Player = new(10, 3, 20),
+        Camera = new(new(4, 7, 12), new(1, 0, 0), new(0, 1, 0), new(0, 0, 1))
+    };
+    foreach (var blend in new[] { 0.0, .25, .5, 1 })
+    {
+        var settings = new MappingSettings(DirectionOriginBlend: blend);
+        var expected = new Vec3(10 - 6 * blend, 3 + 4 * blend, 20 - 8 * blend);
+        Assert(LightMapper.DirectionOrigin(frame, settings) == expected, "Origin left the player-camera line");
+        var direction = LightMapper.SourceDirection(expected + new Vec3(2, 0, 5), frame, settings);
+        Assert((direction - new Vec3(2, 5, 0).Unit).Length < 1e-12);
+        var turned = frame with { Camera = frame.Camera with { Right = new(-1, 0, 0), Forward = new(0, 0, -1) } };
+        Assert(LightMapper.DirectionOrigin(turned, settings) == expected, "Camera orientation moved the origin");
+        Assert((LightMapper.SourceDirection(expected + new Vec3(2, 0, 5), turned, settings) + direction).Length < 1e-12);
+    }
+    foreach (var invalid in new[] { -.01, 1.01, double.PositiveInfinity })
+        Reject(() => LightMapper.Validate(new(DirectionOriginBlend: invalid)));
+});
+Add("Recorded nearby fires switch front or rear with the chosen player-camera origin at 15 GU", () =>
+{
+    // These fires are behind the player, but between the player and camera lens.
+    var layout = new EntertainmentArea(Fixtures.Id, "Recorded room", false,
+    [
+        new(0, new(.31291532926158294, -.9982087856556487, .5052717571578222), [], "Rear right"),
+        new(1, new(.6081610035675666, 1, -.3940484143872305), [], "Front right"),
+        new(2, new(-.9011899756747147, 1, -.8866089323712685), [], "Front left")
+    ]);
+    var frame = TelemetryParser.Parse(Fixtures.CurrentSnapshot(), out _)! with
+    {
+        Player = new(-10606.647, 607.5385, -4421.96),
+        Camera = new(new(-10612.477, 610.5437, -4423.1084), new(.05939758, 3.7252903e-9, -.99823433),
+            new(.11824696, .99295926, .007036004), new(.9912061, -.11845611, .058979392)),
+        Lights = [new(new(-10612.612, 608.2134, -4421.1597), new(.3418959, .10573153, .026059404)),
+            new(new(-10612.609, 608.2771, -4421.1597), new(1.3013425, .4003111, .09886421)),
+            new(new(-10611.344, 607.69556, -4425.8354), new(.36165032, .11177812, .027556013)),
+            new(new(-10611.355, 607.7641, -4425.8354), new(1.1991158, .36700568, .090834536))]
+    };
+    var settings = new MappingSettings(Brightness: .6, Radius: 15, FadeStart: 6, FadeExponent: 1.2);
+    var mapper = new LightMapper();
+    var lens = mapper.Map(frame, layout, settings with { DirectionOriginBlend = 1 }, .001);
+    Assert(lens[0].Rgb == default && lens[1].Rgb.X > .5 && lens[2].Rgb.X > .5, "Lens endpoint did not reproduce the reported front output");
+    var player = mapper.Map(frame, layout, settings with { DirectionOriginBlend = 0 }, .001);
+    Assert(player[0].Rgb.X > .5 && player.Skip(1).All(c => c.Rgb == default), "Player endpoint did not move the source to the rear");
+    var quarter = mapper.Map(frame, layout, settings with { DirectionOriginBlend = .25 }, .001);
+    Assert(quarter[0].Rgb.X > 0 && quarter.Skip(1).All(c => c.Rgb == default));
+    var half = mapper.Map(frame, layout, settings, .001);
+    Assert(half.All(c => c.Rgb.IsFinite) && half.Skip(1).All(c => c.Rgb == default));
+    var translatedCamera = frame with { Camera = frame.Camera with { Position = new(0, 500, 0) } };
+    var fixedPlayer = mapper.Map(translatedCamera, layout, settings with { DirectionOriginBlend = 0 }, .001);
+    Assert(player.SequenceEqual(fixedPlayer), "Camera translation changed output at the player endpoint");
 });
 Add("A missing matching lamp never redirects sources across a boundary", () =>
 {
@@ -633,7 +687,7 @@ Add("Legacy radius migrates to fade end and new fade settings round-trip", () =>
     const string legacy = "{\"BridgeAddress\":\"192.168.2.1\",\"AreaId\":\"saved-area\",\"Mapping\":{\"Gain\":2,\"Brightness\":0.4,\"Radius\":47.5,\"Spread\":3,\"SmoothingMs\":250}}";
     var saved = JsonSerializer.Deserialize<AppSettings>(legacy)!;
     Assert(saved.Mapping is { FadeStart: 0, FadeEnd: 47.5, Gain: 2, Brightness: 0.4, Spread: 3, SmoothingMs: 250, AmbientSensitivity: 1 });
-    Assert(saved.Mapping is { SeparateLeftRight: true, SeparateFrontRear: true, SourceDiscRadiusDegrees: 60, SourceDiscSoftness: 0.25 },
+    Assert(saved.Mapping is { SeparateLeftRight: true, SeparateFrontRear: true, SourceDiscRadiusDegrees: 60, SourceDiscSoftness: 0.25, DirectionOriginBlend: 0.5 },
         "Older settings must load with the visible strict boundaries and bounded disc defaults");
     var directory = Path.Combine(Path.GetTempPath(), "CrimsonHue-fade-test-" + Guid.NewGuid().ToString("N"));
     var store = new SettingsStore(directory);
@@ -661,7 +715,7 @@ Add("Saved settings retain every explicit control and do not silently migrate br
             LocalStrength = 2, AmbientReferenceLevel = 5, AmbientSmoothingMs = 700, HueShiftDegrees = -15, Saturation = 0.8,
             RedGain = 0.9, GreenGain = 1.2, BlueGain = 0.7, OutputGamma = 1.3, DirectionNormalization = 0.5,
             CameraYawOffset = 20, FadeExponent = 1.6, AmbientTintHue = 210, AmbientTintSaturation = 0.2,
-            SeparateLeftRight = false, SeparateFrontRear = false, SourceDiscRadiusDegrees = 42, SourceDiscSoftness = 0.6 };
+            SeparateLeftRight = false, SeparateFrontRear = false, SourceDiscRadiusDegrees = 42, SourceDiscSoftness = 0.6, DirectionOriginBlend = .37 };
         store.SaveSettings(restored with { Mapping = custom });
         Assert(store.LoadSettings().Mapping == custom, "An explicit mapping value did not round-trip");
         File.WriteAllText(Path.Combine(directory, "settings.json"), JsonSerializer.Serialize(new AppSettings(Mapping: oldDefault with { Radius = 50 })));
@@ -873,22 +927,29 @@ if (args.Contains("--live-mapping")) Async("LIVE read-only saved-layout mapping 
         var frame = telemetry.Read(out _)!;
         var ambientFrame = ambient.Read(out _)!;
         var mapping = saved.Mapping ?? new();
-        IReadOnlyList<ChannelColor> Map(TelemetryFrame f, bool includeAmbient = true)
+        IReadOnlyList<ChannelColor> Map(TelemetryFrame f, bool includeAmbient = true, double? originBlend = null)
         {
             var mapper = new LightMapper();
             IReadOnlyList<ChannelColor> output = [];
-            for (var i = 0; i < 3; i++) output = mapper.Map(f, layout, mapping, 1, includeAmbient ? ambientFrame : null);
+            var options = originBlend is { } blend ? mapping with { DirectionOriginBlend = blend } : mapping;
+            for (var i = 0; i < 3; i++) output = mapper.Map(f, layout, options, 1, includeAmbient ? ambientFrame : null);
             return output;
         }
         var ahead = Map(frame);
         var turned = Map(frame with { Camera = frame.Camera with { Right = frame.Camera.Right * -1, Forward = frame.Camera.Forward * -1 } });
         var baseline = Map(frame with { Lights = [] });
         var localOnly = Map(frame, includeAmbient: false);
+        var playerOrigin = Map(frame, includeAmbient: false, originBlend: 0);
+        var cameraOrigin = Map(frame, includeAmbient: false, originBlend: 1);
         Console.WriteLine($"  {frame.Lights.Count} clear sources; raw Ambient W={ambientFrame.WorkingLevel:G9}; max brightness={mapping.Brightness:P0}");
         Console.WriteLine($"  Strict left/right={mapping.SeparateLeftRight}; front/rear={mapping.SeparateFrontRear}; disc radius={mapping.SourceDiscRadiusDegrees:G} deg; soft edge={mapping.SourceDiscSoftness:P0}");
+        Console.WriteLine($"  Direction origin={mapping.DirectionOriginBlend:P0} camera; world origin={LightMapper.DirectionOrigin(frame, mapping)}; distance cutoff={mapping.FadeEnd:G} GU (saved settings)");
         Console.WriteLine($"  Raw Ambient working RGB={ambientFrame.WorkingRgb}; sky RGB={ambientFrame.SkyRgb}; visibility={ambientFrame.SkyVisibility:G9}");
         for (var i = 0; i < layout.Channels.Count; i++)
+        {
             Console.WriteLine($"  CH {layout.Channels[i].Id}: actual {ahead[i].Rgb}, yaw +180° {turned[i].Rgb}, no local lights {baseline[i].Rgb}, local only {localOnly[i].Rgb}");
+            Console.WriteLine($"  CH {layout.Channels[i].Id}: local origin 0% {playerOrigin[i].Rgb}; local origin 100% {cameraOrigin[i].Rgb}");
+        }
         Assert(ahead.All(c => c.Rgb.IsFinite) && turned.All(c => c.Rgb.IsFinite));
     }
     finally { await cancel.CancelAsync(); await telemetryTask; await ambientTask; }

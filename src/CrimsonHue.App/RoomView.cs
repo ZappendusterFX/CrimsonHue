@@ -41,14 +41,8 @@ public sealed class RoomView : FrameworkElement
             {
                 var fade = LightMapper.DistanceWeight((light.Position - Frame.Player).Length, Settings);
                 if (fade <= 0) continue;
-                var d = light.Position - Frame.Camera.Position;
-                var length = Math.Max(1, d.Length);
-                var localRight = d.Dot(Frame.Camera.Right) / length;
-                var localFront = d.Dot(Frame.Camera.Forward) / length;
-                var yaw = Settings.CameraYawOffset * Math.PI / 180;
-                var roomRight = localRight * Math.Cos(yaw) - localFront * Math.Sin(yaw);
-                var roomFront = localRight * Math.Sin(yaw) + localFront * Math.Cos(yaw);
-                var point = new Point(center.X + roomRight * sx * 0.7, center.Y - roomFront * sy * 0.7);
+                var direction = LightMapper.SourceDirection(light.Position, Frame, Settings);
+                var point = new Point(center.X + direction.X * sx * 0.7, center.Y - direction.Y * sy * 0.7);
                 var sourceBrush = Brush("#9A6D59"); sourceBrush.Opacity = fade;
                 dc.DrawEllipse(sourceBrush, null, point, 1.8, 1.8);
             }

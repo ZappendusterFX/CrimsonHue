@@ -1,4 +1,65 @@
-# Current checkpoint — CrimsonHue 0.3.1, 2026-09-28, Codex
+# Current checkpoint — CrimsonHue 0.3.2, 2026-09-28, Codex
+
+Owner found nearby fires behind the character lighting the front Hues while CH0
+rear stayed dark. A read-only CDT capture confirmed the geometry: player
+(-10606.647, 607.5385, -4421.96), camera
+(-10612.477, 610.5437, -4423.1084), sources about 6.06–6.10 GU from the player.
+Those sources are behind the player but in front of the third-person camera lens.
+The owner explicitly chose an adjustable percentage between those two reference
+points instead of declaring either one universally correct.
+
+Space now exposes Direction origin, 0% raw player position to 100% paired camera
+position, with 50% as the visible default. It interpolates all three coordinates
+along their connecting line; there is no additional eye-height offset. Camera
+right/forward/up still supplies orientation at every percentage. Distance fade
+remains player-relative, and the strict boundaries/disc use the selected origin.
+Mapper and RoomView share SourceDirection; preview status labels the percentage.
+The origin has slider/numeric/reset/save support and defaults to 50% for older
+settings that do not contain it. No existing numeric settings were rewritten.
+
+CH0 is at imported room XYZ (+0.3129, -0.9982, +0.5053): rear-right, about 26 degrees
+above horizontal. It is not a sky-only channel. Its height participates in the
+finite disc test. In the recorded scene, origin 0% reaches CH0 with the rear-right
+fire and leaves both front channels at exact local zero. At 100%, the same nearby
+fires reach the fronts. At 50%, their combined side/height angle can miss the
+60-degree disc around CH0, so the midpoint is not promised as a universal fix.
+Origin 25% also reaches the rear in the recorded regression. Strict left/right
+still excludes the rear-left fire from the only rear-right lamp.
+
+Owner reports an active Off beyond of 15 GU; disk settings still said 20 GU at
+inspection, so in-app unsaved settings must not be equated with saved ones. The
+recorded scene regression explicitly uses 15 GU. Normal close should save the
+owner's current choices before switching packages. LEDVANCE minimum brightness
+was also suspected by the owner for tiny nonzero output; the existing Ambient
+black threshold was recommended. No hardware dimming limit was measured and no
+new output threshold was added in this release.
+
+Verification: Release build zero warnings/errors; 71/71 non-live tests passed,
+including exact 0/25/50/100% origin geometry, camera axes, endpoint persistence,
+the recorded 15-GU scene, and camera translation independence at 0%. Read-only
+live saved-layout mapping passed 72/72. With the saved 20-GU cutoff, origin 0%
+gave CH0 local RGB approx (0.6000, 0.3541, 0.1832) and front local RGB zero.
+At 100%, both front lamps had red output 0.6000. At 50%, fronts were zero and
+CH0 had only a small contribution from farther sources (~0.00383 red). The
+separate Ambient baseline was ~0.000823 per output channel. These are calculated
+outputs, not physical lamp measurements. No physical stream was started.
+
+Source and packaged WPF smoke runs exited 0, with six panels rendered; Space was
+visually inspected. UI coverage includes all 28 numeric and two boolean settings,
+and origin endpoint changes update mapping and preview text. All five ZIP entries
+match package files. AGENTS.md and CLAUDE.md are byte-identical.
+
+Package: `dist/CrimsonHue-0.3.2-win-x64/CrimsonHue.exe` (166969627 bytes),
+`dist/CrimsonHue-0.3.2-win-x64.zip`, SHA-256
+`6A1C4C5D39BB90136925A112439AA245B59348A71B5A63A85D7BAE3F6EE01DC6`.
+Prior immutable packages and pre-existing codex_check_hdr.obj are preserved.
+No credentials/settings/game files are packaged and no upload occurred.
+
+Next: owner closes 0.3.1 normally, opens 0.3.2, and compares origin percentages
+in the same scene. Camera position, player position and imported lamp height
+are distinct factors; do not change Hue positions or invent a hardware limit.
+
+# Previous checkpoint — CrimsonHue 0.3.1, 2026-09-28, Codex
 
 Owner requires strict spatial separation: a source on one side must never light
 lamps on the opposite side. Off-screen sources remain relevant to the room. The
