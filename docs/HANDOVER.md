@@ -1,3 +1,15 @@
+# Release publication — 2026-09-28
+
+GitHub repository: https://github.com/ZappendusterFX/CrimsonHue (public).
+GitHub pre-release: https://github.com/ZappendusterFX/CrimsonHue/releases/tag/v0.3.2.
+Tag `v0.3.2` points to `c34245c287d3d7301f991c885d3d56c0db0b3225`,
+which includes `docs/USER-GUIDE.md` and README links. The immutable ZIP was
+uploaded with 70,326,922 bytes; GitHub reports SHA-256
+`6A1C4C5D39BB90136925A112439AA245B59348A71B5A63A85D7BAE3F6EE01DC6`,
+matching the local file. GitHub release notes state prerequisites and link the
+complete guide. CDT is separate and not packaged. Nexus publication belongs to
+the owner; `docs/NEXUS.md` is the prepared listing copy. No Nexus upload by Codex.
+
 # Current checkpoint — CrimsonHue 0.3.2, 2026-09-28, Codex
 
 Owner found nearby fires behind the character lighting the front Hues while CH0

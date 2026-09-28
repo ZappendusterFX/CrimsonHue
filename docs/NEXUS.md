@@ -1,4 +1,17 @@
-# Draft listing — live lamp acceptance pending
+# Nexus listing copy — CrimsonHue 0.3.2
+
+GitHub release and download:
+https://github.com/ZappendusterFX/CrimsonHue/releases/tag/v0.3.2
+
+Complete setup and tuning guide:
+https://github.com/ZappendusterFX/CrimsonHue/blob/v0.3.2/docs/USER-GUIDE.md
+
+Required separate CDT download:
+https://github.com/ZappendusterFX/CrimsonDesertTelemetry/releases/tag/v2.2.1
+
+Use the same immutable `CrimsonHue-0.3.2-win-x64.zip` for Nexus. Its SHA-256 is
+`6A1C4C5D39BB90136925A112439AA245B59348A71B5A63A85D7BAE3F6EE01DC6`.
+CDT and the game are not included.
 
 Title: CrimsonHue - Spatial Room Lighting
 Category: Crimson Desert / Utilities
@@ -50,6 +63,7 @@ Mapping is an estimate of direction/proximity; the current version does not infe
 surrounding brightness from the time of day.
 
 Use HANDOVER.md for current test status and release hash. Physical Hue hardware
-and larger areas require separate testing. Add a gameplay/real-lamp video after
-the user accepts the behavior. Public branding/source-license choice and final
-listing remain release tasks. No Nexus/GitHub upload is part of this build.
+and larger areas require separate testing. Physical lamp appearance was checked
+by the owner with diyHue/LEDVANCE but was not measured or verified on a Philips
+Hue bridge. The GitHub release is published; Nexus publishing remains with the
+owner. The public source repository currently has no explicit source license.
