@@ -7,8 +7,12 @@ Summary: An external lighting companion for CrimsonDesertTelemetry. Turn live
 in-game light contributions into spatial Hue Entertainment output using your
 existing Entertainment area.
 
-Adjustable distance fade: choose where local lights begin to fade and where their
-contribution ends. Settings affect preview and active sync without restarting it.
+Inspect raw CDT light and Ambient values beside the calculated channel colors.
+Tabs provide sliders and numeric inputs for output brightness, Ambient response,
+color balance and hue shifts, camera direction and distance fade. The distance
+curve shows contribution in percent over game-unit distance. Settings affect
+preview and active sync immediately; use Save settings or Reset this tab.
+Freeze readout holds the raw display for copying while streaming continues.
 
 Required mod: CrimsonDesertTelemetry 2.2.1 with rendered and upstream ManyLights
 capture and source visibility enabled for all-around, confirmed-clear output.
@@ -19,13 +23,17 @@ Install: extract the portable ZIP anywhere, run CrimsonHue.exe, pair the bridge,
 select an area, then Start. Keep the telemetry mod installed separately. Do not
 deploy this application into the game with a mod manager.
 
-Version 0.2.2 uses the current all-around ManyLights input and emits only sources
+Version 0.3.0 uses the current all-around ManyLights input and emits only sources
 with a fresh confirmed-clear physics verdict. Older CDT schema 1.4/1.5 uses the
 legacy renderer-only path. The separate CDT Ambient feed supplies a relative
-brightness signal: bright surroundings make the room neutral and reduce local
-light contrast; dark surroundings keep local colors prominent. Its working RGB
-is not calibrated to local-light RGB or physical output. An Ambient influence
-control tunes the artistic response; missing Ambient falls back to local lights.
+brightness signal. Extra background light defaults to 0% and requires valid,
+enabled Ambient. Ambient black threshold controls which small input values map
+to black; zero Ambient plus no clear local lights gives black after the chosen
+Ambient transition. Ambient exposure, Ambient mix, tint and Local light mix are
+editable. Color adjustments default to neutral and apply generally to all
+local-light colors. Raw input stays visible and unchanged by those adjustments.
+Ambient working RGB is not calibrated to local-light RGB or physical output.
+Missing Ambient removes its fill and falls back to local lights.
 No screen capture, complete lighting, physical-lumen or pixel-matching claim.
 Mapping is an estimate of direction/proximity; the current version does not infer
 surrounding brightness from the time of day.

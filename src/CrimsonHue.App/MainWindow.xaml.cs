@@ -43,6 +43,7 @@ public partial class MainWindow : Window
     {
         this.smoke = smoke;
         InitializeComponent();
+        InitializeTuning();
         if (!smoke)
         {
             try
@@ -52,12 +53,7 @@ public partial class MainWindow : Window
                 TelemetryAddress.Text = saved.TelemetryAddress;
                 selectedAreaId = saved.AreaId;
                 var m = saved.Mapping ?? new(); LightMapper.Validate(m);
-                BrightnessSlider.Value = m.Brightness; GainSlider.Value = m.Gain;
-                FadeEndSlider.Maximum = Math.Max(100, m.FadeEnd);
-                FadeStartSlider.Maximum = FadeEndSlider.Maximum - 0.5;
-                FadeEndSlider.Value = m.FadeEnd; FadeStartSlider.Value = m.FadeStart;
-                SpreadSlider.Value = m.Spread; SmoothingSlider.Value = m.SmoothingMs;
-                AmbientSlider.Value = m.AmbientSensitivity;
+                mapping = m;
                 var credentials = store.LoadCredentials();
                 if (credentials != null)
                 {
@@ -69,7 +65,7 @@ public partial class MainWindow : Window
             { BridgeStatus.Text = "Saved setup could not be loaded. Find and pair your bridge again."; }
         }
         initialized = true;
-        SettingsChanged(this, null!);
+        SyncTuningValues();
         timer.Tick += (_, _) => RefreshPreview();
         timer.Start();
         Loaded += async (_, _) =>
@@ -183,29 +179,6 @@ public partial class MainWindow : Window
         StreamStatus.Text = "Stopping and restoring light states…";
         await streamCancel.CancelAsync();
     }
-    private void SettingsChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        if (!initialized || updatingSettings) return;
-        updatingSettings = true;
-        try
-        {
-            if (FadeStartSlider.Value >= FadeEndSlider.Value)
-            {
-                if (ReferenceEquals(sender, FadeStartSlider)) FadeEndSlider.Value = FadeStartSlider.Value + 0.5;
-                else FadeStartSlider.Value = Math.Max(0, FadeEndSlider.Value - 0.5);
-            }
-            var next = new MappingSettings(GainSlider.Value, BrightnessSlider.Value, FadeEndSlider.Value, SpreadSlider.Value,
-                SmoothingSlider.Value, FadeStartSlider.Value, AmbientSlider.Value);
-            LightMapper.Validate(next);
-            Volatile.Write(ref mapping, next);
-        }
-        finally { updatingSettings = false; }
-        BrightnessValue.Text = $"{mapping.Brightness:P0}";
-        GainValue.Text = $"{mapping.Gain:F2}×";
-        FadeStartValue.Text = $"{mapping.FadeStart:F1}";
-        FadeEndValue.Text = $"{mapping.FadeEnd:F1}";
-        AmbientValue.Text = $"{mapping.AmbientSensitivity:F1}×";
-    }
     private void DemoChanged(object sender, RoutedEventArgs e) { if (initialized) { previewMapper.Reset(); UpdateButtons(); } }
     private void RefreshPreview()
     {
@@ -217,13 +190,14 @@ public partial class MainWindow : Window
             $"{frame.Feed} · {frame.Lights.Count}/{frame.SourceCount} usable lights · {frame.Lights.Count(l => (l.Position - frame.Player).Length < mapping.FadeEnd)} in range · capture {frame.CaptureSequence} · age {Math.Max(0, (DateTimeOffset.UtcNow - frame.LightCapturedAt).TotalMilliseconds):F0} ms";
         var demo = DemoCheck.IsChecked == true;
         AmbientStatus.Text = demo ? "Demo preview · ambient not sampled" : ambientMessage;
+        if (FreezeRawCheck.IsChecked != true) UpdateRawInput(frame, ambientFrame);
         var area = demo ? DemoData.Area : SelectedArea;
         if (demo) frame = DemoData.Frame(uptime.Elapsed.TotalSeconds);
         IReadOnlyList<ChannelColor> colors = [];
         if (area != null)
         {
             if (session != null) colors = session.Colors;
-            else if (frame != null) colors = previewMapper.Map(frame, area, mapping, 0.1, ambientFrame);
+            else if (frame != null) colors = previewMapper.Map(frame, area, mapping, 0.1, demo ? null : ambientFrame);
             else previewMapper.Reset();
         }
         Room.Area = area; Room.Colors = colors; Room.Frame = frame; Room.Demo = demo; Room.Settings = mapping; Room.InvalidateVisual();
@@ -232,6 +206,7 @@ public partial class MainWindow : Window
             Name = c.Label,
             Subtitle = $"CH {c.Id:D2}  ·  height {c.Position.Z:+0.00;-0.00;0.00}",
             Details = $"{c.Label}\nHue position: {c.Position}\n{c.Members.Count} member(s)",
+            Output = FormatOutput(colors.FirstOrDefault(v => v.Id == c.Id)?.Rgb ?? default),
             Color = new SolidColorBrush(RoomView.ColorFrom(colors.FirstOrDefault(v => v.Id == c.Id)?.Rgb ?? default))
         }).ToArray();
         if (session != null && streamCancel?.IsCancellationRequested != true) StreamStatus.Text = session.Status;
@@ -287,26 +262,37 @@ public partial class MainWindow : Window
         StreamStatus.Text = "Demo preview · physical lamp output disabled";
         RefreshPreview();
     }
-    internal void VerifyDistanceControls()
+    private static string FormatOutput(Vec3 rgb) => FormattableString.Invariant($"RGB {rgb.X:F4} / {rgb.Y:F4} / {rgb.Z:F4}");
+
+    internal void SelectSmokePanel(string group, bool raw = false)
     {
-        if (!smoke) throw new InvalidOperationException("Control self-test requires isolated smoke mode.");
-        var start = FadeStartSlider.Value; var end = FadeEndSlider.Value; var ambientInfluence = AmbientSlider.Value;
-        try
+        if (!smoke) throw new InvalidOperationException("Synthetic panel rendering requires smoke mode.");
+        MixerTabs.SelectedItem = MixerTabs.Items.Cast<TabItem>().First(t => (string)t.Tag == group);
+        MonitorTabs.SelectedIndex = raw ? 1 : 0;
+        if (raw)
         {
-            FadeStartSlider.Value = 45;
-            if (mapping.FadeStart != 45 || mapping.FadeEnd != 45.5) throw new InvalidOperationException("Fade-end control did not follow start.");
-            FadeEndSlider.Value = 2;
-            if (mapping.FadeStart != 1.5 || mapping.FadeEnd != 2) throw new InvalidOperationException("Fade-start control did not follow end.");
-            FadeStartSlider.Value = 99.5;
-            if (mapping.FadeEnd != 100) throw new InvalidOperationException("Upper fade limit is inconsistent.");
-            FadeEndSlider.Value = 1;
-            if (mapping.FadeStart != 0.5) throw new InvalidOperationException("Lower fade limit is inconsistent.");
-            AmbientSlider.Value = 2;
-            if (mapping.AmbientSensitivity != 2) throw new InvalidOperationException("Ambient influence control did not update mapping.");
-            AmbientSlider.Value = 0;
-            if (mapping.AmbientSensitivity != 0) throw new InvalidOperationException("Ambient influence control did not reach local-only mode.");
-            LightMapper.Validate(mapping);
+            FreezeRawCheck.IsChecked = true;
+            UpdateRawInput(DemoData.Frame(1), new(42, DateTimeOffset.UtcNow, 0, 0, 0.00025,
+                new(0.00025, 0.00027, 0.00023), new(0.0027, 0.0029, 0.0024), 0.0926));
+            RawAmbientValues.Text = "SYNTHETIC UI FIXTURE · no live connection\n" + RawAmbientValues.Text;
+            RawSourceSummary.Text = "SYNTHETIC UI FIXTURE · source values for layout verification only";
         }
-        finally { FadeEndSlider.Value = end; FadeStartSlider.Value = start; AmbientSlider.Value = ambientInfluence; }
+        UpdateLayout();
+    }
+
+    private void UpdateRawInput(TelemetryFrame? frame, AmbientFrame? ambientFrame)
+    {
+        RawAmbientValues.Text = ambientFrame == null ? "No fresh Ambient sample" : FormattableString.Invariant(
+            $"Local RGB  {ambientFrame.WorkingRgb}\nSky RGB    {ambientFrame.SkyRgb}\nVisibility {ambientFrame.SkyVisibility:R}\nLocal mean {ambientFrame.WorkingLevel:R}\nReported age: sky {ambientFrame.SkyAgeMs:F0} ms · visibility {ambientFrame.VisibilityAgeMs:F0} ms");
+        RawSourceSummary.Text = frame == null ? "No fresh light sample" :
+            $"{frame.Lights.Count} {(frame.ConfirmedVisibleOnly ? "confirmed-clear" : "legacy rendered, visibility unconfirmed")} / {frame.SourceCount} captured · distance in game units · RGB before all mixer controls";
+        RawLightsGrid.ItemsSource = frame?.Lights.OrderBy(l => (l.Position - frame.Player).Length).Select(l => new
+        {
+            Distance = (l.Position - frame.Player).Length.ToString("F2", System.Globalization.CultureInfo.InvariantCulture),
+            Red = l.Rgb.X.ToString("G", System.Globalization.CultureInfo.InvariantCulture),
+            Green = l.Rgb.Y.ToString("G", System.Globalization.CultureInfo.InvariantCulture),
+            Blue = l.Rgb.Z.ToString("G", System.Globalization.CultureInfo.InvariantCulture),
+            Position = l.Position.ToString()
+        }).ToArray();
     }
 }

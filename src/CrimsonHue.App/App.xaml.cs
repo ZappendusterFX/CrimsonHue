@@ -21,12 +21,25 @@ public partial class App : Application
                 window.VerifyDistanceControls();
                 await Task.Delay(350);
                 window.UpdateLayout();
-                var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);
-                bitmap.Render(window);
-                var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
                 var path = Path.GetFullPath(e.Args[1]); Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-                using (var file = File.Create(path)) encoder.Save(file);
+                Capture(path);
+                foreach (var group in new[] { "Ambient", "Color", "Space", "Setup" })
+                {
+                    window.SelectSmokePanel(group);
+                    await Dispatcher.InvokeAsync(window.UpdateLayout, System.Windows.Threading.DispatcherPriority.ContextIdle);
+                    Capture(Path.Combine(Path.GetDirectoryName(path)!, Path.GetFileNameWithoutExtension(path) + "-" + group.ToLowerInvariant() + ".png"));
+                }
+                window.SelectSmokePanel("Ambient", raw: true);
+                await Dispatcher.InvokeAsync(window.UpdateLayout, System.Windows.Threading.DispatcherPriority.ContextIdle);
+                Capture(Path.Combine(Path.GetDirectoryName(path)!, Path.GetFileNameWithoutExtension(path) + "-raw.png"));
                 window.Close();
+                void Capture(string destination)
+                {
+                    var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+                    bitmap.Render(window);
+                    var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                    using var file = File.Create(destination); encoder.Save(file);
+                }
             };
         }
         window.Show();

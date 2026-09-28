@@ -17,13 +17,7 @@ public sealed class SettingsStore
     public AppSettings LoadSettings()
     {
         var path = Path.Combine(DirectoryPath, "settings.json");
-        var saved = File.Exists(path) ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllBytes(path)) ?? new() : new();
-        // 0.2.1 used 60% as its untouched default. Lift only that exact preset;
-        // once saved with a revision, a deliberate 60% selection stays at 60%.
-        var oldDefault = new MappingSettings(Brightness: 0.6);
-        return saved.MappingRevision == 0 && saved.Mapping == oldDefault
-            ? saved with { Mapping = new MappingSettings(), MappingRevision = 1 }
-            : saved;
+        return File.Exists(path) ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllBytes(path)) ?? new() : new();
     }
     public BridgeCredentials? LoadCredentials()
     {
@@ -33,7 +27,7 @@ public sealed class SettingsStore
         try { return JsonSerializer.Deserialize<BridgeCredentials>(clear); }
         finally { CryptographicOperations.ZeroMemory(clear); }
     }
-    public void SaveSettings(AppSettings settings) => SaveAtomic("settings.json", JsonSerializer.SerializeToUtf8Bytes(settings with { MappingRevision = 1 }, Options));
+    public void SaveSettings(AppSettings settings) => SaveAtomic("settings.json", JsonSerializer.SerializeToUtf8Bytes(settings, Options));
     public void SaveCredentials(BridgeCredentials credentials)
     {
         var clear = JsonSerializer.SerializeToUtf8Bytes(credentials);

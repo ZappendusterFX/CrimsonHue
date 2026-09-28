@@ -3,14 +3,14 @@
 A standalone Windows companion that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**0.2.2 — early preview.** This is a source-driven lighting estimate. With the
-current CDT API, CrimsonHue uses the all-around ManyLights input, emits only
-lights with a fresh confirmed-clear physics visibility result, and uses CDT's
-separate camera-local Ambient estimate for neutral room fill. Bright surroundings
-still soften local colors, but nearby lights retain a visible effect. Orange
-engine lights receive an artistic amber correction because the game's displayed
-fire can look yellower than its source RGB. Neither feed is calibrated to display
-color; the mapping remains adjustable.
+**0.3.0 — early preview.** CrimsonHue shows the raw CDT light and Ambient values
+beside the mapped lamp output. Sliders and numeric inputs expose the brightness,
+Ambient response, color and spatial adjustments. **Extra background light**
+defaults to 0% and color adjustments are neutral: zero Ambient plus no confirmed-clear
+lights produces black. The previous automatic orange-to-amber correction and
+saved-brightness upgrade have been removed. The result is a source-driven
+lighting estimate; neither CDT feed is calibrated to displayed game pixels or
+physical lamp brightness.
 
 ## Start
 
@@ -27,8 +27,9 @@ color; the mapping remains adjustable.
    Entertainment client key are requested automatically.
 5. Select an existing **Entertainment area**. Create and position lights in the
    Hue app first, then refresh. CrimsonHue preserves the existing layout/channels.
-6. Adjust brightness, light sensitivity, Ambient influence and the two distance
-   fade controls described below. Stop other sync apps, then click **Start lighting sync**.
+6. Use the **Output**, **Ambient**, **Color** and **Space** tabs to adjust the
+   preview. Compare the raw CDT values with the channel output while tuning.
+   Stop other sync apps, then click **Start lighting sync**.
 7. **Stop**, or close the window, to release the stream and restore previously read
    on/off, brightness and color states of the selected lights, if CrimsonHue still
    owns the stream. Running effects/dynamic scenes are not resumed.
@@ -66,8 +67,9 @@ is disabled, schema 1.6 can use the rendered feed with the same clear-only rule.
 Older schema 1.4/1.5 uses the original rendered-only behavior.
 
 Player distance supplies a configurable fade, and camera direction supplies a
-smooth weight for each Hue channel. Each source is normalized against its
-strongest imported channel, sharpening camera rotation in sparse room layouts.
+smooth weight for each Hue channel. **Strongest-channel compensation** controls
+how much each source is normalized against its strongest imported channel; 0%
+uses the absolute angular weight and 100% gives that channel its full spatial peak.
 Hue X points right, Y towards the screen and
 Z up. The preview is top-down; cards show channel height, which participates in
 the direction calculation. A clear physics ray is a sampled geometry verdict,
@@ -75,10 +77,12 @@ not a guarantee of optical visibility through every material or at every instant
 
 Each source's HDR intensity is compressed with a common RGB scale before applying
 distance and direction weights, so high source intensity cannot undo that source's
-fade. Orange-family source RGB is shifted toward amber; pure red and other hues
-retain their source ratios. Weighted contributions are combined in linear RGB; only sums above the
-output range are scaled down, preserving RGB ratios. Output is then sRGB-encoded
-and brightness-limited. Imported Hue brightness balance is applied where provided.
+fade. Local colors retain their source ratios with the default color controls.
+RGB gains, hue shift and saturation apply the same rule to all local-light
+colors; no fire color is detected or specially recolored. Weighted contributions
+are combined in linear RGB and overflow is scaled down. Output is sRGB-encoded,
+corrected by the displayed gamma control and brightness-limited. Imported Hue
+brightness balance is applied where provided.
 Short configurable smoothing reduces jitter on the legacy rendered feed. The
 confirmed-visible mode updates channel colors immediately so a previous clear
 light cannot linger after becoming blocked or unknown. This is an artistic estimate, not
@@ -86,13 +90,41 @@ game pixels, physical lux, measured room distances or full scene lighting.
 Spotlight cones are not simulated. CDT supplies the separate source visibility
 decision; CrimsonHue does not perform its own occlusion test.
 
+### Controls and raw values
+
+Every tuning control has a slider and numeric input. Adjustments affect preview
+and active sync immediately. **Reset this tab** restores that tab's defaults;
+**Save settings** stores the current configuration. Settings are also saved on
+Start and normal window close. Existing saved brightness is retained as entered; the 85% default
+applies to new or reset settings only.
+
+| Tab | Controls (default; range) |
+| --- | --- |
+| Output | Maximum brightness (85%; 0–100%), Light sensitivity (1.5×; 0–10×), Local light mix (100%; 0–400%), Output gamma (1; 0.1–4), Legacy smoothing (100 ms; 0–1000 ms) |
+| Ambient | Ambient exposure (1×; 0–10×), Ambient reference level (4; 0.01–100 raw units), Ambient mix (40%; 0–100%), Extra background light (0%; 0–100%), Ambient black threshold (0; 0–100 raw units), Local mix in bright Ambient (100%; 0–200%), Ambient transition (400 ms; 0–5000 ms) |
+| Color | Local hue shift (0°; −180–180°), Local saturation (100%; 0–200%), Red balance / Green balance / Blue balance (each 1×; 0–4×), Ambient tint hue (0°; 0–360°), Ambient tint saturation (0%; 0–100%) |
+| Space | Fade starts (0; below Off beyond, up to just under 1000 game units), Off beyond (35; 1–1000 game units), Distance falloff (2; 0.1–8), Directional focus (2; 0–16), Strongest-channel compensation (100%; 0–100%), Room direction offset (0°; −180–180°) |
+| Setup | Bridge pairing, imported Entertainment area and local telemetry address |
+
+The raw readout shows CDT's global sky RGB, camera sky visibility, camera-local
+Ambient RGB and exact working level, plus confirmed-clear source positions/RGB.
+Those values are shown before any tuning. Calculated channel RGB describes the
+mapped output after tuning. A display swatch is an illustration; the numeric
+working values retain their original meaning and may exceed the display range.
+These diagnostics do not measure the physical lamps. **Freeze readout** holds
+the raw display for inspection and copying; live mapping and streaming continue.
+
 ### Distance fade
 
 - **Fade starts:** full distance strength up to this distance from the player.
 - **Off beyond:** no new contribution at or beyond this distance.
-- Between both values, strength falls smoothly to zero. Approaching a source uses
-  the same curve in reverse. Smoothing can briefly fade out the previous output
-  after crossing the cutoff.
+- Between both values, strength falls smoothly to zero. **Distance falloff** changes
+  the curve; larger values attenuate the middle of the interval more strongly.
+  Approaching a source uses the same curve in reverse. Legacy smoothing can
+  briefly retain the previous output after crossing the cutoff.
+
+The curve preview plots remaining contribution in percent against distance in
+game units. It updates with Fade starts, Off beyond and Distance falloff.
 
 Distances are **game units, not confirmed metres**. For example, start 5 / end 15
 means full distance strength through 5, then a fade ending at 15; these example
@@ -106,29 +138,32 @@ at zero. New setups default to 0 / 35. Mapping is intentionally different from
 0.1.0: very bright distant sources now fade reliably instead of saturating the
 post-falloff HDR compressor. Multiple overlapping sources still add together.
 
-### Ambient influence
+### Ambient response
 
 CrimsonHue reads CDT's separate `/v1/ambient/stream` on the same loopback port.
 It requires a fresh global sky sample, fresh measured camera sky visibility and
 the available local product estimate. The three working RGB channels provide a
-**relative brightness proxy**, not display color. CrimsonHue turns that proxy
-into a neutral room baseline and moderately reduces local-light contrast as the measured
-surroundings brighten. A valid dark Ambient estimate also adds a small neutral
-floor, keeping the room visible without inventing sky color. The default **Ambient influence** is
-1×; 0 disables this mapping, while higher values react more strongly. Ambient
-changes fade over about 0.4 seconds. This is a tunable visual model, not a claim
-that CDT exposes physical lux or pixel-accurate room illumination.
+**relative brightness proxy**, not display color. **Ambient exposure** and
+**Ambient reference level** control its response; **Ambient mix** sets the amount
+of fill. **Extra background light** defaults to 0% and applies only with valid
+Ambient input and Ambient exposure above zero. **Ambient black threshold** also
+defaults to 0; raise it to treat small positive Ambient values as black. Exactly
+zero input produces zero fill with the defaults, after any configured transition
+has ended. The raw readout continues to show the original value even when the
+threshold suppresses the mapped result. **Ambient tint saturation**, in the Color
+tab, defaults to 0% for neutral fill. **Local mix in bright Ambient** defaults to
+100%, leaving local contributions unchanged; lower values soften their influence
+as Ambient rises, and higher values strengthen it.
+**Ambient transition** controls the smoothing time. Response levels and transition
+time are editable in the Ambient tab; the tint controls are in Color. This
+is a tunable visual model, not physical lux or pixel-accurate room illumination.
 
 Sky and local visibility expire independently after 1500 ms, including client
-time. On missing/stale Ambient, the neutral baseline fades away and the app falls
+time. On missing/stale Ambient, the fill is removed immediately and the app falls
 back to the existing local-light mapping; the status line names that fallback.
 Invalid or missing local-light telemetry still clears output and releases the
 Entertainment stream as before. See `docs/AMBIENT-INTEGRATION.md` for limits and
 acceptance checks.
-
-The new default maximum brightness is 85%. An untouched 0.2.1 preset at 60%
-is upgraded once; custom values, including a deliberate 60% choice in 0.2.2,
-remain unchanged. The brightness slider still caps output at its displayed value.
 
 `sampleIndex` is never a persistent ID. Authored and rendered feeds are not added.
 Gradient channel membership is preserved. The transport supports up to 160 channels
@@ -154,7 +189,7 @@ pin the certificate accepted during pairing; Find and pair again if it changes.
 The initial identity probe sends no credentials. Bridges must use private IPv4
 and HTTPS. HTTP is allowed only on loopback for automated tests.
 
-Telemetry defaults to `ws://127.0.0.1:27311/v1/stream`; Advanced settings allow
+Telemetry defaults to `ws://127.0.0.1:27311/v1/stream`; Setup allows
 another local port. Only loopback addresses are accepted. Host restarts reconnect
 automatically and reset sequence tracking. Additive schema 1.x fields are tolerated.
 

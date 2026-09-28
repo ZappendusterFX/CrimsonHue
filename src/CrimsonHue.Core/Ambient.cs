@@ -51,8 +51,10 @@ public static class AmbientParser
                 throw new FormatException("Invalid ambient RGB.");
             // The AP1-like working channels are a relative brightness proxy only.
             var level = channels.Select(x => Math.Max(0, x)).Average();
-            status = $"Ambient live · relative level {level:F2}";
-            return new(sequence, capturedAt, skyAge, visibilityAge, level);
+            status = $"Ambient live · relative level {level:G6}";
+            return new(sequence, capturedAt, skyAge, visibilityAge, level,
+                new(channels[0], channels[1], channels[2]),
+                new(skyChannels[0], skyChannels[1], skyChannels[2]), visibilityValue);
         }
         catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or FormatException or OverflowException)
         {

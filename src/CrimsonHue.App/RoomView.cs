@@ -38,7 +38,12 @@ public sealed class RoomView : FrameworkElement
                 if (fade <= 0) continue;
                 var d = light.Position - Frame.Camera.Position;
                 var length = Math.Max(1, d.Length);
-                var point = new Point(center.X + d.Dot(Frame.Camera.Right) / length * sx * 0.7, center.Y - d.Dot(Frame.Camera.Forward) / length * sy * 0.7);
+                var localRight = d.Dot(Frame.Camera.Right) / length;
+                var localFront = d.Dot(Frame.Camera.Forward) / length;
+                var yaw = Settings.CameraYawOffset * Math.PI / 180;
+                var roomRight = localRight * Math.Cos(yaw) - localFront * Math.Sin(yaw);
+                var roomFront = localRight * Math.Sin(yaw) + localFront * Math.Cos(yaw);
+                var point = new Point(center.X + roomRight * sx * 0.7, center.Y - roomFront * sy * 0.7);
                 var sourceBrush = Brush("#9A6D59"); sourceBrush.Opacity = fade;
                 dc.DrawEllipse(sourceBrush, null, point, 1.8, 1.8);
             }

@@ -1,4 +1,59 @@
-# Current checkpoint — CrimsonHue 0.2.2, 2026-09-28, Codex
+# Current checkpoint — CrimsonHue 0.3.0, 2026-09-28, Codex
+
+Owner rejected 0.2.2's artificial night fill: live CDT had zero confirmed-clear
+sources and practically zero Ambient, yet that version generated ~0.188 neutral
+RGB at their saved 60% cap. The owner explicitly requires visible controls and
+raw input, rather than hardcoded tuning changes. An initial 0.2.3 fix was never
+packaged; this feature release supersedes that work.
+
+The WPF UI now has Output, Ambient, Color, Space and Setup tabs. All 25 mapping
+parameters have a slider, numeric entry, explanation and individual reset. Each
+tab can be reset; Save settings stores the current choices. The Space tab has
+Fade starts, Off beyond and the requested Distance falloff exponent, with a
+curve preview drawn from the mapper's actual distance function. Camera offset
+also rotates source dots consistently with lamp assignment.
+
+The fixed night floor, special orange/fire recoloring, doubled direction
+exponent and silent saved-brightness migration are removed. Extra background
+light and Ambient black threshold default to zero. Hue shift, saturation, RGB
+balance, gamma, Ambient exposure/reference/mix/transition/tint, local contrast,
+distance curve and angular compensation are exposed. Technical conversion and
+bounded-output formulas are documented in docs/AMBIENT-INTEGRATION.md.
+
+CDT raw input shows unmodified local and sky working RGB, sky visibility and
+the local mean, plus the raw confirmed-clear source RGB/positions and counts.
+Freeze readout holds only the display for inspection/copying; incoming telemetry
+and physical output continue normally. Channel cards show mapped output RGB.
+Demo preview stays synthetic and no longer mixes live Ambient into its preview.
+No CDT or diyHue implementation was changed.
+
+Verification: Release build zero warnings/errors; 62/62 non-live tests pass,
+including neutral preservation of orange source ratios, exact black at zero,
+all controls, distance falloff boundaries, persistence and ownership cleanup.
+Read-only saved-layout live mapping passed 63/63 with zero clear sources:
+Ambient W=0.000247726451 produced RGB≈0.000189962018 on every channel at the
+preserved 60% limit (~0.019% output component). Tiny raw input is retained by
+default; the visible Ambient black threshold can suppress it if desired. This
+is computed output, not physical lamp evidence. No physical session was started.
+
+Source and packaged WPF smoke runs exited 0. The UI gate verifies every
+MappingSettings double has a visible control, each control changes mapping,
+numeric entry rejects invalid values, and distance limits remain consistent.
+Output/Ambient/Color/Space/Setup/raw panels were rendered; raw and mixer views
+were visually inspected. All five ZIP entries match package files.
+
+Package: `dist/CrimsonHue-0.3.0-win-x64/CrimsonHue.exe` (166958875 bytes),
+`dist/CrimsonHue-0.3.0-win-x64.zip`, SHA-256
+`71F4AD244421AE97F2D7C140778AC1AB540DEF80D40E23BBA10FD6EF272DD18C`.
+Earlier packages and the pre-existing untracked codex_check_hdr.obj are preserved.
+No credentials/settings/game files are packaged. AGENTS.md and CLAUDE.md are
+byte-identical. No public upload occurred.
+
+Next: owner tunes 0.3.0 in-app, especially Distance falloff and Ambient black
+threshold, while comparing raw values and mapped output. Actual physical lamp
+appearance remains owner-observed evidence and must not be inferred from tests.
+
+# Previous checkpoint — CrimsonHue 0.2.2, 2026-09-28, Codex
 
 Owner tested 0.2.1 in game and found the lamps too dark, with weak camera-turn
 response and an orangered lamp beside a visibly yellow fire. Ingame HUD and

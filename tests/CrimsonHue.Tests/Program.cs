@@ -127,6 +127,8 @@ Add("Ambient contract requires a fresh camera-local estimate", () =>
 {
     var sample = AmbientParser.Parse(Fixtures.Ambient(), out _)!;
     Assert(sample.WorkingLevel == 8 && sample.CaptureSequence == 42);
+    Assert(sample.WorkingRgb == new Vec3(6, 8, 10) && sample.SkyRgb == new Vec3(24, 32, 40) && sample.SkyVisibility == 0.25,
+        "Raw working RGB, sky RGB or visibility was not preserved");
     var node = JsonNode.Parse(Fixtures.Ambient())!;
     node["units"] = "display-nits";
     Assert(AmbientParser.Parse(Encoding.UTF8.GetBytes(node.ToJsonString()), out _) == null);
@@ -165,7 +167,7 @@ Add("Ambient provides room fill without erasing a nearby local light", () =>
     for (var i = 0; i < 5; i++) bright = daylight.Map(frame, area, settings, 1);
     Assert(bright.Zip(localOnly).All(pair => (pair.First.Rgb - pair.Second.Rgb).Length < 0.001), "Stale ambient was retained indefinitely");
 });
-Add("Yellow fire follows camera yaw while dark Ambient remains visible", () =>
+Add("Unmodified orange source follows camera yaw while zero Ambient stays black", () =>
 {
     var layout = new EntertainmentArea(Fixtures.Id, "Three-lamp room", false,
     [
@@ -180,15 +182,16 @@ Add("Yellow fire follows camera yaw while dark Ambient remains visible", () =>
         Lights = [new(new(-3, 0, 5), new(1.58, 0.63, 0.17))]
     };
     var settings = new MappingSettings(Brightness: 0.6, SmoothingMs: 0);
-    var night = new AmbientFrame(42, DateTimeOffset.UtcNow, 0, 0, 0.001);
+    var night = new AmbientFrame(42, DateTimeOffset.UtcNow, 0, 0, 0);
     IReadOnlyList<ChannelColor> ahead = [];
     var mapper = new LightMapper();
     for (var i = 0; i < 3; i++) ahead = mapper.Map(frame, layout, settings, 1, night);
     var unlit = mapper.Map(frame with { Lights = [] }, layout, settings, 1, night);
-    Assert(unlit.All(c => c.Rgb.X > 0.15 && c.Rgb.X == c.Rgb.Y), "Night Ambient left the room black or colored");
+    Assert(unlit.All(c => c.Rgb.Length == 0), "A black Ambient estimate lit the empty night scene");
     Assert(ahead[0].Rgb.X > ahead[2].Rgb.X + 0.25, "Fire did not concentrate on the left-front lamp");
-    Assert(ahead[0].Rgb.Y > ahead[0].Rgb.X * 0.87, "Orange source still appears too red for yellow fire");
-    Assert(ahead[0].Rgb.Z < ahead[0].Rgb.Y * 0.7, "Fire became white instead of amber");
+    double Decode(double v) => v <= 0.04045 ? v / 12.92 : Math.Pow((v + 0.055) / 1.055, 2.4);
+    Assert(Math.Abs(Decode(ahead[0].Rgb.Y / settings.Brightness) / Decode(ahead[0].Rgb.X / settings.Brightness) - 0.63 / 1.58) < 1e-9,
+        "Neutral color controls changed the orange source's linear RGB ratio");
     var facingAway = frame with { Camera = frame.Camera with { Right = new(-1, 0, 0), Forward = new(0, 0, -1) } };
     var behind = new LightMapper();
     IReadOnlyList<ChannelColor> turned = [];
@@ -196,7 +199,47 @@ Add("Yellow fire follows camera yaw while dark Ambient remains visible", () =>
     Assert(turned[2].Rgb.X > turned[0].Rgb.X + 0.25, "Yaw did not transfer fire to the rear channel");
     var pureRed = new LightMapper().Map(frame with { Lights = [new(new(-3, 0, 5), new(1.58, 0, 0))] },
         layout, settings with { AmbientSensitivity = 0 }, 1, night);
-    Assert(pureRed.All(c => c.Rgb.Y == 0), "Warm correction altered pure red");
+    Assert(pureRed.All(c => c.Rgb.Y == 0), "Neutral controls altered pure red");
+});
+Add("Zero signal stays black and a night cutoff only applies when configured", () =>
+{
+    var empty = TelemetryParser.Parse(Fixtures.CurrentSnapshot(), out _)! with { Lights = [] };
+    var settings = new MappingSettings(SmoothingMs: 0, AmbientSmoothingMs: 0);
+    var zero = new AmbientFrame(42, DateTimeOffset.UtcNow, 0, 0, 0);
+    var night = zero with { WorkingLevel = 0.001 };
+    Assert(new LightMapper().Map(empty, area, settings, 1, zero).All(c => c.Rgb.Length == 0));
+    var faint = new LightMapper().Map(empty, area, settings, 1, night);
+    Assert(faint.All(c => c.Rgb.X is > 0 and < 0.002), "Near-zero raw Ambient acquired a hidden floor or cutoff");
+    Assert(new LightMapper().Map(empty, area, settings with { AmbientCutoff = 0.01 }, 1, night).All(c => c.Rgb.Length == 0));
+    Assert(new LightMapper().Map(empty, area, settings with { AmbientFloor = 0.1 }, 1, zero).All(c => c.Rgb.X > 0.2),
+        "Explicit floor has no effect");
+    Assert(new LightMapper().Map(empty, area, settings with { AmbientFloor = 0.1 }, 1).All(c => c.Rgb.Length == 0),
+        "Missing Ambient allowed synthetic fill");
+    Assert(new LightMapper().Map(empty, area, settings, 1, zero with { WorkingLevel = 8 })
+        .All(c => c.Rgb.X > 0.3 && c.Rgb.X == c.Rgb.Y), "Daylight Ambient disappeared with no local lights");
+});
+Add("Ambient strength, reference, tint and smoothing respond to settings", () =>
+{
+    var empty = TelemetryParser.Parse(Fixtures.CurrentSnapshot(), out _)! with { Lights = [] };
+    var settings = new MappingSettings(Brightness: 1, SmoothingMs: 0, AmbientSmoothingMs: 0);
+    var ambient = new AmbientFrame(42, DateTimeOffset.UtcNow, 0, 0, 2);
+    Vec3 Sample(MappingSettings s) => new LightMapper().Map(empty, area, s, 0.1, ambient)[0].Rgb;
+    var baseline = Sample(settings);
+    Assert(Sample(settings with { AmbientOutput = 0 }).Length == 0);
+    Assert(Sample(settings with { AmbientOutput = 0.8 }).X > baseline.X);
+    Assert(Sample(settings with { AmbientReferenceLevel = 8 }).X < baseline.X);
+    Assert(Sample(settings with { AmbientSensitivity = 2 }).X > baseline.X);
+    var blue = Sample(settings with { AmbientTintHue = 240, AmbientTintSaturation = 1 });
+    Assert(blue.Z > 0 && blue.X == 0 && blue.Y == 0);
+    Assert(Sample(settings with { AmbientSensitivity = 0, AmbientFloor = 0.5 }).Length == 0);
+    var smoothed = Sample(settings with { AmbientSmoothingMs = 1000 });
+    Assert(smoothed.X > 0 && smoothed.X < baseline.X);
+    var mapper = new LightMapper();
+    mapper.Map(empty, area, settings with { AmbientSmoothingMs = 1000 }, 1, ambient);
+    Assert(mapper.Map(empty, area, settings, 0.01, ambient with { WorkingLevel = 0 }).All(c => c.Rgb.Length == 0),
+        "Zero smoothing did not immediately follow zero input");
+    mapper.Map(empty, area, settings, 1, ambient);
+    Assert(mapper.Map(empty, area, settings, 0.01).All(c => c.Rgb.Length == 0), "Stale Ambient persisted");
 });
 Add("Malformed JSON is unavailable", () => Assert(TelemetryParser.Parse("{"u8.ToArray(), out _) == null));
 Add("Envelope duplicates cannot refresh light freshness", () =>
@@ -342,12 +385,72 @@ Add("Fade slider settings take effect without restarting the mapper", () =>
     Assert(mapper.Map(frame, fadeArea, fadeSettings with { Radius = 8 }, 0.1)[0].Rgb.Length == 0);
     Assert(mapper.Map(frame, fadeArea, fadeSettings with { FadeStart = 12 }, 0.1)[0].Rgb.X > 0.8);
 });
-Add("Distance attenuation preserves a non-warm source's linear color ratios", () =>
+Add("Neutral controls preserve all source color ratios including orange", () =>
 {
-    var rgb = new LightMapper().Map(DistanceFrame(10, new(1, 2, 4)), fadeArea, fadeSettings, 0.1)[0].Rgb;
     double Decode(double v) => v <= 0.04045 ? v / 12.92 : Math.Pow((v + 0.055) / 1.055, 2.4);
-    Assert(Math.Abs(Decode(rgb.X) / Decode(rgb.Z) - 0.25) < 1e-9);
-    Assert(Math.Abs(Decode(rgb.Y) / Decode(rgb.Z) - 0.5) < 1e-9);
+    foreach (var raw in new[] { new Vec3(1, 2, 4), new(1.122, 0.3401, 0.08453), new(1, 0, 0), new(0, 1, 0), new(0, 0, 1), new(0.5, 0.5, 0.5) })
+    {
+        var rgb = new LightMapper().Map(DistanceFrame(10, raw), fadeArea, fadeSettings, 0.1)[0].Rgb;
+        var decoded = new Vec3(Decode(rgb.X), Decode(rgb.Y), Decode(rgb.Z));
+        Assert((decoded.Unit - raw.Unit).Length < 1e-9, $"Neutral controls changed {raw}");
+    }
+});
+Add("General color and output controls are adjustable without changing raw frames", () =>
+{
+    var frame = DistanceFrame(2, new(1, 0, 0));
+    Vec3 Sample(MappingSettings s, TelemetryFrame? f = null) => new LightMapper().Map(f ?? frame, fadeArea, s, 1)[0].Rgb;
+    var red = Sample(fadeSettings);
+    var green = Sample(fadeSettings with { HueShiftDegrees = 120 });
+    Assert(green.X == 0 && green.Y > 0 && green.Z == 0);
+    Assert(frame.Lights[0].Rgb == new Vec3(1, 0, 0), "Mapping mutated CDT input");
+    var neutral = Sample(fadeSettings with { Saturation = 0 });
+    Assert(neutral.X > 0 && neutral.X == neutral.Y && neutral.Y == neutral.Z);
+    Assert(Sample(fadeSettings with { RedGain = 0 }).Length == 0);
+    var mixedFrame = DistanceFrame(2, new(1, 0.2, 0.1));
+    Assert(Sample(fadeSettings with { GreenGain = 2 }, mixedFrame).Y > Sample(fadeSettings, mixedFrame).Y);
+    Assert(Sample(fadeSettings with { BlueGain = 2 }, mixedFrame).Z > Sample(fadeSettings, mixedFrame).Z);
+    Assert(Sample(fadeSettings with { LocalStrength = 0 }).Length == 0);
+    Assert(Sample(fadeSettings with { LocalStrength = 0.5 }).X < red.X);
+    Assert(Sample(fadeSettings with { Gain = 0 }).Length == 0);
+    Assert(Sample(fadeSettings with { OutputGamma = 2 }).X > red.X);
+    Assert(Sample(fadeSettings with { OutputGamma = 2, Brightness = 0.2 }).X <= 0.2);
+    var black = DistanceFrame(2, default);
+    Assert(Sample(fadeSettings with { HueShiftDegrees = 120, Saturation = 0, RedGain = 4, OutputGamma = 4 }, black).Length == 0);
+});
+Add("Spatial normalization, yaw offset and fade curve are explicit controls", () =>
+{
+    var frame = DistanceFrame(5, new(1, 0, 0)) with
+    {
+        Camera = new(default, new(1, 0, 0), new(0, 1, 0), new(0, 0, 1)),
+        Lights = [new(new(-3, 0, 5), new(1, 0, 0))]
+    };
+    IReadOnlyList<ChannelColor> Sample(MappingSettings s) => new LightMapper().Map(frame, area, s, 1);
+    var focused = Sample(fadeSettings with { Spread = 4 });
+    var absolute = Sample(fadeSettings with { Spread = 4, DirectionNormalization = 0 });
+    Assert(focused.Max(c => c.Rgb.X) > absolute.Max(c => c.Rgb.X));
+    var unfocused = Sample(fadeSettings with { Spread = 0 });
+    Assert(unfocused[0].Rgb == unfocused[1].Rgb);
+    var rotated = Sample(fadeSettings with { Spread = 4, CameraYawOffset = 180 });
+    Assert(focused[0].Rgb.X > focused[1].Rgb.X && rotated[1].Rgb.X > rotated[0].Rgb.X);
+    Assert(LightMapper.DistanceWeight(10, fadeSettings with { FadeExponent = 1 }) > LightMapper.DistanceWeight(10, fadeSettings));
+    foreach (var exponent in new[] { 0.1, 0.5, 2.0, 8.0 })
+    {
+        var edge = LightMapper.DistanceWeight(Math.BitDecrement(fadeSettings.FadeEnd), fadeSettings with { FadeExponent = exponent });
+        Assert(double.IsFinite(edge) && edge is >= 0 and <= 1, "Fractional distance falloff failed near the cutoff");
+    }
+    var ambient = new AmbientFrame(42, DateTimeOffset.UtcNow, 0, 0, 8);
+    Vec3 Day(double strength) => new LightMapper().Map(frame, fadeArea,
+        fadeSettings with { AmbientOutput = 0, AmbientSmoothingMs = 0, DaylightLocalStrength = strength }, 1, ambient)[0].Rgb;
+    Assert(Day(0).X < Day(1).X && Day(2).X > Day(1).X);
+});
+Add("Every mapping parameter rejects NaN", () =>
+{
+    foreach (var property in typeof(MappingSettings).GetProperties().Where(p => p.CanWrite && p.PropertyType == typeof(double)))
+    {
+        var settings = new MappingSettings();
+        property.SetValue(settings, double.NaN);
+        Reject(() => LightMapper.Validate(settings));
+    }
 });
 Add("Invalid fade intervals are rejected and invalid distances contribute nothing", () =>
 {
@@ -382,7 +485,7 @@ Add("Legacy radius migrates to fade end and new fade settings round-trip", () =>
     }
     finally { File.Delete(Path.Combine(directory, "settings.json")); Directory.Delete(directory); }
 });
-Add("Only the untouched 60% brightness preset migrates to 85%", () =>
+Add("Saved settings retain every explicit control and do not silently migrate brightness", () =>
 {
     var directory = Path.Combine(Path.GetTempPath(), "CrimsonHue-brightness-test-" + Guid.NewGuid().ToString("N"));
     var store = new SettingsStore(directory);
@@ -391,10 +494,14 @@ Add("Only the untouched 60% brightness preset migrates to 85%", () =>
     {
         var oldDefault = new MappingSettings(Brightness: 0.6);
         File.WriteAllText(Path.Combine(directory, "settings.json"), JsonSerializer.Serialize(new AppSettings(Mapping: oldDefault)));
-        var upgraded = store.LoadSettings();
-        Assert(upgraded.Mapping is { Brightness: 0.85 } && upgraded.MappingRevision == 1);
-        store.SaveSettings(upgraded with { Mapping = upgraded.Mapping! with { Brightness = 0.6 } });
-        Assert(store.LoadSettings().Mapping is { Brightness: 0.6 }, "A deliberate 60% setting was overwritten");
+        var restored = store.LoadSettings();
+        Assert(restored.Mapping is { Brightness: 0.6 } && restored.MappingRevision == 0, "Legacy brightness changed silently");
+        var custom = oldDefault with { AmbientOutput = 0.25, AmbientFloor = 0.05, AmbientCutoff = 0.02, DaylightLocalStrength = 0.3,
+            LocalStrength = 2, AmbientReferenceLevel = 5, AmbientSmoothingMs = 700, HueShiftDegrees = -15, Saturation = 0.8,
+            RedGain = 0.9, GreenGain = 1.2, BlueGain = 0.7, OutputGamma = 1.3, DirectionNormalization = 0.5,
+            CameraYawOffset = 20, FadeExponent = 1.6, AmbientTintHue = 210, AmbientTintSaturation = 0.2 };
+        store.SaveSettings(restored with { Mapping = custom });
+        Assert(store.LoadSettings().Mapping == custom, "An explicit mapping value did not round-trip");
         File.WriteAllText(Path.Combine(directory, "settings.json"), JsonSerializer.Serialize(new AppSettings(Mapping: oldDefault with { Radius = 50 })));
         Assert(store.LoadSettings().Mapping is { Brightness: 0.6, Radius: 50 }, "Custom legacy settings were changed");
     }
@@ -614,7 +721,8 @@ if (args.Contains("--live-mapping")) Async("LIVE read-only saved-layout mapping 
         var ahead = Map(frame);
         var turned = Map(frame with { Camera = frame.Camera with { Right = frame.Camera.Right * -1, Forward = frame.Camera.Forward * -1 } });
         var baseline = Map(frame with { Lights = [] });
-        Console.WriteLine($"  {frame.Lights.Count} clear sources; Ambient W={ambientFrame.WorkingLevel:F3}; max brightness={mapping.Brightness:P0}");
+        Console.WriteLine($"  {frame.Lights.Count} clear sources; raw Ambient W={ambientFrame.WorkingLevel:G9}; max brightness={mapping.Brightness:P0}");
+        Console.WriteLine($"  Raw Ambient working RGB={ambientFrame.WorkingRgb}; sky RGB={ambientFrame.SkyRgb}; visibility={ambientFrame.SkyVisibility:G9}");
         for (var i = 0; i < layout.Channels.Count; i++)
             Console.WriteLine($"  CH {layout.Channels[i].Id}: actual {ahead[i].Rgb}, yaw +180° {turned[i].Rgb}, no local lights {baseline[i].Rgb}");
         Assert(ahead.All(c => c.Rgb.IsFinite) && turned.All(c => c.Rgb.IsFinite));

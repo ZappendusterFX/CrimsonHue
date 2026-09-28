@@ -29,7 +29,8 @@ public sealed record TelemetryFrame(long Sequence, long CaptureSequence, DateTim
     DateTimeOffset LightCapturedAt, double ProducerAgeMs, Vec3 Player, CameraPose Camera, IReadOnlyList<LightContribution> Lights,
     int SourceCount = 0, string Feed = "rendered", bool ConfirmedVisibleOnly = false);
 public sealed record AmbientFrame(long CaptureSequence, DateTimeOffset CapturedAt, double SkyAgeMs,
-    double VisibilityAgeMs, double WorkingLevel);
+    double VisibilityAgeMs, double WorkingLevel, Vec3 WorkingRgb = default, Vec3 SkyRgb = default,
+    double SkyVisibility = 0);
 public sealed record ChannelMember(string ServiceId, int SegmentIndex);
 public sealed record EntertainmentChannel(byte Id, Vec3 Position, IReadOnlyList<ChannelMember> Members, string Label, double Brightness = 1);
 public sealed record EntertainmentArea(string Id, string Name, bool Active, IReadOnlyList<EntertainmentChannel> Channels)
@@ -40,7 +41,13 @@ public sealed record EntertainmentArea(string Id, string Name, bool Active, IRea
 }
 public sealed record BridgeCredentials(string Address, string ApplicationKey, string ClientKey, string? CertificateSha256);
 public sealed record MappingSettings(double Gain = 1.5, double Brightness = 0.85, double Radius = 35, double Spread = 2,
-    double SmoothingMs = 100, double FadeStart = 0, double AmbientSensitivity = 1)
+    double SmoothingMs = 100, double FadeStart = 0, double AmbientSensitivity = 1,
+    double AmbientOutput = 0.4, double AmbientFloor = 0, double AmbientCutoff = 0,
+    double DaylightLocalStrength = 1, double LocalStrength = 1, double AmbientReferenceLevel = 4,
+    double AmbientSmoothingMs = 400, double HueShiftDegrees = 0, double Saturation = 1,
+    double RedGain = 1, double GreenGain = 1, double BlueGain = 1, double OutputGamma = 1,
+    double DirectionNormalization = 1, double CameraYawOffset = 0, double FadeExponent = 2,
+    double AmbientTintHue = 0, double AmbientTintSaturation = 0)
 {
     // Retain Radius in stored settings and the constructor for 0.1.0 compatibility.
     [JsonIgnore] public double FadeEnd => Radius;

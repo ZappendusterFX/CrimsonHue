@@ -26,6 +26,30 @@
     <Style TargetType="CheckBox"><Setter Property="Foreground" Value="#CDD1DD" /><Setter Property="VerticalContentAlignment" Value="Center" /></Style>
     <Style TargetType="Slider"><Setter Property="Margin" Value="0,7,0,14" /><Setter Property="IsMoveToPointEnabled" Value="True" /></Style>
     <Style TargetType="Expander"><Setter Property="Foreground" Value="#DDE0E9" /></Style>
+    <Style TargetType="TabControl">
+      <Setter Property="Background" Value="#171A22"/><Setter Property="BorderBrush" Value="#303747"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TabControl">
+        <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+          <TabPanel IsItemsHost="True" Margin="0,0,0,8"/>
+          <Border Grid.Row="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="7" Background="{TemplateBinding Background}"><ContentPresenter ContentSource="SelectedContent"/></Border>
+        </Grid>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style TargetType="TabItem">
+      <Setter Property="Foreground" Value="#A8B1C3"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TabItem">
+        <Border x:Name="Tab" Background="#202530" CornerRadius="6" Padding="11,9" Margin="0,0,5,0"><ContentPresenter ContentSource="Header"/></Border>
+        <ControlTemplate.Triggers><Trigger Property="IsSelected" Value="True"><Setter TargetName="Tab" Property="Background" Value="#743348"/><Setter Property="Foreground" Value="#FFF0F3"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Tab" Property="Opacity" Value="0.8"/></Trigger></ControlTemplate.Triggers>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style TargetType="DataGrid">
+      <Setter Property="Background" Value="#11161E"/><Setter Property="Foreground" Value="#D6DCE8"/><Setter Property="BorderBrush" Value="#303747"/>
+      <Setter Property="RowBackground" Value="#171D28"/><Setter Property="AlternatingRowBackground" Value="#1D2430"/>
+      <Setter Property="HorizontalGridLinesBrush" Value="#293242"/><Setter Property="VerticalGridLinesBrush" Value="#293242"/>
+      <Setter Property="FontFamily" Value="Consolas"/><Setter Property="FontSize" Value="11"/>
+    </Style>
+    <Style TargetType="DataGridColumnHeader"><Setter Property="Background" Value="#252D3B"/><Setter Property="Foreground" Value="#BFCADD"/><Setter Property="Padding" Value="8"/><Setter Property="BorderBrush" Value="#303747"/><Setter Property="BorderThickness" Value="0,0,1,1"/></Style>
+    <Style TargetType="DataGridCell"><Setter Property="Padding" Value="7,5"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="DataGridCell"><Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}"><ContentPresenter/></Border></ControlTemplate></Setter.Value></Setter></Style>
     <Style TargetType="ComboBox">
       <Setter Property="Background" Value="#252B38" /><Setter Property="Foreground" Value="#ECEEF3" /><Setter Property="BorderBrush" Value="#3C4354" />
       <Setter Property="Padding" Value="10" /><Setter Property="MinHeight" Value="40" />
