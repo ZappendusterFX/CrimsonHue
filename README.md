@@ -3,6 +3,13 @@
 A standalone Windows companion that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
+**Downloads and guides:** [CrimsonHue releases](https://github.com/ZappendusterFX/CrimsonHue/releases) ·
+[complete setup and tuning guide](docs/USER-GUIDE.md) ·
+[required CrimsonDesertTelemetry releases](https://github.com/ZappendusterFX/CrimsonDesertTelemetry/releases).
+CrimsonDesertTelemetry (CDT) is a separate game mod and is **not included** in
+the CrimsonHue ZIP. Install and run it separately; do not put CrimsonHue in the
+game directory or install it with a game mod manager.
+
 **0.3.2 — early preview.** **Direction origin** blends the room's game-space
 reference point between the player (0%) and camera lens (100%), starting at 50%.
 Viewing axes always follow the paired camera. This lets you choose where nearby
@@ -21,7 +28,7 @@ physical lamp brightness.
 
 ## Start
 
-1. Install **CrimsonDesertTelemetry 2.2.1** with its server, rendered and upstream
+1. Install [**CrimsonDesertTelemetry 2.2.1**](https://github.com/ZappendusterFX/CrimsonDesertTelemetry/releases/tag/v2.2.1) with its server, rendered and upstream
    ManyLights capture, and source visibility enabled. Start the game.
 2. Extract the complete CrimsonHue ZIP anywhere and run `CrimsonHue.exe`.
    The package includes its .NET runtime. No administrator rights or installation
@@ -36,6 +43,8 @@ physical lamp brightness.
    Hue app first, then refresh. CrimsonHue preserves the existing layout/channels.
 6. Use the **Output**, **Ambient**, **Color** and **Space** tabs to adjust the
    preview. Compare the raw CDT values with the channel output while tuning.
+   The [tuning guide](docs/USER-GUIDE.md) explains each control, interactions
+   between controls and a practical setup sequence.
    Stop other sync apps, then click **Start lighting sync**.
 7. **Stop**, or close the window, to release the stream and restore previously read
    on/off, brightness and color states of the selected lights, if CrimsonHue still
