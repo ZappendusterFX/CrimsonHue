@@ -477,6 +477,44 @@ if (args.Contains("--live") || args.Contains("--live-telemetry")) Async("LIVE pr
     Console.WriteLine($"  Live control: {sequences.Count} envelopes; {captures.Count} captures; {allAroundFrames} all-around frames; up to {maxLights} confirmed clear lights");
     Assert(captures.Count > 10 && sequences.Count > 10 && allAroundFrames > 0, "No progressing all-around control");
 });
+if (args.Contains("--live-lamps")) Async("LIVE bounded Entertainment output and restoration", async () =>
+{
+    var store = new SettingsStore();
+    var credentials = store.LoadCredentials() ?? throw new Exception("Pair CrimsonHue first.");
+    var saved = store.LoadSettings();
+    using var bridge = new BridgeClient(credentials);
+    var areas = await bridge.GetAreasAsync();
+    Assert(!areas.Any(a => a.Active), "An Entertainment area is already active; refusing takeover.");
+    var area = areas.SingleOrDefault(a => a.Id == saved.AreaId) ?? throw new Exception("Saved Entertainment area is unavailable.");
+    var telemetry = new TelemetryState();
+    using var telemetryCancel = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+    var telemetryTask = new TelemetryClient(telemetry).RunAsync(TelemetryClient.ValidateEndpoint(saved.TelemetryAddress), telemetryCancel.Token);
+    using var streamCancel = new CancellationTokenSource();
+    var session = new StreamingSession(bridge);
+    Task? streamTask = null;
+    var sawOutput = false;
+    try
+    {
+        await Fixtures.WaitUntil(() => telemetry.Read(out _) is { Feed: "all-around" }, 5000);
+        var mapping = new MappingSettings(Gain: 1, Brightness: 0.25, Radius: 100, SmoothingMs: 0);
+        streamTask = session.RunAsync(area, telemetry, () => mapping, streamCancel.Token);
+        await Fixtures.WaitUntil(() => session.Sending || streamTask.IsCompleted, 10000);
+        Assert(session.Sending, "Entertainment stream did not start.");
+        for (var i = 0; i < 50 && !streamTask.IsCompleted; i++)
+        {
+            sawOutput |= session.Colors.Any(c => c.Rgb.Length > 0);
+            await Task.Delay(100);
+        }
+    }
+    finally
+    {
+        await streamCancel.CancelAsync();
+        try { if (streamTask != null) await streamTask; }
+        finally { await telemetryCancel.CancelAsync(); await telemetryTask; }
+    }
+    Assert(!(await bridge.GetAreasAsync()).Any(a => a.Active), "Entertainment area was not released.");
+    Console.WriteLine($"  Bounded lamp run: stream started, nonzero mapped output: {sawOutput}; area released and light states restored");
+});
 
 var failures = 0;
 foreach (var test in tests)

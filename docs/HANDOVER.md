@@ -20,8 +20,14 @@ visibility-expiry checks and immediate removal of hidden color. A read-only CDT
 WebSocket run during live gameplay passed 53/53 with 40 progressing all-around
 captures and up to six confirmed-clear
 sources. This proves input parsing and finite mapping, not real-lamp appearance or
-visibility accuracy. A separate `--live` run could not reach the old development
-diyHue address `192.168.2.109:443`; the telemetry-only run passed independently.
+visibility accuracy. After diyHue was restarted, a read-only bridge plus CDT run
+passed 54/54 and confirmed the saved area layout. The area was initially active;
+the owner stopped the other stream before physical output was attempted.
+An explicit, bounded `--live-lamps` run then started Entertainment, observed
+nonzero mapped color, stopped after five seconds, released the area and completed
+the previous-light-state restoration path (53/53 tests passed). This proves the
+CrimsonHue DTLS/bridge control path sent data; actual lamp appearance and
+visible/blocked behavior still need the owner's observation.
 Source and packaged WPF demo smoke modes exited 0 with no bridge connection or
 lamp output. The ZIP's five entries match the on-disk package hashes. Existing
 0.1.0 and 0.1.1 packages remain untouched. An earlier local 0.1.2 package from
@@ -34,9 +40,9 @@ No credentials, settings, ASI or game files are included; no public upload.
 CDT's separate Ambient API exists, but its working RGB has no calibrated relation
 to local-light RGB or Hue output, so ambient mixing remains pending.
 
-Next: when the Hue bridge is reachable, the owner checks preview and Start/Stop
-near visible and blocked lights, including a source behind the camera. Record
-real-lamp evidence separately before claiming physical acceptance.
+Next: ask the owner what the three lamps visibly did during the bounded stream.
+Then check visible and blocked lights, including a source behind the camera, in
+the packaged UI before claiming physical acceptance.
 
 # Previous checkpoint — CrimsonHue 0.1.1, 2026-09-07, Codex
 

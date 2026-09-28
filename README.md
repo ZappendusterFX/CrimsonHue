@@ -150,6 +150,12 @@ the `dotnet run` argument separator to override. `--live-telemetry` adds a read-
 CDT WebSocket control, `--live-bridge` probes the development bridge, and `--live`
 runs both. None changes lamps.
 
+`--live-lamps` is a separate, explicitly requested physical test. It reads the
+paired current-user credentials and saved area, refuses to take over any active
+Entertainment stream, sends a bounded five-second session at 25% maximum
+brightness, then stops and restores the previously read light states. It does not
+save settings. Use it only while the game and paired bridge are available.
+
 `--inspect-layout` instead reads the paired user's protected credentials and prints
 only area names, channel names/IDs and raw Hue XYZ positions. Run it as the same
 Windows user who paired the app. It performs GET requests only, does not start a
