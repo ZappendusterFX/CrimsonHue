@@ -28,6 +28,8 @@ public sealed record LightContribution(Vec3 Position, Vec3 Rgb, double? Visibili
 public sealed record TelemetryFrame(long Sequence, long CaptureSequence, DateTimeOffset CapturedAt,
     DateTimeOffset LightCapturedAt, double ProducerAgeMs, Vec3 Player, CameraPose Camera, IReadOnlyList<LightContribution> Lights,
     int SourceCount = 0, string Feed = "rendered", bool ConfirmedVisibleOnly = false);
+public sealed record AmbientFrame(long CaptureSequence, DateTimeOffset CapturedAt, double SkyAgeMs,
+    double VisibilityAgeMs, double WorkingLevel);
 public sealed record ChannelMember(string ServiceId, int SegmentIndex);
 public sealed record EntertainmentChannel(byte Id, Vec3 Position, IReadOnlyList<ChannelMember> Members, string Label, double Brightness = 1);
 public sealed record EntertainmentArea(string Id, string Name, bool Active, IReadOnlyList<EntertainmentChannel> Channels)
@@ -37,7 +39,8 @@ public sealed record EntertainmentArea(string Id, string Name, bool Active, IRea
     public override string ToString() => Description;
 }
 public sealed record BridgeCredentials(string Address, string ApplicationKey, string ClientKey, string? CertificateSha256);
-public sealed record MappingSettings(double Gain = 1.5, double Brightness = 0.6, double Radius = 35, double Spread = 2, double SmoothingMs = 100, double FadeStart = 0)
+public sealed record MappingSettings(double Gain = 1.5, double Brightness = 0.6, double Radius = 35, double Spread = 2,
+    double SmoothingMs = 100, double FadeStart = 0, double AmbientSensitivity = 1)
 {
     // Retain Radius in stored settings and the constructor for 0.1.0 compatibility.
     [JsonIgnore] public double FadeEnd => Radius;

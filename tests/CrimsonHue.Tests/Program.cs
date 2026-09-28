@@ -123,6 +123,47 @@ Add("Confirmed-visible mapping drops hidden color without an EMA tail", () =>
     var blue = mapper.Map(frame with { Lights = [new(frame.Lights[0].Position, new(0, 0, 2), 100)] }, area, new(), 0.01);
     Assert(blue.All(c => c.Rgb.X == 0) && blue.Any(c => c.Rgb.Z > 0));
 });
+Add("Ambient contract requires a fresh camera-local estimate", () =>
+{
+    var sample = AmbientParser.Parse(Fixtures.Ambient(), out _)!;
+    Assert(sample.WorkingLevel == 8 && sample.CaptureSequence == 42);
+    var node = JsonNode.Parse(Fixtures.Ambient())!;
+    node["units"] = "display-nits";
+    Assert(AmbientParser.Parse(Encoding.UTF8.GetBytes(node.ToJsonString()), out _) == null);
+    node = JsonNode.Parse(Fixtures.Ambient())!;
+    node["localEnvironmentAmbientEstimateWorking"]!["available"] = false;
+    Assert(AmbientParser.Parse(Encoding.UTF8.GetBytes(node.ToJsonString()), out var status) == null && status.Contains("local sky visibility unavailable"));
+    node["visibility"] = null;
+    Assert(AmbientParser.Parse(Encoding.UTF8.GetBytes(node.ToJsonString()), out status) == null && status.Contains("local sky visibility unavailable"));
+});
+Add("Ambient sky and visibility expire independently without retaining daylight", () =>
+{
+    var state = new AmbientState();
+    state.Accept(Fixtures.Ambient(at: DateTimeOffset.UtcNow.AddMilliseconds(-100), skyAge: 100, visibilityAge: 1480));
+    Assert(state.Read(out _) != null);
+    Assert(state.Read(out _, DateTimeOffset.UtcNow.AddMilliseconds(40)) == null);
+    state.Accept(Fixtures.Ambient(at: DateTimeOffset.UtcNow.AddSeconds(-2), skyAge: 0));
+    Assert(state.Read(out _) == null);
+});
+Add("Bright ambient makes daylight neutral while a dark interior retains local color", () =>
+{
+    var frame = TelemetryParser.Parse(Fixtures.CurrentSnapshot(), out _)!;
+    var settings = new MappingSettings(Brightness: 1, SmoothingMs: 0);
+    var daylight = new LightMapper();
+    IReadOnlyList<ChannelColor> bright = [];
+    for (var i = 0; i < 3; i++) bright = daylight.Map(frame, area, settings, 1, new(42, DateTimeOffset.UtcNow, 0, 0, 8));
+    Assert(bright.All(c => c.Rgb.Y > 0.5 && c.Rgb.X < c.Rgb.Y * 1.2), "Daylight remains red-dominated");
+    var dark = new LightMapper().Map(frame, area, settings, 1, new(42, DateTimeOffset.UtcNow, 0, 0, 0.02));
+    Assert(dark.Any(c => c.Rgb.X > c.Rgb.Y * 2), "Dark surroundings lost the local red light");
+    var hidden = daylight.Map(frame with { Lights = [] }, area, settings, 1, new(42, DateTimeOffset.UtcNow, 0, 0, 8));
+    Assert(hidden.All(c => c.Rgb.Y > 0.5 && Math.Abs(c.Rgb.X - c.Rgb.Y) < 1e-9), "Hidden red leaked into the ambient baseline");
+    var disabled = new LightMapper().Map(frame, area, settings with { AmbientSensitivity = 0 }, 1,
+        new(42, DateTimeOffset.UtcNow, 0, 0, 8));
+    var localOnly = new LightMapper().Map(frame, area, settings, 1);
+    Assert(disabled.Zip(localOnly).All(pair => pair.First.Rgb == pair.Second.Rgb), "Zero influence changed local-only output");
+    for (var i = 0; i < 5; i++) bright = daylight.Map(frame, area, settings, 1);
+    Assert(bright.All(c => c.Rgb.Y < 0.05), "Stale ambient was retained indefinitely");
+});
 Add("Malformed JSON is unavailable", () => Assert(TelemetryParser.Parse("{"u8.ToArray(), out _) == null));
 Add("Envelope duplicates cannot refresh light freshness", () =>
 {
@@ -295,14 +336,14 @@ Add("Legacy radius migrates to fade end and new fade settings round-trip", () =>
 {
     const string legacy = "{\"BridgeAddress\":\"192.168.2.1\",\"AreaId\":\"saved-area\",\"Mapping\":{\"Gain\":2,\"Brightness\":0.4,\"Radius\":47.5,\"Spread\":3,\"SmoothingMs\":250}}";
     var saved = JsonSerializer.Deserialize<AppSettings>(legacy)!;
-    Assert(saved.Mapping is { FadeStart: 0, FadeEnd: 47.5, Gain: 2, Brightness: 0.4, Spread: 3, SmoothingMs: 250 });
+    Assert(saved.Mapping is { FadeStart: 0, FadeEnd: 47.5, Gain: 2, Brightness: 0.4, Spread: 3, SmoothingMs: 250, AmbientSensitivity: 1 });
     var directory = Path.Combine(Path.GetTempPath(), "CrimsonHue-fade-test-" + Guid.NewGuid().ToString("N"));
     var store = new SettingsStore(directory);
     try
     {
-        store.SaveSettings(saved with { Mapping = saved.Mapping! with { FadeStart = 5.5, Radius = 12.5 } });
+        store.SaveSettings(saved with { Mapping = saved.Mapping! with { FadeStart = 5.5, Radius = 12.5, AmbientSensitivity = 1.8 } });
         var restored = store.LoadSettings();
-        Assert(restored.AreaId == "saved-area" && restored.Mapping is { FadeStart: 5.5, FadeEnd: 12.5 });
+        Assert(restored.AreaId == "saved-area" && restored.Mapping is { FadeStart: 5.5, FadeEnd: 12.5, AmbientSensitivity: 1.8 });
         Assert(!File.ReadAllText(Path.Combine(directory, "settings.json")).Contains("FadeEnd"), "Alias was serialized instead of the compatible Radius key");
     }
     finally { File.Delete(Path.Combine(directory, "settings.json")); Directory.Delete(directory); }
@@ -477,6 +518,21 @@ if (args.Contains("--live") || args.Contains("--live-telemetry")) Async("LIVE pr
     Console.WriteLine($"  Live control: {sequences.Count} envelopes; {captures.Count} captures; {allAroundFrames} all-around frames; up to {maxLights} confirmed clear lights");
     Assert(captures.Count > 10 && sequences.Count > 10 && allAroundFrames > 0, "No progressing all-around control");
 });
+if (args.Contains("--live") || args.Contains("--live-ambient")) Async("LIVE progressing CDT Ambient WebSocket", async () =>
+{
+    var state = new AmbientState(); using var cancel = new CancellationTokenSource(10000);
+    var endpoint = AmbientClient.FromTelemetryEndpoint(TelemetryClient.ValidateEndpoint("ws://127.0.0.1:27311/v1/stream"));
+    var task = new AmbientClient(state).RunAsync(endpoint, cancel.Token);
+    var captures = new HashSet<long>(); var usable = 0; var maximumLevel = 0.0;
+    for (var i = 0; i < 40; i++)
+    {
+        await Task.Delay(100); var frame = state.Read(out _); if (frame == null) continue;
+        captures.Add(frame.CaptureSequence); usable++; maximumLevel = Math.Max(maximumLevel, frame.WorkingLevel);
+    }
+    cancel.Cancel(); await task;
+    Console.WriteLine($"  Ambient control: {usable} fresh reads; {captures.Count} sky captures; maximum relative level {maximumLevel:F2}");
+    Assert(usable > 10 && captures.Count >= 3, "No progressing Ambient control");
+});
 if (args.Contains("--live-lamps")) Async("LIVE bounded Entertainment output and restoration", async () =>
 {
     var store = new SettingsStore();
@@ -487,22 +543,29 @@ if (args.Contains("--live-lamps")) Async("LIVE bounded Entertainment output and 
     Assert(!areas.Any(a => a.Active), "An Entertainment area is already active; refusing takeover.");
     var area = areas.SingleOrDefault(a => a.Id == saved.AreaId) ?? throw new Exception("Saved Entertainment area is unavailable.");
     var telemetry = new TelemetryState();
+    var ambient = new AmbientState();
     using var telemetryCancel = new CancellationTokenSource(TimeSpan.FromSeconds(20));
     var telemetryTask = new TelemetryClient(telemetry).RunAsync(TelemetryClient.ValidateEndpoint(saved.TelemetryAddress), telemetryCancel.Token);
+    var ambientTask = new AmbientClient(ambient).RunAsync(
+        AmbientClient.FromTelemetryEndpoint(TelemetryClient.ValidateEndpoint(saved.TelemetryAddress)), telemetryCancel.Token);
     using var streamCancel = new CancellationTokenSource();
     var session = new StreamingSession(bridge);
     Task? streamTask = null;
     var sawOutput = false;
+    var sawNeutralOutput = false;
     try
     {
         await Fixtures.WaitUntil(() => telemetry.Read(out _) is { Feed: "all-around" }, 5000);
+        await Fixtures.WaitUntil(() => ambient.Read(out _) != null, 5000);
         var mapping = new MappingSettings(Gain: 1, Brightness: 0.25, Radius: 100, SmoothingMs: 0);
-        streamTask = session.RunAsync(area, telemetry, () => mapping, streamCancel.Token);
+        streamTask = session.RunAsync(area, telemetry, () => mapping, streamCancel.Token, ambient);
         await Fixtures.WaitUntil(() => session.Sending || streamTask.IsCompleted, 10000);
         Assert(session.Sending, "Entertainment stream did not start.");
         for (var i = 0; i < 50 && !streamTask.IsCompleted; i++)
         {
             sawOutput |= session.Colors.Any(c => c.Rgb.Length > 0);
+            sawNeutralOutput |= session.Colors.Any(c => c.Rgb.X > 0.1 && c.Rgb.Y > 0.1 && c.Rgb.Z > 0.1 &&
+                Math.Max(c.Rgb.X, Math.Max(c.Rgb.Y, c.Rgb.Z)) < 1.2 * Math.Min(c.Rgb.X, Math.Min(c.Rgb.Y, c.Rgb.Z)));
             await Task.Delay(100);
         }
     }
@@ -510,10 +573,10 @@ if (args.Contains("--live-lamps")) Async("LIVE bounded Entertainment output and 
     {
         await streamCancel.CancelAsync();
         try { if (streamTask != null) await streamTask; }
-        finally { await telemetryCancel.CancelAsync(); await telemetryTask; }
+        finally { await telemetryCancel.CancelAsync(); await telemetryTask; await ambientTask; }
     }
     Assert(!(await bridge.GetAreasAsync()).Any(a => a.Active), "Entertainment area was not released.");
-    Console.WriteLine($"  Bounded lamp run: stream started, nonzero mapped output: {sawOutput}; area released and light states restored");
+    Console.WriteLine($"  Bounded lamp run: stream started, nonzero output: {sawOutput}; neutral ambient output: {sawNeutralOutput}; area released and light states restored");
 });
 
 var failures = 0;
@@ -570,6 +633,18 @@ static class Fixtures
                 Light(new(4, 2, 5), "unknown"), Light(new(-4, 2, 5), "clear", "other-method"))
         };
         return Encoding.UTF8.GetBytes(node.ToJsonString());
+    }
+    public static byte[] Ambient(DateTimeOffset? at = null, int skyAge = 0, int visibilityAge = 0)
+    {
+        return JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            schemaVersion = "1.0", status = "available", source = "precompute-ambient-sky",
+            scope = "global-upper-hemisphere-sky", units = "relative-shader-units",
+            captureSequence = 42, capturedAt = at ?? DateTimeOffset.UtcNow,
+            ageMilliseconds = skyAge, sky = new { upperHemisphereMeanWorking = new[] { 24.0, 32.0, 40.0 } },
+            visibility = new { valueWorking = 0.25, frameNumber = 55, ageMilliseconds = visibilityAge },
+            localEnvironmentAmbientEstimateWorking = new { available = true, stale = false, rgbWorking = new[] { 6.0, 8.0, 10.0 } }
+        }, Options);
     }
     public static string AreaJson(bool active = false, string owner = "test-app") => JsonSerializer.Serialize(new
     {

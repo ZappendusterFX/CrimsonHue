@@ -1,4 +1,43 @@
-# Current checkpoint — CrimsonHue 0.1.3, 2026-09-28, Codex
+# Current checkpoint — CrimsonHue 0.2.1, 2026-09-28, Codex
+
+The owner observed all three lamps turning red together outdoors in bright
+daylight with 0.1.3, matching that version's local-only mapping. Screenshot/CDT
+diagnostics showed available sky and camera visibility; live read-only Ambient
+values gave a local working estimate around 7–11. CrimsonHue now subscribes to
+CDT's separate `/v1/ambient/stream` on the configured local port. It requires
+fresh sky, measured camera sky visibility and a valid local product, expiring
+sky and visibility independently after 1500 ms including client time. Missing
+Ambient is explicitly labelled and fades to the local-only fallback.
+
+The working RGB is AP1-like and not calibrated to local-light or display RGB.
+0.2.1 therefore uses it only as a relative brightness signal: a smoothed neutral
+room baseline increases and confirmed local-light contrast decreases as camera-
+local Ambient grows. The new Ambient influence control (default 1×, 0 disables)
+adjusts this artistic response. No time-of-day or invented directional Ambient
+was added. The exact model and limits are in `docs/AMBIENT-INTEGRATION.md`.
+
+Verification: Release build zero warnings/errors; 55/55 non-live tests pass,
+including bright-day/dark-interior mapping, immediate blocked-light removal,
+independent sky/visibility expiry, fallback and legacy-settings migration.
+Read-only live Bridge, all-around lights and Ambient WebSockets passed 58/58:
+40 progressing light captures and nine progressing sky captures in four seconds.
+Before packaging, a bounded source-built physical run started the free area,
+sent nonzero near-neutral mapped colors, stopped and restored states; it did not
+establish what the owner saw on the lamps. Source and packaged UI demo smoke
+runs exited 0 with no physical output. All five ZIP entries match package files.
+
+Package: `dist/CrimsonHue-0.2.1-win-x64/CrimsonHue.exe` (166916379 bytes),
+`dist/CrimsonHue-0.2.1-win-x64.zip`, SHA-256
+`FDEE30A69E2F60DA38264815A9803665539D7AD5BEE0097FFC8190B2090B71D5`.
+The earlier local 0.2.0 package remains preserved but is superseded because its
+normal missing-visibility status was misleading. No credentials/settings/game
+files are in the ZIP and no public upload occurred.
+
+Next: owner tests the exact 0.2.1 package in the same bright outdoor scene and
+reports lamp colors/brightness. Then compare a dark interior and night, including
+a visible and blocked source; adjust the response based on real-lamp evidence.
+
+# Previous checkpoint — CrimsonHue 0.1.3, 2026-09-28, Codex
 
 CrimsonHue now consumes CDT's schema 1.6 all-around `lights.upstream` input from
 the neutral `/v1/stream` API. It requires the input's capture sequence, frame and

@@ -8,7 +8,7 @@
         <Border Background="#CE3E5D" Width="42" Height="42" CornerRadius="12" Margin="0,0,13,0"><TextBlock Text="C" FontSize="27" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
         <StackPanel><TextBlock Text="CrimsonHue" FontSize="26" FontWeight="SemiBold" /><TextBlock Text="Bring Pywel into your room" Foreground="{StaticResource Muted}" FontSize="12" /></StackPanel>
       </StackPanel>
-      <Border Grid.Column="1" Background="#211923" CornerRadius="6" Padding="11,7" VerticalAlignment="Center"><TextBlock Text="EARLY PREVIEW  /  0.1.3" Foreground="#EF9BAC" FontSize="11" FontWeight="SemiBold" /></Border>
+      <Border Grid.Column="1" Background="#211923" CornerRadius="6" Padding="11,7" VerticalAlignment="Center"><TextBlock Text="EARLY PREVIEW  /  0.2.1" Foreground="#EF9BAC" FontSize="11" FontWeight="SemiBold" /></Border>
     </Grid>
     <Grid Grid.Row="1">
       <Grid.ColumnDefinitions><ColumnDefinition Width="330" /><ColumnDefinition Width="20" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
@@ -43,6 +43,9 @@
           <Border Background="{StaticResource Surface}" CornerRadius="12" Padding="18">
             <StackPanel>
               <TextBlock Text="03  /  TUNE THE FEEL" Foreground="#9CA6BE" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,14" />
+              <DockPanel><TextBlock Text="Ambient influence" /><TextBlock x:Name="AmbientValue" HorizontalAlignment="Right" /></DockPanel>
+              <Slider x:Name="AmbientSlider" Minimum="0" Maximum="3" Value="1" ValueChanged="SettingsChanged" AutomationProperties.Name="Ambient influence" ToolTip="Higher values make bright surroundings more neutral and reduce local light contrast. Zero uses local lights only." />
+              <TextBlock Text="Bright surroundings soften local colors; dark areas keep them." TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="11" Margin="0,0,0,12" />
               <DockPanel><TextBlock Text="Fade starts" /><TextBlock x:Name="FadeStartValue" HorizontalAlignment="Right" /></DockPanel>
               <Slider x:Name="FadeStartSlider" Minimum="0" Maximum="99.5" Value="0" TickFrequency="0.5" SmallChange="0.5" IsSnapToTickEnabled="True" ValueChanged="SettingsChanged" AutomationProperties.Name="Distance fade start" ToolTip="Full distance strength up to this distance from the player." />
               <DockPanel><TextBlock Text="Off beyond" /><TextBlock x:Name="FadeEndValue" HorizontalAlignment="Right" /></DockPanel>
@@ -67,7 +70,7 @@
       <Grid Grid.Column="2">
         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" MinHeight="230" /><RowDefinition Height="160" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
         <Border Background="{StaticResource Surface}" CornerRadius="10" Padding="16,12" Margin="0,0,0,14">
-          <StackPanel><TextBlock x:Name="TelemetryStatus" Text="Waiting for CrimsonDesertTelemetry" FontWeight="SemiBold" /><TextBlock x:Name="CaptureInfo" Text="Start the game with CrimsonDesertTelemetry 2.2.1 installed." TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,4,0,0" /></StackPanel>
+          <StackPanel><TextBlock x:Name="TelemetryStatus" Text="Waiting for CrimsonDesertTelemetry" FontWeight="SemiBold" /><TextBlock x:Name="CaptureInfo" Text="Start the game with CrimsonDesertTelemetry 2.2.1 installed." TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,4,0,0" /><TextBlock x:Name="AmbientStatus" Text="Waiting for CDT Ambient" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,4,0,0" /></StackPanel>
         </Border>
         <Border Grid.Row="1" Background="#141720" CornerRadius="12" BorderBrush="#2A2E3C" BorderThickness="1">
           <Grid Margin="16">

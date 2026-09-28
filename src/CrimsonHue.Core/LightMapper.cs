@@ -3,11 +3,20 @@ namespace CrimsonHue.Core;
 public sealed class LightMapper
 {
     private readonly Dictionary<byte, Vec3> previous = [];
-    public void Reset() => previous.Clear();
+    private double ambientLevel;
+    public void Reset() { previous.Clear(); ambientLevel = 0; }
 
-    public IReadOnlyList<ChannelColor> Map(TelemetryFrame frame, EntertainmentArea area, MappingSettings settings, double deltaSeconds)
+    public IReadOnlyList<ChannelColor> Map(TelemetryFrame frame, EntertainmentArea area, MappingSettings settings, double deltaSeconds,
+        AmbientFrame? ambient = null)
     {
         Validate(settings);
+        // CDT's working RGB is not calibrated to local-light/display RGB. Use its
+        // camera-local estimate only as a relative brightness control, with a
+        // neutral room baseline; never add its channels to renderer RGB.
+        var targetAmbient = ambient is null ? 0 : 1 - Math.Exp(-Math.Max(0, ambient.WorkingLevel) * settings.AmbientSensitivity / 4);
+        var ambientAlpha = 1 - Math.Exp(-Math.Clamp(deltaSeconds, 0, 1) / 0.4);
+        ambientLevel = settings.AmbientSensitivity == 0 ? 0 : ambientLevel + (targetAmbient - ambientLevel) * ambientAlpha;
+        var localContrast = Math.Max(0.05, Math.Pow(1 - ambientLevel, 1.5));
         // Bound each source's HDR intensity before spatial attenuation. Applying
         // tone mapping afterwards can turn a tiny distant HDR contribution back
         // into a saturated output, effectively undoing the fade.
@@ -37,7 +46,10 @@ public sealed class LightMapper
             var peak = Math.Max(sum.X, Math.Max(sum.Y, sum.Z));
             // Normalize only overflow from overlapping sources; never boost the
             // attenuated sum. Mixing and ratio preservation stay in linear RGB.
-            var linear = sum / Math.Max(1, peak);
+            var local = sum / Math.Max(1, peak);
+            var combined = new Vec3(ambientLevel * 0.8, ambientLevel * 0.8, ambientLevel * 0.8) + local * localContrast;
+            var combinedPeak = Math.Max(combined.X, Math.Max(combined.Y, combined.Z));
+            var linear = combined / Math.Max(1, combinedPeak);
             var rgb = new Vec3(Encode(linear.X), Encode(linear.Y), Encode(linear.Z)) * (settings.Brightness * channel.Brightness);
             // A channel-level EMA can retain RGB from a source that just became
             // blocked/unknown. Without stable source identities, the clear-only
@@ -67,7 +79,8 @@ public sealed class LightMapper
         if (!double.IsFinite(s.Gain) || s.Gain is < 0.05 or > 10 || !double.IsFinite(s.Brightness) || s.Brightness is < 0 or > 1 ||
             !double.IsFinite(s.Radius) || s.Radius is < 1 or > 1000 || !double.IsFinite(s.Spread) || s.Spread is < 0.1 or > 8 ||
             !double.IsFinite(s.SmoothingMs) || s.SmoothingMs is < 0 or > 1000 ||
-            !double.IsFinite(s.FadeStart) || s.FadeStart < 0 || s.FadeStart >= s.FadeEnd)
+            !double.IsFinite(s.FadeStart) || s.FadeStart < 0 || s.FadeStart >= s.FadeEnd ||
+            !double.IsFinite(s.AmbientSensitivity) || s.AmbientSensitivity is < 0 or > 3)
             throw new CrimsonHueException("Invalid lighting settings.");
     }
     private static double Encode(double linear) => linear <= 0.0031308 ? 12.92 * linear : 1.055 * Math.Pow(linear, 1 / 2.4) - 0.055;

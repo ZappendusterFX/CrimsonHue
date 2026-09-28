@@ -19,10 +19,13 @@ Install: extract the portable ZIP anywhere, run CrimsonHue.exe, pair the bridge,
 select an area, then Start. Keep the telemetry mod installed separately. Do not
 deploy this application into the game with a mod manager.
 
-Version 0.1.3 uses the current all-around ManyLights input and emits only sources
+Version 0.2.1 uses the current all-around ManyLights input and emits only sources
 with a fresh confirmed-clear physics verdict. Older CDT schema 1.4/1.5 uses the
-legacy renderer-only path. General Ambient is a separate CDT feed and is not yet
-mixed into output because its working RGB is not calibrated to local-light RGB.
+legacy renderer-only path. The separate CDT Ambient feed supplies a relative
+brightness signal: bright surroundings make the room neutral and reduce local
+light contrast; dark surroundings keep local colors prominent. Its working RGB
+is not calibrated to local-light RGB or physical output. An Ambient influence
+control tunes the artistic response; missing Ambient falls back to local lights.
 No screen capture, complete lighting, physical-lumen or pixel-matching claim.
 Mapping is an estimate of direction/proximity; the current version does not infer
 surrounding brightness from the time of day.

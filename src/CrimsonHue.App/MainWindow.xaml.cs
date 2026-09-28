@@ -17,12 +17,14 @@ public partial class MainWindow : Window
     private readonly bool smoke;
     private readonly SettingsStore store = new();
     private readonly TelemetryState telemetry = new();
+    private readonly AmbientState ambient = new();
     private readonly LightMapper previewMapper = new();
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private readonly Stopwatch uptime = Stopwatch.StartNew();
     private readonly CancellationTokenSource lifetime = new();
     private CancellationTokenSource? telemetryCancel;
     private Task? telemetryTask;
+    private Task? ambientTask;
     private CancellationTokenSource? streamCancel;
     private Task? streamTask;
     private StreamingSession? session;
@@ -55,6 +57,7 @@ public partial class MainWindow : Window
                 FadeStartSlider.Maximum = FadeEndSlider.Maximum - 0.5;
                 FadeEndSlider.Value = m.FadeEnd; FadeStartSlider.Value = m.FadeStart;
                 SpreadSlider.Value = m.Spread; SmoothingSlider.Value = m.SmoothingMs;
+                AmbientSlider.Value = m.AmbientSensitivity;
                 var credentials = store.LoadCredentials();
                 if (credentials != null)
                 {
@@ -144,9 +147,16 @@ public partial class MainWindow : Window
     private async Task ConnectTelemetryAsync()
     {
         var uri = TelemetryClient.ValidateEndpoint(TelemetryAddress.Text.Trim());
-        if (telemetryCancel != null) { await telemetryCancel.CancelAsync(); if (telemetryTask != null) await telemetryTask; telemetryCancel.Dispose(); }
+        if (telemetryCancel != null)
+        {
+            await telemetryCancel.CancelAsync();
+            if (telemetryTask != null) await telemetryTask;
+            if (ambientTask != null) await ambientTask;
+            telemetryCancel.Dispose();
+        }
         telemetryCancel = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
         telemetryTask = new TelemetryClient(telemetry).RunAsync(uri, telemetryCancel.Token);
+        ambientTask = new AmbientClient(ambient).RunAsync(AmbientClient.FromTelemetryEndpoint(uri), telemetryCancel.Token);
     }
     private async void StartClick(object sender, RoutedEventArgs e)
     {
@@ -157,7 +167,7 @@ public partial class MainWindow : Window
         session = new StreamingSession(bridge);
         var activeSession = session;
         var area = SelectedArea;
-        streamTask = Task.Run(() => activeSession.RunAsync(area, telemetry, () => Volatile.Read(ref mapping), streamCancel.Token));
+        streamTask = Task.Run(() => activeSession.RunAsync(area, telemetry, () => Volatile.Read(ref mapping), streamCancel.Token, ambient));
         UpdateButtons();
         try { await streamTask; StreamStatus.Text = "Stopped · previous light states restored when still owned"; }
         catch (Exception ex) { StreamStatus.Text = FriendlyError(ex); }
@@ -184,7 +194,8 @@ public partial class MainWindow : Window
                 if (ReferenceEquals(sender, FadeStartSlider)) FadeEndSlider.Value = FadeStartSlider.Value + 0.5;
                 else FadeStartSlider.Value = Math.Max(0, FadeEndSlider.Value - 0.5);
             }
-            var next = new MappingSettings(GainSlider.Value, BrightnessSlider.Value, FadeEndSlider.Value, SpreadSlider.Value, SmoothingSlider.Value, FadeStartSlider.Value);
+            var next = new MappingSettings(GainSlider.Value, BrightnessSlider.Value, FadeEndSlider.Value, SpreadSlider.Value,
+                SmoothingSlider.Value, FadeStartSlider.Value, AmbientSlider.Value);
             LightMapper.Validate(next);
             Volatile.Write(ref mapping, next);
         }
@@ -193,23 +204,26 @@ public partial class MainWindow : Window
         GainValue.Text = $"{mapping.Gain:F2}×";
         FadeStartValue.Text = $"{mapping.FadeStart:F1}";
         FadeEndValue.Text = $"{mapping.FadeEnd:F1}";
+        AmbientValue.Text = $"{mapping.AmbientSensitivity:F1}×";
     }
     private void DemoChanged(object sender, RoutedEventArgs e) { if (initialized) { previewMapper.Reset(); UpdateButtons(); } }
     private void RefreshPreview()
     {
         var frame = telemetry.Read(out var message);
+        var ambientFrame = ambient.Read(out var ambientMessage);
         TelemetryStatus.Text = message;
         TelemetryStatus.Foreground = frame == null ? new SolidColorBrush(Color.FromRgb(175, 182, 198)) : new SolidColorBrush(Color.FromRgb(145, 215, 185));
         CaptureInfo.Text = frame == null ? "Requires fresh CDT light capture. For all-around lighting, enable upstream lights and source visibility." :
             $"{frame.Feed} · {frame.Lights.Count}/{frame.SourceCount} usable lights · {frame.Lights.Count(l => (l.Position - frame.Player).Length < mapping.FadeEnd)} in range · capture {frame.CaptureSequence} · age {Math.Max(0, (DateTimeOffset.UtcNow - frame.LightCapturedAt).TotalMilliseconds):F0} ms";
         var demo = DemoCheck.IsChecked == true;
+        AmbientStatus.Text = demo ? "Demo preview · ambient not sampled" : ambientMessage;
         var area = demo ? DemoData.Area : SelectedArea;
         if (demo) frame = DemoData.Frame(uptime.Elapsed.TotalSeconds);
         IReadOnlyList<ChannelColor> colors = [];
         if (area != null)
         {
             if (session != null) colors = session.Colors;
-            else if (frame != null) colors = previewMapper.Map(frame, area, mapping, 0.1);
+            else if (frame != null) colors = previewMapper.Map(frame, area, mapping, 0.1, ambientFrame);
             else previewMapper.Reset();
         }
         Room.Area = area; Room.Colors = colors; Room.Frame = frame; Room.Demo = demo; Room.Settings = mapping; Room.InvalidateVisual();
@@ -257,6 +271,7 @@ public partial class MainWindow : Window
             await lifetime.CancelAsync();
             if (streamTask != null) await streamTask;
             if (telemetryTask != null) await telemetryTask;
+            if (ambientTask != null) await ambientTask;
             SaveSettings();
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
@@ -275,7 +290,7 @@ public partial class MainWindow : Window
     internal void VerifyDistanceControls()
     {
         if (!smoke) throw new InvalidOperationException("Control self-test requires isolated smoke mode.");
-        var start = FadeStartSlider.Value; var end = FadeEndSlider.Value;
+        var start = FadeStartSlider.Value; var end = FadeEndSlider.Value; var ambientInfluence = AmbientSlider.Value;
         try
         {
             FadeStartSlider.Value = 45;
@@ -286,8 +301,12 @@ public partial class MainWindow : Window
             if (mapping.FadeEnd != 100) throw new InvalidOperationException("Upper fade limit is inconsistent.");
             FadeEndSlider.Value = 1;
             if (mapping.FadeStart != 0.5) throw new InvalidOperationException("Lower fade limit is inconsistent.");
+            AmbientSlider.Value = 2;
+            if (mapping.AmbientSensitivity != 2) throw new InvalidOperationException("Ambient influence control did not update mapping.");
+            AmbientSlider.Value = 0;
+            if (mapping.AmbientSensitivity != 0) throw new InvalidOperationException("Ambient influence control did not reach local-only mode.");
             LightMapper.Validate(mapping);
         }
-        finally { FadeEndSlider.Value = end; FadeStartSlider.Value = start; }
+        finally { FadeEndSlider.Value = end; FadeStartSlider.Value = start; AmbientSlider.Value = ambientInfluence; }
     }
 }

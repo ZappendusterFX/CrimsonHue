@@ -10,7 +10,8 @@ public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTra
     public string Status => Volatile.Read(ref status);
     public IReadOnlyList<ChannelColor> Colors => Volatile.Read(ref colors);
     public bool Sending { get; private set; }
-    public async Task RunAsync(EntertainmentArea area, TelemetryState telemetry, Func<MappingSettings> settings, CancellationToken token)
+    public async Task RunAsync(EntertainmentArea area, TelemetryState telemetry, Func<MappingSettings> settings, CancellationToken token,
+        AmbientState? ambient = null)
     {
         if (area.Channels.Count == 0) throw new CrimsonHueException("Choose an Entertainment area with lights.");
         IEntertainmentTransport? transport = null;
@@ -87,7 +88,8 @@ public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTra
                         stateCheck = bridge.GetAreaStateAsync(area.Id, checkCancel!.Token);
                     // Handshakes/HTTP checks can take seconds. Re-read freshness before every datagram.
                     frame = telemetry.Read(out _);
-                    colors = frame == null ? area.Channels.Select(c => new ChannelColor(c.Id, default)).ToArray() : mapper.Map(frame, area, settings(), 1.0 / 30).ToArray();
+                    colors = frame == null ? area.Channels.Select(c => new ChannelColor(c.Id, default)).ToArray() :
+                        mapper.Map(frame, area, settings(), 1.0 / 30, ambient?.Read(out _)).ToArray();
                     transport.Send(EntertainmentPacket.Build(area.Id, sequence++, colors));
                     status = "Streaming · 30 updates/s";
                 }

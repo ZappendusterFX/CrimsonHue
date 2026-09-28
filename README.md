@@ -3,11 +3,12 @@
 A standalone Windows companion that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**0.1.3 — early preview.** This is a source-driven lighting estimate. With the
-current CDT API, CrimsonHue uses the all-around ManyLights input and emits only
-lights with a fresh, confirmed clear physics visibility result. CDT's separate
-Ambient feed is not yet mixed into Hue output; its working RGB is not calibrated
-against local-light RGB or display color.
+**0.2.1 — early preview.** This is a source-driven lighting estimate. With the
+current CDT API, CrimsonHue uses the all-around ManyLights input, emits only
+lights with a fresh confirmed-clear physics visibility result, and uses CDT's
+separate camera-local Ambient estimate to reduce local-light contrast in bright
+surroundings. Its working RGB is not calibrated to local-light RGB or display
+color; the Ambient mapping is deliberately artistic and adjustable.
 
 ## Start
 
@@ -24,8 +25,8 @@ against local-light RGB or display color.
    Entertainment client key are requested automatically.
 5. Select an existing **Entertainment area**. Create and position lights in the
    Hue app first, then refresh. CrimsonHue preserves the existing layout/channels.
-6. Adjust brightness, sensitivity and the two distance-fade controls described
-   below. Stop other sync apps, then click **Start lighting sync**.
+6. Adjust brightness, light sensitivity, Ambient influence and the two distance
+   fade controls described below. Stop other sync apps, then click **Start lighting sync**.
 7. **Stop**, or close the window, to release the stream and restore previously read
    on/off, brightness and color states of the selected lights, if CrimsonHue still
    owns the stream. Running effects/dynamic scenes are not resumed.
@@ -100,11 +101,25 @@ at zero. New setups default to 0 / 35. Mapping is intentionally different from
 0.1.0: very bright distant sources now fade reliably instead of saturating the
 post-falloff HDR compressor. Multiple overlapping sources still add together.
 
-Ambient-aware suppression is **not active yet**. CDT now publishes camera-local
-visibility and a working sky estimate through a separate `/v1/ambient` API. Its
-RGB is not in a documented, directly comparable scale with local-light RGB, so
-adding it to Hue output or deriving daylight contrast would be uncalibrated.
-See `docs/AMBIENT-INTEGRATION.md` for the remaining integration requirements.
+### Ambient influence
+
+CrimsonHue reads CDT's separate `/v1/ambient/stream` on the same loopback port.
+It requires a fresh global sky sample, fresh measured camera sky visibility and
+the available local product estimate. The three working RGB channels provide a
+**relative brightness proxy**, not display color. CrimsonHue turns that proxy
+into a neutral room baseline and reduces local-light contrast as the measured
+surroundings brighten. Daylight can therefore overpower ordinary red firelight;
+a dark daytime interior can still show it. The default **Ambient influence** is
+1×; 0 disables this mapping, while higher values react more strongly. Ambient
+changes fade over about 0.4 seconds. This is a tunable visual model, not a claim
+that CDT exposes physical lux or pixel-accurate room illumination.
+
+Sky and local visibility expire independently after 1500 ms, including client
+time. On missing/stale Ambient, the neutral baseline fades away and the app falls
+back to the existing local-light mapping; the status line names that fallback.
+Invalid or missing local-light telemetry still clears output and releases the
+Entertainment stream as before. See `docs/AMBIENT-INTEGRATION.md` for limits and
+acceptance checks.
 
 `sampleIndex` is never a persistent ID. Authored and rendered feeds are not added.
 Gradient channel membership is preserved. The transport supports up to 160 channels
@@ -147,14 +162,16 @@ powershell -ExecutionPolicy Bypass -File scripts/Publish.ps1
 The tests need OpenSSL for real DTLS interoperability. By default they use Git for
 Windows' `C:\Program Files\Git\usr\bin\openssl.exe`; pass `--openssl <path>` after
 the `dotnet run` argument separator to override. `--live-telemetry` adds a read-only
-CDT WebSocket control, `--live-bridge` probes the development bridge, and `--live`
-runs both. None changes lamps.
+CDT light WebSocket control, `--live-bridge` probes the development bridge, and
+`--live` runs those plus the Ambient WebSocket control. None changes lamps.
 
-`--live-lamps` is a separate, explicitly requested physical test. It reads the
+`--live-ambient` adds a read-only Ambient WebSocket control. `--live-lamps` is a
+separate, explicitly requested physical test. It reads the
 paired current-user credentials and saved area, refuses to take over any active
 Entertainment stream, sends a bounded five-second session at 25% maximum
-brightness, then stops and restores the previously read light states. It does not
-save settings. Use it only while the game and paired bridge are available.
+brightness using fresh Ambient and local lights, then stops and restores the
+previously read light states. It does not save settings. Use it only while the
+game and paired bridge are available.
 
 `--inspect-layout` instead reads the paired user's protected credentials and prints
 only area names, channel names/IDs and raw Hue XYZ positions. Run it as the same
