@@ -18,8 +18,12 @@ CLAUDE.md remain byte-identical.
 
 Package: `dist/CrimsonHue-0.3.3-win-x64.zip` (68,230,539 bytes), SHA-256
 `90867C06261C7DBCC9925768E0E70F6AC1C804D3FF0294C58EB7A816A3B29A61`.
-The 0.3.2 package remains immutable. GitHub release publication is pending;
-Nexus publication belongs to the owner.
+The 0.3.2 package remains immutable. Tag `v0.3.3` points to
+`24f39fb3cc5a4423cdb92e06f7e4c6e863e491fe`. GitHub release
+https://github.com/ZappendusterFX/CrimsonHue/releases/tag/v0.3.3 is published
+as Latest, not a pre-release. The public ZIP download returned HTTP 200 and
+GitHub reported the same size and SHA-256 digest. Nexus publication belongs to
+the owner.
 
 # Release publication — 2026-09-28
 

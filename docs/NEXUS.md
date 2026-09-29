@@ -71,5 +71,5 @@ surrounding brightness from the time of day.
 Use HANDOVER.md for current test status and release hash. Physical Hue hardware
 and larger areas require separate testing. Physical lamp appearance was checked
 by the owner with diyHue/LEDVANCE but was not measured or verified on a Philips
-Hue bridge. Nexus publishing remains with the
+Hue bridge. The GitHub release is published; Nexus publishing remains with the
 owner. The public source repository currently has no explicit source license.
