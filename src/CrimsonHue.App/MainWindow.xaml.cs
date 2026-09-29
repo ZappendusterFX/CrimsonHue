@@ -233,7 +233,7 @@ public partial class MainWindow : Window
     }
     private void SaveSettings()
     {
-        if (!smoke) store.SaveSettings(new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(), SelectedArea?.Id, mapping));
+        if (!smoke) store.SaveSettings(new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(), SelectedArea?.Id ?? selectedAreaId, mapping));
     }
     private async void OnClosing(object? sender, CancelEventArgs e)
     {

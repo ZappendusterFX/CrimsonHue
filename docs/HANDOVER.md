@@ -1,3 +1,26 @@
+# Current checkpoint — CrimsonHue 0.3.3, 2026-09-29, Codex
+
+Shareable mixer presets are implemented in the standalone app. Export writes a
+strict, readable `CrimsonHuePreset` v1 JSON containing the 30 mapping controls
+and a name. It excludes bridge/telemetry addresses, Entertainment area ID,
+channel positions and protected credentials. Import checks the format, version,
+complete field set, valid ranges and size before showing a change preview.
+Output, Ambient and Color start selected; room-dependent Space starts off. The
+selected values save locally and update active mapping. Cancel or invalid files
+leave current settings intact. The complete user guide is included in the ZIP.
+
+Verification: Release build zero warnings/errors; 73/73 nonphysical tests pass,
+including full preset round-trip, selective import and malformed-file rejection.
+Source and packaged WPF UI smoke ran in synthetic mode. Package contents were
+hash-compared with the seven ZIP entries; no CDT, local settings, secrets or
+nested archive was present. No physical stream was started. AGENTS.md and
+CLAUDE.md remain byte-identical.
+
+Package: `dist/CrimsonHue-0.3.3-win-x64.zip` (68,230,539 bytes), SHA-256
+`90867C06261C7DBCC9925768E0E70F6AC1C804D3FF0294C58EB7A816A3B29A61`.
+The 0.3.2 package remains immutable. GitHub release publication is pending;
+Nexus publication belongs to the owner.
+
 # Release publication — 2026-09-28
 
 GitHub repository: https://github.com/ZappendusterFX/CrimsonHue (public).

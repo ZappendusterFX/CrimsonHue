@@ -10,7 +10,14 @@ CrimsonDesertTelemetry (CDT) is a separate game mod and is **not included** in
 the CrimsonHue ZIP. Install and run it separately; do not put CrimsonHue in the
 game directory or install it with a game mod manager.
 
-**0.3.2 — early preview.** **Direction origin** blends the room's game-space
+**0.3.3 — early preview.** **Export preset** writes a versioned, readable JSON
+file containing only the 30 mixer controls. **Import preset** previews the
+differences and lets users apply Output, Ambient, Color and Space independently.
+Space is off by default because it depends on the room. Import saves the chosen
+values; bridge address, Entertainment area, telemetry address and protected
+credentials stay local. See [Sharing presets](docs/USER-GUIDE.md#sharing-presets).
+
+Since 0.3.2, **Direction origin** blends the room's game-space
 reference point between the player (0%) and camera lens (100%), starting at 50%.
 Viewing axes always follow the paired camera. This lets you choose where nearby
 sources belong around a third-person view. Local sources use a bounded 2D disc
@@ -44,7 +51,7 @@ physical lamp brightness.
 6. Use the **Output**, **Ambient**, **Color** and **Space** tabs to adjust the
    preview. Compare the raw CDT values with the channel output while tuning.
    The [tuning guide](docs/USER-GUIDE.md) explains each control, interactions
-   between controls and a practical setup sequence.
+   between controls, shareable presets and a practical setup sequence.
    Stop other sync apps, then click **Start lighting sync**.
 7. **Stop**, or close the window, to release the stream and restore previously read
    on/off, brightness and color states of the selected lights, if CrimsonHue still
@@ -139,6 +146,13 @@ and active sync immediately. **Reset this tab** restores that tab's defaults;
 **Save settings** stores the current configuration. Settings are also saved on
 Start and normal window close. Existing saved brightness is retained as entered; the 85% default
 applies to new or reset settings only.
+
+**Export preset…** writes only mixer values, never bridge setup or credentials.
+**Import preset…** validates the file, previews changed values and lets you
+choose which tabs to apply. Output, Ambient and Color are selected initially;
+Space is unselected because it is room-dependent. Applying a preset saves it and
+updates any active lighting sync. The format has a version number; unsupported,
+incomplete or out-of-range files are rejected without changing settings.
 
 | Tab | Controls (default; range) |
 | --- | --- |

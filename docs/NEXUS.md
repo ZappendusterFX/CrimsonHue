@@ -1,16 +1,16 @@
-# Nexus listing copy — CrimsonHue 0.3.2
+# Nexus listing copy — CrimsonHue 0.3.3
 
 GitHub release and download:
-https://github.com/ZappendusterFX/CrimsonHue/releases/tag/v0.3.2
+https://github.com/ZappendusterFX/CrimsonHue/releases/tag/v0.3.3
 
 Complete setup and tuning guide:
-https://github.com/ZappendusterFX/CrimsonHue/blob/v0.3.2/docs/USER-GUIDE.md
+https://github.com/ZappendusterFX/CrimsonHue/blob/v0.3.3/docs/USER-GUIDE.md
 
 Required separate CDT download:
 https://github.com/ZappendusterFX/CrimsonDesertTelemetry/releases/tag/v2.2.1
 
-Use the same immutable `CrimsonHue-0.3.2-win-x64.zip` for Nexus. Its SHA-256 is
-`6A1C4C5D39BB90136925A112439AA245B59348A71B5A63A85D7BAE3F6EE01DC6`.
+Use the same immutable `CrimsonHue-0.3.3-win-x64.zip` for Nexus. Its SHA-256 is
+`90867C06261C7DBCC9925768E0E70F6AC1C804D3FF0294C58EB7A816A3B29A61`.
 CDT and the game are not included.
 
 Title: CrimsonHue - Spatial Room Lighting
@@ -26,6 +26,10 @@ color balance and hue shifts, camera direction and distance fade. The distance
 curve shows contribution in percent over game-unit distance. Settings affect
 preview and active sync immediately; use Save settings or Reset this tab.
 Freeze readout holds the raw display for copying while streaming continues.
+Export preset writes all mixer values to a readable, versioned JSON file without
+bridge setup or credentials. Import preset previews changes and applies selected
+Output, Ambient, Color or Space sections; Space is off by default because it
+depends on the room. The selected values are saved and affect active sync.
 
 Required mod: CrimsonDesertTelemetry 2.2.1 with rendered and upstream ManyLights
 capture and source visibility enabled for all-around, confirmed-clear output.
@@ -36,8 +40,10 @@ Install: extract the portable ZIP anywhere, run CrimsonHue.exe, pair the bridge,
 select an area, then Start. Keep the telemetry mod installed separately. Do not
 deploy this application into the game with a mod manager.
 
-Version 0.3.2 adds a Direction origin slider from player position (0%) to camera
-lens (100%), starting halfway at 50%. Camera axes supply orientation throughout;
+Version 0.3.3 adds the preset export/import controls and includes the full user
+guide in the ZIP. Version 0.3.2 added a Direction origin slider from player
+position (0%) to camera lens (100%), starting halfway at 50%. Camera axes supply
+orientation throughout;
 the preview shows the chosen percentage. This makes the third-person positional
 reference explicit. Distance cutoff remains player-relative.
 
@@ -65,5 +71,5 @@ surrounding brightness from the time of day.
 Use HANDOVER.md for current test status and release hash. Physical Hue hardware
 and larger areas require separate testing. Physical lamp appearance was checked
 by the owner with diyHue/LEDVANCE but was not measured or verified on a Philips
-Hue bridge. The GitHub release is published; Nexus publishing remains with the
+Hue bridge. Nexus publishing remains with the
 owner. The public source repository currently has no explicit source license.

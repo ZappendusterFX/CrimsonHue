@@ -723,6 +723,45 @@ Add("Saved settings retain every explicit control and do not silently migrate br
     }
     finally { File.Delete(Path.Combine(directory, "settings.json")); Directory.Delete(directory); }
 });
+Add("Shareable preset round-trips every mixer control without local setup", () =>
+{
+    var custom = new MappingSettings(Gain: 2.3, Brightness: .62, Radius: 18, Spread: 4,
+        SmoothingMs: 0, FadeStart: 4, AmbientSensitivity: 2, AmbientOutput: .3,
+        AmbientFloor: .02, AmbientCutoff: .004, DaylightLocalStrength: .7,
+        LocalStrength: 1.6, AmbientReferenceLevel: 2.5, AmbientSmoothingMs: 700,
+        HueShiftDegrees: 12, Saturation: 1.2, RedGain: .95, GreenGain: 1.1,
+        BlueGain: .8, OutputGamma: 1.4, DirectionNormalization: .75,
+        CameraYawOffset: -20, FadeExponent: 3, AmbientTintHue: 220,
+        AmbientTintSaturation: .3, SeparateLeftRight: false, SeparateFrontRear: false,
+        SourceDiscRadiusDegrees: 45, SourceDiscSoftness: .4, DirectionOriginBlend: .2);
+    var json = MappingPreset.Export("Warm fire", custom);
+    Assert(!json.Contains("BridgeAddress", StringComparison.OrdinalIgnoreCase) &&
+        !json.Contains("AreaId", StringComparison.OrdinalIgnoreCase) &&
+        !json.Contains("TelemetryAddress", StringComparison.OrdinalIgnoreCase) &&
+        !json.Contains("secrets", StringComparison.OrdinalIgnoreCase), "Preset exposed machine setup");
+    var imported = MappingPreset.Import(Encoding.UTF8.GetBytes(json));
+    Assert(imported.Name == "Warm fire" && imported.Mapping == custom && imported.Version == 1);
+    Assert(imported.ApplyTo(new(), PresetGroups.All) == custom, "Full preset did not restore all controls");
+    var sections = imported.ApplyTo(new(), PresetGroups.Output | PresetGroups.Color);
+    Assert(sections.Gain == 2.3 && sections.HueShiftDegrees == 12 && sections.AmbientFloor == 0 &&
+        sections.Radius == 35 && sections.DirectionOriginBlend == .5 && sections.SeparateLeftRight,
+        "Selected import changed an unselected section");
+});
+Add("Preset import rejects local settings, incomplete files and invalid values", () =>
+{
+    var valid = MappingPreset.Export("Shared settings", new());
+    var bytes = Encoding.UTF8.GetBytes(valid);
+    Reject(() => MappingPreset.Import(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new AppSettings()))));
+    Reject(() => MappingPreset.Import(Encoding.UTF8.GetBytes(valid.Replace("\"version\": 1", "\"version\": 99"))));
+    Reject(() => MappingPreset.Import(Encoding.UTF8.GetBytes(valid.Replace("\"gain\": 1.5,", ""))));
+    Reject(() => MappingPreset.Import(Encoding.UTF8.GetBytes(valid.Replace("\"gain\": 1.5", "\"gain\": 99"))));
+    Reject(() => MappingPreset.Import(Encoding.UTF8.GetBytes(valid.Replace("\"name\": \"Shared settings\"", "\"name\": 5"))));
+    Reject(() => MappingPreset.Import(new byte[MappingPreset.MaximumBytes + 1]));
+    Reject(() => MappingPreset.Import([]));
+    var preset = MappingPreset.Import(bytes);
+    Reject(() => preset.ApplyTo(new(), PresetGroups.None));
+    Reject(() => MappingPreset.Export(" ", new()));
+});
 Add("HueStream v2 wire golden: UUID, RGB and noncontiguous channels", () =>
 {
     var bytes = EntertainmentPacket.Build(area.Id, 254, [new(2, new(1, 0, 0.5)), new(5, new(0, 1, 0))]);

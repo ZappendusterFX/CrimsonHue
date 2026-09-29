@@ -1,4 +1,4 @@
-# Ambient and mapping controls — CrimsonHue 0.3.2
+# Ambient and mapping controls — CrimsonHue 0.3.3
 
 CrimsonHue consumes CDT's independent `/v1/ambient/stream` and local-light feed.
 CDT owns capture and the neutral contracts. CrimsonHue shows the received values

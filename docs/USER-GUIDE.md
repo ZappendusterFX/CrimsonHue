@@ -1,4 +1,4 @@
-# CrimsonHue 0.3.2 — setup and tuning guide
+# CrimsonHue 0.3.3 — setup and tuning guide
 
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
 existing Hue Entertainment area. It is a standalone Windows application. Its
@@ -12,7 +12,7 @@ or a measurement of the physical lamps.
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
    For all-around light sources, CrimsonHue needs CDT's fresh confirmed-clear
    visibility results. A missing or blocked source does not light a channel.
-2. Extract the entire `CrimsonHue-0.3.2-win-x64.zip` into a normal folder and
+2. Extract the entire `CrimsonHue-0.3.3-win-x64.zip` into a normal folder and
    start `CrimsonHue.exe`. It includes the .NET runtime. Do **not** install this
    ZIP through a game mod manager or copy it into the game directory. **CDT,
    the game, bridge firmware and saved credentials are not in this ZIP.**
@@ -48,6 +48,28 @@ Every numeric control has a slider and an exact numeric input. Changes apply to
 the live preview and active sync immediately. **Save settings** persists them;
 **Reset this tab** restores the defaults for one tab. Start and normal window
 close also save. The raw CDT values never change when you move a control.
+
+## Sharing presets
+
+Click **Export preset…**, choose a filename, and share the resulting readable
+JSON file. It contains the 28 numeric mixer settings and two boundary switches,
+plus a format version and name derived from the filename. It does **not** contain
+the bridge address, Entertainment area ID, telemetry endpoint or bridge keys.
+Never share `%LOCALAPPDATA%\CrimsonHue\bridge.secrets` or your complete local
+`settings.json`.
+
+To use a shared file, click **Import preset…** and choose it. Review the list of
+values that would change, then select the sections to apply. **Output**,
+**Ambient** and **Color** start selected. **Space** starts unselected because
+room direction, lamp positions and distance preferences vary between users.
+Click **Apply selected** to save the chosen values; if lighting sync is already
+running, the new values also affect it immediately. Cancel leaves everything as
+it was. The import checks the preset version, every required value and valid
+ranges; local bridge pairing and Entertainment area remain yours.
+
+Shared presets cannot include Hue channel positions. Each installation reads
+those from its own Entertainment area, so the same preset can look different in
+different rooms and on different lamps.
 
 ## A useful tuning order
 

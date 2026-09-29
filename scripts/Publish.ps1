@@ -1,4 +1,4 @@
-param([string]$Version = '0.3.2')
+param([string]$Version = '0.3.3')
 $ErrorActionPreference = 'Stop'
 if ($Version -notmatch '^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$') { throw 'Invalid version.' }
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -9,6 +9,9 @@ $stage = Join-Path $projectRoot ('artifacts\publish-' + [guid]::NewGuid().ToStri
 & dotnet publish (Join-Path $projectRoot 'src\CrimsonHue.App\CrimsonHue.App.csproj') -c Release -r win-x64 --self-contained true -o $stage "-p:Version=$Version" -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None "-p:RestorePackagesPath=$projectRoot\artifacts\packages"
 if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
 Copy-Item -LiteralPath (Join-Path $projectRoot 'README.md'), (Join-Path $projectRoot 'THIRD-PARTY-NOTICES.md') -Destination $stage
+$guideDirectory = Join-Path $stage 'docs'
+New-Item -ItemType Directory -Path $guideDirectory | Out-Null
+Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\USER-GUIDE.md'), (Join-Path $projectRoot 'docs\AMBIENT-INTEGRATION.md') -Destination $guideDirectory
 $runtimeRoots = Get-ChildItem -Directory -LiteralPath (Join-Path $projectRoot 'artifacts\packages') | Where-Object { $_.Name -in @('microsoft.netcore.app.runtime.win-x64', 'microsoft.windowsdesktop.app.runtime.win-x64') }
 foreach ($runtimeRoot in $runtimeRoots) {
     $runtimeVersion = Get-ChildItem -Directory -LiteralPath $runtimeRoot.FullName | Sort-Object Name -Descending | Select-Object -First 1
@@ -18,7 +21,7 @@ foreach ($runtimeRoot in $runtimeRoots) {
     }
 }
 New-Item -ItemType Directory -Path $output | Out-Null
-Get-ChildItem -File -LiteralPath $stage | Copy-Item -Destination $output
+Get-ChildItem -LiteralPath $stage | Copy-Item -Destination $output -Recurse
 Compress-Archive -LiteralPath $output -DestinationPath $zip -CompressionLevel Optimal
 Get-FileHash -Algorithm SHA256 -LiteralPath $zip
 Get-ChildItem -File -LiteralPath $output | Select-Object Name,Length
