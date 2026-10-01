@@ -3,6 +3,13 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
+**Work paused at the owner's request (2026-10-01).** The required ASI must draw
+its UI inside the game and require installed .NET 8 Desktop Runtime x64. The
+current source prototype still uses a separate WPF window; the in-game overlay
+and updated packaging are unfinished. See [current checkpoint](docs/HANDOVER.md).
+The `.asi.2` package and installation instructions below describe the preserved
+earlier prototype, not the final requested design.
+
 **Branch preview: 0.4.0-asi.2.** `CrimsonHue.asi` runs the existing mixer and Hue
 client inside the game, using its own UI thread and the bundled .NET/WPF DLLs.
 There is no separate process or EXE in this package. Installation and lifecycle

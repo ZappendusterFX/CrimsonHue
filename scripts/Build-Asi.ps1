@@ -1,9 +1,8 @@
-param([string]$Version = '0.4.0-asi.2')
+param([string]$Version = '0.4.0-asi.3')
 $ErrorActionPreference = 'Stop'
 if ($Version -notmatch '^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$') { throw 'Invalid version.' }
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $nativeBuild = Join-Path $projectRoot 'artifacts\native-asi'
-$payload = Join-Path $projectRoot 'artifacts\asi\CrimsonHue'
 $cmakeCommand = Get-Command cmake -ErrorAction SilentlyContinue
 $cmake = if ($cmakeCommand) { $cmakeCommand.Source } else {
     $locator = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
@@ -17,43 +16,53 @@ $hostPack = Get-ChildItem -Directory -LiteralPath (Join-Path $dotnetRoot 'packs\
     Where-Object { $_.Name -match '^8\.0\.\d+$' } | Sort-Object { [version]$_.Name } -Descending | Select-Object -First 1
 if (-not $hostPack) { throw 'Install the .NET 8 SDK (x64 host headers are required).' }
 $headers = Join-Path $hostPack.FullName 'runtimes\win-x64\native'
-& $cmake -S (Join-Path $projectRoot 'native\CrimsonHue.Asi') -B $nativeBuild -G 'Visual Studio 17 2022' -A x64 "-DDOTNET_HOST_INCLUDE=$headers"
+$stage = Join-Path $projectRoot ('artifacts\asi-component-' + [guid]::NewGuid().ToString('N'))
+$component = Join-Path $stage 'component'
+# Framework-dependent: only our assemblies and NuGet dependencies are published.
+# End users install .NET 8 Desktop Runtime x64; it is never embedded in the ASI.
+& dotnet publish (Join-Path $projectRoot 'src\CrimsonHue.App\CrimsonHue.App.csproj') -c Release -r win-x64 --self-contained false -o $component "-p:Version=$Version" -p:UseAppHost=false -p:DebugType=None "-p:RestorePackagesPath=$projectRoot\artifacts\packages"
+if ($LASTEXITCODE -ne 0) { throw 'Managed publish failed.' }
+$files = @(Get-ChildItem -LiteralPath $component -Recurse -File | Sort-Object FullName)
+if ($files.Count -lt 4 -or $files.Count -gt 32) { throw 'Unexpected managed component size.' }
+if ($files | Where-Object { $_.Extension -in @('.exe', '.secrets', '.pdb', '.obj') -or $_.Name -in @('hostfxr.dll', 'hostpolicy.dll', 'coreclr.dll', 'settings.json') }) {
+    throw 'Unexpected executable, bundled runtime or local settings in component.'
+}
+$manifest = [Collections.Generic.List[string]]::new()
+$directives = [Collections.Generic.List[string]]::new()
+$directives.Add('.Set CabinetNameTemplate=component.cab')
+$directives.Add('.Set DiskDirectoryTemplate="' + $stage + '"')
+$directives.Add('.Set MaxDiskSize=0')
+$directives.Add('.Set MaxCabinetSize=0')
+$directives.Add('.Set MaxFolderSize=0')
+$directives.Add('.Set CompressionType=MSZIP')
+$directives.Add('.Set Cabinet=on')
+$directives.Add('.Set Compress=on')
+$directives.Add('.Set InfFileName="' + (Join-Path $stage 'component.inf') + '"')
+$directives.Add('.Set RptFileName="' + (Join-Path $stage 'component.rpt') + '"')
+foreach ($file in $files) {
+    $name = $file.FullName.Substring($component.Length + 1)
+    if ($name -match '[^\x20-\x7e]' -or $name.Contains('"')) { throw 'Component filenames must be ASCII.' }
+    $relativeDirectory = Split-Path -Parent $name
+    if (-not $relativeDirectory) { $relativeDirectory = '.' }
+    $directives.Add('.Set DestinationDir="' + $relativeDirectory + '"')
+    $directives.Add('"' + $file.FullName + '"')
+    $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+    $manifest.Add("$hash $($file.Length) $name")
+}
+$manifestPath = Join-Path $stage 'manifest.txt'
+[IO.File]::WriteAllLines($manifestPath, $manifest, [Text.Encoding]::ASCII)
+$ddf = Join-Path $stage 'component.ddf'
+[IO.File]::WriteAllLines($ddf, $directives, [Text.Encoding]::ASCII)
+& makecab /V0 /F $ddf > (Join-Path $stage 'makecab.log')
+if ($LASTEXITCODE -ne 0) { throw 'Component compression failed.' }
+$cabinet = Join-Path $stage 'component.cab'
+if (-not (Test-Path -LiteralPath $cabinet)) { throw 'Component cabinet missing.' }
+& $cmake -S (Join-Path $projectRoot 'native\CrimsonHue.Asi') -B $nativeBuild -G 'Visual Studio 17 2022' -A x64 "-DDOTNET_HOST_INCLUDE=$headers" "-DPAYLOAD_CAB=$cabinet" "-DPAYLOAD_MANIFEST=$manifestPath"
 if ($LASTEXITCODE -ne 0) { throw 'Native configuration failed.' }
 & $cmake --build $nativeBuild --config Release
 if ($LASTEXITCODE -ne 0) { throw 'Native build failed.' }
-# A library with an app-local runtime, no apphost executable. The ASI calls the
-# managed entry points through hostfxr; no dotnet.exe is required by users.
-$stage = Join-Path $projectRoot ('artifacts\asi-payload-' + [guid]::NewGuid().ToString('N'))
-& dotnet publish (Join-Path $projectRoot 'src\CrimsonHue.App\CrimsonHue.App.csproj') -c Release -r win-x64 --self-contained true -o $stage "-p:Version=$Version" -p:UseAppHost=false -p:DebugType=None "-p:RestorePackagesPath=$projectRoot\artifacts\packages"
-if ($LASTEXITCODE -ne 0) { throw 'Managed publish failed.' }
-# createdump is an optional .NET crash-dump helper. It is never needed by the
-# hosted UI and must not reintroduce an EXE into the mod package.
-Get-ChildItem -LiteralPath $stage -Recurse -File -Filter '*.exe' | ForEach-Object {
-    if ($_.Name -ne 'createdump.exe') { throw "Unexpected executable in ASI payload: $($_.Name)" }
-    Remove-Item -LiteralPath $_.FullName
-}
-$packages = Join-Path $projectRoot 'artifacts\packages'
-foreach ($name in @('microsoft.netcore.app.runtime.win-x64', 'microsoft.windowsdesktop.app.runtime.win-x64')) {
-    $root = Join-Path $packages $name
-    $runtime = Get-ChildItem -Directory -LiteralPath $root | Sort-Object { [version]$_.Name } -Descending | Select-Object -First 1
-    foreach ($notice in @('LICENSE.TXT', 'THIRD-PARTY-NOTICES.TXT')) {
-        $file = Join-Path $runtime.FullName $notice
-        if (Test-Path -LiteralPath $file) { Copy-Item -LiteralPath $file -Destination (Join-Path $stage "$name-$notice") }
-    }
-}
-# Preserve every previous build. Use a fresh runtime directory so stale files
-# cannot enter the next package; the old payload stays under artifacts.
-if (Test-Path -LiteralPath $payload) {
-    $previous = Join-Path $projectRoot ('artifacts\asi-payload-previous-' + [guid]::NewGuid().ToString('N'))
-    $allowedRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot 'artifacts')) + [IO.Path]::DirectorySeparatorChar
-    foreach ($target in @($payload, $previous)) {
-        if (-not [IO.Path]::GetFullPath($target).StartsWith($allowedRoot, [StringComparison]::OrdinalIgnoreCase)) {
-            throw 'Payload move escaped the workspace artifacts directory.'
-        }
-    }
-    Move-Item -LiteralPath $payload -Destination $previous
-}
-New-Item -ItemType Directory -Path $payload -Force | Out-Null
-Get-ChildItem -LiteralPath $stage | Copy-Item -Destination $payload -Recurse
-Copy-Item -LiteralPath (Join-Path $nativeBuild 'Release\CrimsonHue.asi') -Destination (Join-Path $projectRoot 'artifacts\asi\CrimsonHue.asi')
-Write-Output "Built $projectRoot\artifacts\asi\CrimsonHue.asi"
+$output = Join-Path $projectRoot 'artifacts\asi'
+New-Item -ItemType Directory -Path $output -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $nativeBuild 'Release\CrimsonHue.asi') -Destination $output
+Copy-Item -LiteralPath $manifestPath -Destination (Join-Path $output 'component-manifest.txt')
+Write-Output "Built $output\CrimsonHue.asi with $($files.Count) embedded component files; .NET Desktop Runtime is required separately."

@@ -1,4 +1,56 @@
-# Current checkpoint — CrimsonHue 0.4.0-asi.2 branch preview, 2026-10-01, Codex
+# Current checkpoint — ASI prototype saved; in-game UI required, 2026-10-01, Codex
+
+Owner's latest instruction: **do not finish the implementation now; record it
+and stop.** The required result is an independent CrimsonHue ASI with an actual
+in-game overlay. A WPF window outside the game's rendered image does not meet
+that requirement, even when it runs inside the game process. Do not integrate
+the consumer into CDT. Owner also chose an installed **.NET 8 Desktop Runtime
+x64** as a requirement instead of redistributing the runtime.
+
+Branch remains `codex/crimsonhue-asi`. The saved `.asi.3` prototype uses static
+nethost to discover installed .NET and embeds only five application/dependency
+files in a compressed cabinet inside the ASI. It verifies and extracts these
+to `%LOCALAPPDATA%\CrimsonHue\asi-cache\<cabinet-sha256>`; no loose runtime or
+application DLLs need deployment to the game directory. The current production
+UI is still the earlier WPF window. **No in-game overlay has been implemented.**
+The small-file/runtime changes are an intermediate source checkpoint, not a
+finished release or accepted implementation of the owner's UI requirement.
+
+Reason for single-ASI deployment: CDT's
+`docs/MOD_MANAGER_VALIDATION.md` records DMM 1.9.4/2.8.1/3.1.1 leaving DLL/CFG
+companions after removal and retaining old metadata on upgrades. Its package
+rules also avoid loose JSON, which DMM can classify as game patches. This is
+evidence of a manager lifecycle issue, not a general Crimson Desert DLL ban.
+The new native host ignores helper processes such as crashpad_handler.exe and
+initializes only in CrimsonDesert.exe or the explicit developer smoke harness.
+
+Latest prototype evidence: native Release /W4 /WX build passed; the actual
+3,134,976-byte ASI loaded installed CoreCLR/WindowsDesktop 8.0.31 in the native
+harness, extracted a fresh verified cache (state 1), rendered all six synthetic
+WPF panels, exercised mixer controls/hide/reopen/close and shut down the UI
+without ending its host. Evidence: `artifacts/asi-small-fixed/cold*.png`.
+A diagnosed stack overflow came from a large DllMain stack frame on small-stack
+WPF render threads; the process-path buffer now lives in a non-inlined helper
+called only on process attach. The installed dotnet root was also corrected.
+Earlier diagnostic runs covered missing runtime/resource, ignored helper,
+startup stop and ready stop; only the complete cold smoke was rerun after the
+final fix. Warm-cache/repair checks and new package validation remain pending.
+The previous 73/73 nonphysical test result below is from `.asi.2`, not a new
+test run after this checkpoint. No physical output or real game test occurred.
+
+**Packaging is unfinished.** Build-Asi defaults to `.asi.3`; Publish-Asi/Publish
+and the installation guides below still describe the historical `.asi.2`
+bundled-runtime folder layout. Update them before creating another ZIP. No
+`.asi.3` release ZIP was created. Existing immutable ZIPs remain preserved.
+
+Next work, only when the owner resumes: implement the real in-game UI in this
+independent ASI, preserving all mixer/setup/preset and stream ownership behavior;
+then finish packaging and proportionate validation. End-user prerequisite is
+.NET 8 Desktop Runtime x64. Keep game-exit cleanup limits explicit. No push,
+upload, installation or game/bridge action was performed. AGENTS and CLAUDE
+remain byte-identical.
+
+# Previous checkpoint — CrimsonHue 0.4.0-asi.2 branch preview, 2026-10-01, Codex
 
 Owner requested an independent CrimsonHue ASI instead of the desktop EXE,
 primarily to remove EXE content from Nexus uploads. First committed the existing

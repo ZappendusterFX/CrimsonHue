@@ -1,5 +1,9 @@
 # CrimsonHue 0.4.0 ASI preview — setup and tuning guide
 
+**Installation/UI sections describe the preserved `.asi.2` prototype.** The
+owner now requires a real in-game overlay and installed .NET 8 Desktop Runtime
+x64. Implementation is paused and unfinished; see [current checkpoint](HANDOVER.md).
+
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
 existing Hue Entertainment area. It is an independent ASI with a mixer window. Its
 output is an artistic lighting estimate, not a sample of the displayed pixels

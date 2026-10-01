@@ -2,9 +2,13 @@
 
 CrimsonHue is the independent Windows Hue Entertainment consumer in this repository.
 Read docs/HANDOVER.md on takeover. Core code is in src/CrimsonHue.Core; WPF UI is in
-src/CrimsonHue.App. Branch codex/crimsonhue-asi hosts that UI and core in the game
-through native/CrimsonHue.Asi; it ships no EXE. Build/test/package commands are in
-README.md. Read docs/ASI.md for native hosting and process-lifetime limits.
+src/CrimsonHue.App. Branch codex/crimsonhue-asi contains an unfinished independent
+ASI prototype in native/CrimsonHue.Asi; it ships no EXE. The owner requires an
+actual in-game overlay, not a separate WPF window, and .NET 8 Desktop Runtime
+x64 as an installed prerequisite. The current prototype still uses the WPF
+window; overlay and packaging work are pending. Owner stopped implementation
+on 2026-10-01: resume only when requested. Read docs/HANDOVER.md before using
+the historical package commands/guides or continuing the native host.
 
 Consume only the neutral HTTP/WebSocket API from C:\DEV\CrimsonDesertTelemetry.
 For telemetry, lighting research, camera or the merged ASI, work in that product

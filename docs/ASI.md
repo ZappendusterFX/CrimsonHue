@@ -1,5 +1,11 @@
 # CrimsonHue ASI preview
 
+**Historical `.asi.2` guide.** The owner's required design now uses a real
+in-game overlay and installed .NET 8 Desktop Runtime x64. The current `.asi.3`
+source checkpoint embeds only application files, but still has the WPF window;
+overlay and package changes are unfinished. Work stopped at the owner's request.
+Read [current handover](HANDOVER.md) before continuing or packaging.
+
 This branch produces an independent `CrimsonHue.asi`. It consumes CDT over the
 same HTTP/WebSocket API as the previous desktop consumer. The native loader hosts
 the existing C# core and WPF mixer in the game's process. It does not launch an
