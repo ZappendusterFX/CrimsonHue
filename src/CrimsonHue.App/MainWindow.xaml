@@ -8,7 +8,7 @@
     <Border Background="#CE3E5D" Width="42" Height="42" CornerRadius="12" Margin="0,0,13,0"><TextBlock Text="C" FontSize="27" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
     <StackPanel><TextBlock Text="CrimsonHue" FontSize="26" FontWeight="SemiBold"/><TextBlock Text="Live lighting mixer · see the input, shape the output" Foreground="{StaticResource Muted}" FontSize="12"/></StackPanel>
    </StackPanel>
-   <Border Grid.Column="1" Background="#211923" CornerRadius="6" Padding="11,7" VerticalAlignment="Center"><TextBlock Text="EARLY PREVIEW  /  0.3.3" Foreground="#EF9BAC" FontSize="11" FontWeight="SemiBold"/></Border>
+   <Border Grid.Column="1" Background="#211923" CornerRadius="6" Padding="11,7" VerticalAlignment="Center"><TextBlock Text="ASI PREVIEW  /  0.4.0" Foreground="#EF9BAC" FontSize="11" FontWeight="SemiBold"/></Border>
   </Grid>
   <Grid Grid.Row="1">
    <Grid.ColumnDefinitions><ColumnDefinition Width="420"/><ColumnDefinition Width="18"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -94,6 +94,9 @@
     </Border>
    </Grid>
   </Grid>
-  <TextBlock Grid.Row="2" Margin="0,13,0,0" Text="Raw CDT input → adjustable mapping → lamp output · no screen capture · no automatic color correction" Foreground="#737D91" FontSize="11"/>
+  <DockPanel Grid.Row="2" Margin="0,13,0,0">
+   <Button x:Name="HideSettingsButton" DockPanel.Dock="Right" Content="Hide settings" Click="HideClick" Padding="12,5" ToolTip="Hide this window while lighting sync continues. Ctrl + Shift + F10 reopens it."/>
+   <TextBlock x:Name="HostHint" VerticalAlignment="Center" Text="Ctrl + Shift + F10: show / hide" Foreground="#A7ADBC" FontSize="11"/>
+  </DockPanel>
  </Grid>
 </Window>

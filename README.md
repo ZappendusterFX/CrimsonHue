@@ -1,14 +1,20 @@
 # CrimsonHue
 
-A standalone Windows companion that turns Crimson Desert's live local-light
+A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
+
+**Branch preview: 0.4.0-asi.2.** `CrimsonHue.asi` runs the existing mixer and Hue
+client inside the game, using its own UI thread and the bundled .NET/WPF DLLs.
+There is no separate process or EXE in this package. Installation and lifecycle
+details are in [ASI guide](docs/ASI.md). This preview has not been published or
+verified in the real game. The linked 0.3.3 release is the earlier desktop EXE.
 
 **Downloads and guides:** [CrimsonHue releases](https://github.com/ZappendusterFX/CrimsonHue/releases) ·
 [complete setup and tuning guide](docs/USER-GUIDE.md) ·
 [required CrimsonDesertTelemetry releases](https://github.com/ZappendusterFX/CrimsonDesertTelemetry/releases).
 CrimsonDesertTelemetry (CDT) is a separate game mod and is **not included** in
-the CrimsonHue ZIP. Install and run it separately; do not put CrimsonHue in the
-game directory or install it with a game mod manager.
+the CrimsonHue ZIP. Install CDT separately alongside CrimsonHue using your
+existing ASI loader; CrimsonHue still consumes only CDT's neutral local API.
 
 **0.3.3 — early preview.** **Export preset** writes a versioned, readable JSON
 file containing only the 30 mixer controls. **Import preset** previews the
@@ -37,9 +43,10 @@ physical lamp brightness.
 
 1. Install [**CrimsonDesertTelemetry 2.2.1**](https://github.com/ZappendusterFX/CrimsonDesertTelemetry/releases/tag/v2.2.1) with its server, rendered and upstream
    ManyLights capture, and source visibility enabled. Start the game.
-2. Extract the complete CrimsonHue ZIP anywhere and run `CrimsonHue.exe`.
-   The package includes its .NET runtime. No administrator rights or installation
-   into the game directory are needed.
+2. With the game closed, put `CrimsonHue.asi` and the complete `CrimsonHue` folder
+   beside it in the same ASI loading directory as CDT. Keep the runtime DLLs in
+   that folder. Start the game; the mixer window opens automatically. The package
+   includes its .NET runtime. It does not include another ASI loader.
 3. Enter your bridge's local IPv4 address and click **Find bridge**. The preset
    `192.168.2.109` is the development setup; change it to your own address.
 4. Check the displayed bridge identity. Press the bridge's link button (for diyHue,
@@ -56,10 +63,13 @@ physical lamp brightness.
 7. **Stop**, or close the window, to release the stream and restore previously read
    on/off, brightness and color states of the selected lights, if CrimsonHue still
    owns the stream. Running effects/dynamic scenes are not resumed.
+   Close then hides the window; **Ctrl + Shift + F10** reopens it while the game
+   or mixer has focus. **Hide settings** and the shortcut hide without stopping
+   sync. Press **Stop** and wait for the stopped status before leaving the game.
 
 **Demo preview only** animates synthetic data and disables physical output. Normal
 preview uses live game data and the imported layout without claiming a stream.
-Streaming never starts automatically on application launch.
+Streaming never starts automatically when the ASI loads.
 
 ## Requirements and scope
 
@@ -73,9 +83,11 @@ Streaming never starts automatically on application launch.
   Backend/lamp performance varies; 30 outgoing updates/s is a target, not a
   measured physical lamp refresh rate.
 
-CrimsonHue consumes the telemetry service over WebSocket/JSON. It has no memory
-reader, ASI, injection, screen capture or bundled game files. Users need the
-running services, not the telemetry or diyHue source repositories.
+CrimsonHue consumes the telemetry service over WebSocket/JSON. Its own ASI hosts
+the consumer; it has no game memory reader, renderer hooks, screen capture or
+bundled game files. Users need the running CDT service, not its source repository.
+An ASI depends on the game's process lifetime: process termination can prevent
+bridge cleanup. See [ASI limits](docs/ASI.md#lifetime-and-limits).
 
 ## Mapping and availability
 
@@ -251,11 +263,13 @@ automatically and reset sequence tracking. Additive schema 1.x fields are tolera
 
 ## Build and verify
 
-Use a .NET 8 or 9 SDK on Windows:
+Use a .NET 8 SDK (or newer with the .NET 8 x64 host pack) and Visual Studio 2022
+with Desktop development with C++ and CMake tools on Windows:
 
 ```powershell
-dotnet build src/CrimsonHue.App -c Release
+powershell -ExecutionPolicy Bypass -File scripts/Build-Asi.ps1
 dotnet run --project tests/CrimsonHue.Tests -c Release
+artifacts\native-asi\Release\CrimsonHue.AsiSmoke.exe artifacts\asi\CrimsonHue.asi artifacts\asi-smoke.png
 powershell -ExecutionPolicy Bypass -File scripts/Publish.ps1
 ```
 
@@ -284,18 +298,20 @@ Windows user who paired the app. It performs GET requests only, does not start a
 stream or change settings, and does not print keys or full API responses. Use this
 to compare the bridge's saved layout with the Hue app before changing mapping axes.
 
-The executable supports `--ui-smoke <absolute-png-path>` to render its actual WPF
-window with synthetic data, exercise numeric controls and boundary switches, without loading
-credentials or connecting to devices, then exit. The publish script creates a
-standalone x64 executable and ZIP in
-`dist/`, and refuses to overwrite existing versions.
+The developer-only native smoke harness loads the actual ASI and bundled runtime
+into its own process, renders six WPF panels with synthetic data, exercises all
+mixer controls and verifies hide/reopen/close and orderly shutdown. It never
+loads saved credentials or connects to devices. The harness is excluded from
+the release. The publish script smoke-checks the exact candidate, rejects EXEs,
+settings and secrets, and creates an ASI ZIP in `dist/` without overwriting versions.
 
 ## Distribution
 
-Intended Nexus category: Crimson Desert / Utilities, as an external companion
-requiring CrimsonDesertTelemetry. Extract the portable app separately from the
-game; do not deploy its ZIP as game files with a mod manager. See `docs/NEXUS.md`
-for the draft listing and `docs/HANDOVER.md` for measured verification status.
+Intended Nexus category: Crimson Desert / Utilities, as an independent ASI
+requiring CrimsonDesertTelemetry. Keep `CrimsonHue.asi` and its payload folder
+together. An EXE-free archive does not establish Nexus moderation or antivirus
+acceptance. `docs/NEXUS.md` preserves the earlier 0.3.3 desktop listing;
+`docs/ASI.md` describes this branch preview and `docs/HANDOVER.md` its verification.
 
 Independent project, not affiliated with Signify or Philips Hue. Third-party
 license notices accompany the release in `THIRD-PARTY-NOTICES.md` and runtime files.

@@ -1,8 +1,10 @@
 # CrimsonHue — spatial lighting companion
 
-CrimsonHue is the standalone Windows Hue Entertainment consumer in this repository.
+CrimsonHue is the independent Windows Hue Entertainment consumer in this repository.
 Read docs/HANDOVER.md on takeover. Core code is in src/CrimsonHue.Core; WPF UI is in
-src/CrimsonHue.App. Build/test/package commands are in README.md.
+src/CrimsonHue.App. Branch codex/crimsonhue-asi hosts that UI and core in the game
+through native/CrimsonHue.Asi; it ships no EXE. Build/test/package commands are in
+README.md. Read docs/ASI.md for native hosting and process-lifetime limits.
 
 Consume only the neutral HTTP/WebSocket API from C:\DEV\CrimsonDesertTelemetry.
 For telemetry, lighting research, camera or the merged ASI, work in that product

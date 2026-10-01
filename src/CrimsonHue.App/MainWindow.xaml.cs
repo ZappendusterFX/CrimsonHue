@@ -15,6 +15,10 @@ namespace CrimsonHue.App;
 public partial class MainWindow : Window
 {
     private readonly bool smoke;
+    private readonly bool asi;
+    private bool hostShutdown;
+    private bool hiding;
+    private bool canHide = true;
     private readonly SettingsStore store = new();
     private readonly TelemetryState telemetry = new();
     private readonly AmbientState ambient = new();
@@ -39,9 +43,10 @@ public partial class MainWindow : Window
     private bool allowClose;
     private EntertainmentArea? SelectedArea => AreaBox.SelectedItem as EntertainmentArea;
 
-    public MainWindow(bool smoke = false)
+    public MainWindow(bool smoke = false, bool asi = false)
     {
         this.smoke = smoke;
+        this.asi = asi;
         InitializeComponent();
         InitializeTuning();
         if (!smoke)
@@ -239,6 +244,21 @@ public partial class MainWindow : Window
     {
         if (allowClose) return;
         e.Cancel = true;
+        if (asi && !hostShutdown)
+        {
+            if (hiding || closing) return;
+            hiding = true;
+            try
+            {
+                if (streamCancel != null) await streamCancel.CancelAsync();
+                if (streamTask != null) await streamTask;
+                SaveSettings();
+                HideOrMinimize();
+            }
+            catch (Exception ex) { StreamStatus.Text = FriendlyError(ex); }
+            finally { hiding = false; }
+            return;
+        }
         if (closing) return;
         closing = true; timer.Stop();
         try
@@ -255,6 +275,34 @@ public partial class MainWindow : Window
         }
         finally { bridge?.Dispose(); lifetime.Dispose(); allowClose = true; _ = Dispatcher.BeginInvoke(new Action(Close)); }
     }
+
+    internal void RequestHostShutdown()
+    {
+        hostShutdown = true;
+        Close();
+    }
+
+    internal void SetHostHint(bool available)
+    {
+        canHide = available;
+        HostHint.Text = available
+            ? "Ctrl + Shift + F10: show / hide · Close stops sync · Stop before leaving the game"
+            : "Shortcut unavailable · Close stops sync and minimizes · Stop before leaving the game";
+        HideSettingsButton.Content = available ? "Hide settings" : "Minimize settings";
+        if (!available) HideSettingsButton.ToolTip = "Minimize while sync continues. Reopen from the taskbar.";
+    }
+    internal void ReportHostFailure() => StreamStatus.Text = "CrimsonHue encountered an error. Lighting sync is stopping.";
+    internal void HideSettings()
+    {
+        try { SaveSettings(); HideOrMinimize(); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { StreamStatus.Text = FriendlyError(ex); }
+    }
+    private void HideOrMinimize()
+    {
+        if (canHide) Hide();
+        else WindowState = WindowState.Minimized;
+    }
+    private void HideClick(object sender, RoutedEventArgs e) => HideSettings();
     public void EnableSmokePreview()
     {
         DemoCheck.IsChecked = true;

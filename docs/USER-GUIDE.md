@@ -1,7 +1,7 @@
-# CrimsonHue 0.3.3 — setup and tuning guide
+# CrimsonHue 0.4.0 ASI preview — setup and tuning guide
 
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
-existing Hue Entertainment area. It is a standalone Windows application. Its
+existing Hue Entertainment area. It is an independent ASI with a mixer window. Its
 output is an artistic lighting estimate, not a sample of the displayed pixels
 or a measurement of the physical lamps.
 
@@ -12,10 +12,11 @@ or a measurement of the physical lamps.
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
    For all-around light sources, CrimsonHue needs CDT's fresh confirmed-clear
    visibility results. A missing or blocked source does not light a channel.
-2. Extract the entire `CrimsonHue-0.3.3-win-x64.zip` into a normal folder and
-   start `CrimsonHue.exe`. It includes the .NET runtime. Do **not** install this
-   ZIP through a game mod manager or copy it into the game directory. **CDT,
-   the game, bridge firmware and saved credentials are not in this ZIP.**
+2. Close the game. Extract `CrimsonHue.asi` and the complete `CrimsonHue` folder
+   from the ASI ZIP into the same ASI loading directory as CDT. Keep the DLLs
+   inside that folder. Start the game; the mixer opens automatically. The package
+   includes its .NET runtime. **CDT, an ASI loader, the game, bridge firmware and
+   saved credentials are not in this ZIP.** See [ASI guide](ASI.md).
 3. Use Windows 10/11 x64 and a Hue-compatible bridge with HTTPS API v2,
    Entertainment DTLS 1.2/PSK, color lamps and an existing Entertainment area.
    Set the area and channel positions in the Hue app first. diyHue is the
@@ -29,8 +30,18 @@ or a measurement of the physical lamps.
    drives lamps. Normal preview uses CDT and imported channel positions but
    does not claim the Entertainment stream.
 
-No separate .NET installation is required for the published ZIP. If you build
-the source yourself, use a Windows .NET 8 or 9 SDK; see the [README](../README.md).
+No separate .NET installation is required for the ASI ZIP. Source builds also
+need Visual Studio's C++/CMake tools; see the [README](../README.md).
+
+**Ctrl + Shift + F10** shows/hides the mixer while the game or mixer has focus.
+**Hide settings** keeps sync running. Closing the window stops sync, saves and
+hides it; the shortcut reopens it. If the shortcut is unavailable, Hide settings
+becomes Minimize settings and Close minimizes after stopping, retaining taskbar
+access.
+Press **Stop** and wait for the stopped status before quitting the game.
+Process termination can prevent restoration; the ASI cannot keep running after
+the game exits. This branch has synthetic verification, with real game and lamp
+acceptance still pending.
 
 ## Read the screen before tuning
 

@@ -1,4 +1,66 @@
-# Current checkpoint — CrimsonHue 0.3.3, 2026-09-29, Codex
+# Current checkpoint — CrimsonHue 0.4.0-asi.2 branch preview, 2026-10-01, Codex
+
+Owner requested an independent CrimsonHue ASI instead of the desktop EXE,
+primarily to remove EXE content from Nexus uploads. First committed the existing
+untracked Media files and historical HDR object on main (`d504b7c`), then created
+`codex/crimsonhue-asi`. All existing releases remain preserved; no push, public
+release, game deployment or physical stream was performed.
+
+`native/CrimsonHue.Asi` is a native x64 DLL with an ASI suffix. Its worker hosts
+the app-local .NET/WPF runtime through hostfxr and calls UnmanagedCallersOnly
+entry points. The previous C# UI is now a library and runs on a dedicated managed
+STA inside the native host process. No EXE is launched or packaged; the existing
+core, telemetry API consumption, mixer/presets, DPAPI store and ownership-aware
+stream cleanup are reused. CDT source and API are unchanged. This is a hosted
+managed consumer, not a full C++ port or a renderer overlay.
+
+The mixer opens when loaded. Ctrl+Shift+F10 shows/hides it while its host or mixer
+has focus; Hide settings saves and hides without stopping sync. Close stops sync,
+saves and hides; the shortcut reopens the same window. A conflicting hotkey
+switches Hide/Close to minimize so the taskbar remains usable. Loading never
+automatically starts physical sync. Native Stop queues bounded existing cleanup
+and shuts down the plugin UI without exiting its host. The ASI is pinned until
+process exit; hot unload/reload is unsupported.
+
+Important lifecycle limit: ending the game's process also kills CrimsonHue.
+This preview has no game exit hook and cannot promise restoration on normal
+game exit, crash or termination. Owner must Stop and wait for stopped status
+before quitting the game. Other CoreCLR-hosting mods remain unverified.
+Installation/lifecycle details are in `docs/ASI.md`; README and user guide now
+describe this branch. AGENTS.md and CLAUDE.md remain byte-identical.
+
+Verification: native Release /W4 /WX and managed Release build succeeded.
+73/73 existing nonphysical tests passed, including mock HTTPS/WS, real loopback
+OpenSSL DTLS and synthetic DPAPI. The native harness loaded the actual ASI and
+local runtime in an ordinary native process with a different working directory;
+all six synthetic WPF panels rendered and mixer control verification passed.
+Hide/reopen/close and final UI shutdown succeeded without ending the host.
+Separate startup-stop, ready-stop and missing-payload runs passed. The rendered
+main view was visually inspected. These are synthetic/native-host results,
+not evidence of in-game ASI-loader compatibility or physical lamp appearance.
+
+`scripts/Publish.ps1` now delegates to `Publish-Asi.ps1`. It refuses existing
+versioned output, checks the exact candidate through the native harness, rejects
+EXEs/settings/secrets/developer artifacts, writes normalized ZIP entry paths and
+hash-compares every archive file to the candidate. Optional .NET createdump.exe
+is excluded; runtime licenses/notices are included. First .asi.1 candidate is
+preserved (its checker failed on Windows ZIP separators); an incomplete .asi.2
+staging directory is preserved under artifacts. The finished .asi.2 ZIP passed
+all 471 file comparisons and its native UI smoke.
+
+Package: `dist/CrimsonHue-0.4.0-asi.2-asi-win-x64.zip` (72,628,534 bytes), SHA-256
+`DB7F954F5459A4CDE3B5D5EE570AC62B3A449A7F49F7CC1CDB3083EA03855D4A`.
+The native `CrimsonHue.asi` is 125,952 bytes; the whole uncompressed candidate is
+173,107,220 bytes, primarily bundled runtime DLLs. The previous 0.3.3 ZIP still
+matches `90867C06261C7DBCC9925768E0E70F6AC1C804D3FF0294C58EB7A816A3B29A61`.
+No Nexus acceptance or antivirus claim follows from removing EXEs.
+
+Next owner action: with the game closed and old desktop sync stopped, place the
+ASI plus its complete sibling CrimsonHue folder in the existing CDT ASI-loader
+directory, then test opening/hiding the mixer and Start/Stop in game. Stop before
+game exit. Real-game/real-lamp acceptance is pending; do not infer it from smoke.
+
+# Previous checkpoint — CrimsonHue 0.3.3, 2026-09-29, Codex
 
 Shareable mixer presets are implemented in the standalone app. Export writes a
 strict, readable `CrimsonHuePreset` v1 JSON containing the 30 mapping controls

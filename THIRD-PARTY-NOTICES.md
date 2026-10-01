@@ -30,5 +30,5 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 Additional .NET runtime notices, when supplied by its packages, accompany the
-standalone executable as `microsoft.*-LICENSE.TXT` and
+ASI's `CrimsonHue` payload folder as `microsoft.*-LICENSE.TXT` and
 `microsoft.*-THIRD-PARTY-NOTICES.TXT`.

@@ -1,5 +1,9 @@
 # Nexus listing copy — CrimsonHue 0.3.3
 
+Historical desktop listing. The ASI preview on `codex/crimsonhue-asi` is described
+in `docs/ASI.md`; it has not been published and this listing must not be used for
+its ZIP or installation instructions.
+
 GitHub release and download:
 https://github.com/ZappendusterFX/CrimsonHue/releases/tag/v0.3.3
 
