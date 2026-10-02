@@ -3,6 +3,7 @@
 #include <coreclr_delegates.h>
 #include <nethost.h>
 #include "payload.h"
+#include "overlay.h"
 #include <atomic>
 #include <filesystem>
 #include <string>
@@ -24,7 +25,8 @@ __declspec(noinline) bool IsSupportedHost() {
     if (!length || length >= 32768) return false;
     const auto separator = wcsrchr(process, L'\\');
     const auto name = separator ? separator + 1 : process;
-    return _wcsicmp(name, L"CrimsonDesert.exe") == 0 || _wcsicmp(name, L"CrimsonHue.AsiSmoke.exe") == 0;
+    return _wcsicmp(name, L"CrimsonDesert.exe") == 0 || _wcsicmp(name, L"CrimsonHue.AsiSmoke.exe") == 0 ||
+        _wcsicmp(name, L"CrimsonHue.OverlaySmoke.exe") == 0;
 }
 
 void __stdcall ReadyCallback() {
@@ -57,6 +59,11 @@ DWORD WINAPI Worker(void*) {
         const auto size = GetEnvironmentVariableW(L"CRIMSONHUE_ASI_SMOKE_PATH", smokePath, 32768);
         if (size >= 32768) { status = -8; return 0; }
         if (stopRequested) { status = 2; return 0; }
+        // Capture creation before loading CoreCLR so early game swapchains are
+        // not missed. The legacy WPF smoke path remains developer-only.
+        wchar_t overlaySmoke[2]{};
+        const bool testingOverlay = size && GetEnvironmentVariableW(L"CRIMSONHUE_ASI_OVERLAY_SMOKE", overlaySmoke, 2) == 1 && overlaySmoke[0] == L'1';
+        if (!size || testingOverlay) crimson::overlay::Start();
         std::filesystem::path payload;
         try { payload = ResolvePayload(module, size ? smokePath : nullptr); }
         catch (...) { status = -12; return 0; }
@@ -107,18 +114,25 @@ DWORD WINAPI Worker(void*) {
         run_fn run = nullptr;
         command_fn requestStop = nullptr;
         command_fn toggleWindow = nullptr;
+        crimson::overlay::read_fn readState = nullptr;
+        crimson::overlay::send_fn sendCommand = nullptr;
         constexpr auto type = L"CrimsonHue.App.AsiEntry, CrimsonHue";
         result = function(type, L"Run", UNMANAGEDCALLERSONLY_METHOD, nullptr, nullptr, reinterpret_cast<void**>(&run));
         if (result >= 0) result = function(type, L"RequestStop", UNMANAGEDCALLERSONLY_METHOD, nullptr, nullptr, reinterpret_cast<void**>(&requestStop));
         if (result >= 0) result = function(type, L"ToggleWindow", UNMANAGEDCALLERSONLY_METHOD, nullptr, nullptr, reinterpret_cast<void**>(&toggleWindow));
+        if (result >= 0) result = function(type, L"ReadState", UNMANAGEDCALLERSONLY_METHOD, nullptr, nullptr, reinterpret_cast<void**>(&readState));
+        if (result >= 0) result = function(type, L"SendCommand", UNMANAGEDCALLERSONLY_METHOD, nullptr, nullptr, reinterpret_cast<void**>(&sendCommand));
         writer(previousWriter);
-        if (result < 0 || !run || !requestStop || !toggleWindow) { status = -7; return 0; }
+        if (result < 0 || !run || !requestStop || !toggleWindow || !readState || !sendCommand) { status = -7; return 0; }
         stop = requestStop; toggle = toggleWindow;
+        crimson::overlay::SetBridge(readState, sendCommand);
         // Only the developer harness sets this. A smoke run never loads settings,
         // opens network connections or sends physical output.
         if (stopRequested) { status = 2; return 0; }
         const int managedResult = run(size ? smokePath : nullptr, reinterpret_cast<void*>(&ReadyCallback));
         status = managedResult == 0 ? 2 : -9;
+        crimson::overlay::SetBridge(nullptr, nullptr);
+        crimson::overlay::SetVisibleForTest(false);
         toggle = nullptr; stop = nullptr;
     } catch (...) {
         status = -10;
@@ -135,9 +149,25 @@ extern "C" __declspec(dllexport) int __stdcall CrimsonHueStop() {
     return 0;
 }
 extern "C" __declspec(dllexport) int __stdcall CrimsonHueToggleWindow() {
-    if (const auto command = toggle.load()) return command();
-    return 0;
+    crimson::overlay::Toggle(); return 1;
 }
+extern "C" __declspec(dllexport) int __stdcall CrimsonHueReadState(void* destination, int capacity) {
+    try {
+    crimson::overlay::RefreshBridge();
+    crimson::overlay::Json state;
+    if (!crimson::overlay::TryRead(state)) return 0;
+    const auto bytes = state.dump();
+    if (!destination || capacity < static_cast<int>(bytes.size())) return -static_cast<int>(bytes.size());
+    memcpy(destination, bytes.data(), bytes.size()); return static_cast<int>(bytes.size());
+    } catch (...) { return 0; }
+}
+extern "C" __declspec(dllexport) int __stdcall CrimsonHueSendCommand(const char* json, int size) {
+    if (!json || size <= 0 || size > 16384) return 0;
+    try { crimson::overlay::Command(crimson::overlay::Json::parse(json, json + size)); crimson::overlay::RefreshBridge(); return 1; }
+    catch (...) { return 0; }
+}
+extern "C" __declspec(dllexport) unsigned long long __stdcall CrimsonHueRenderedFrames() { return crimson::overlay::RenderedFrames(); }
+extern "C" __declspec(dllexport) const char* __stdcall CrimsonHueGraphicsStatus() { return crimson::overlay::GraphicsStatus(); }
 
 BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {

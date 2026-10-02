@@ -36,6 +36,15 @@ public partial class App : Application
         var window = new MainWindow(smoke, asi: true);
         MainWindow = window;
         window.Closed += (_, _) => Shutdown(Failed ? 1 : 0);
+        // Production has no visible WPF window. Controls remain an internal STA
+        // controller while the native ASI draws the UI into the game's backbuffer.
+        var overlay = !smoke || Environment.GetEnvironmentVariable("CRIMSONHUE_ASI_OVERLAY_SMOKE") == "1";
+        if (overlay)
+        {
+            window.StartOverlayController();
+            UiReady?.Invoke();
+            return;
+        }
         window.SourceInitialized += (_, _) =>
         {
             hotkeyWindow = HwndSource.FromHwnd(new WindowInteropHelper(window).Handle);

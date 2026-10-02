@@ -1,116 +1,117 @@
-# CrimsonHue ASI preview
+# CrimsonHue 0.4.0-asi.4 — independent in-game mixer
 
-**Historical `.asi.2` guide.** The owner's required design now uses a real
-in-game overlay and installed .NET 8 Desktop Runtime x64. The current `.asi.3`
-source checkpoint embeds only application files, but still has the WPF window;
-overlay and package changes are unfinished. Work stopped at the owner's request.
-Read [current handover](HANDOVER.md) before continuing or packaging.
-
-This branch produces an independent `CrimsonHue.asi`. It consumes CDT over the
-same HTTP/WebSocket API as the previous desktop consumer. The native loader hosts
-the existing C# core and WPF mixer in the game's process. It does not launch an
-EXE, host telemetry, read game memory or install graphics hooks. The package has
-no EXE files, including the optional .NET `createdump.exe` helper.
-
-The mixer remains a separate Windows window, rather than a renderer overlay.
-This preserves every control, imported Hue layout, preset and current-user DPAPI
-credential without duplicating the parser, mapper or stream lifecycle in C++.
-The native ASI is small; its bundled .NET/WPF runtime makes the full package
-roughly as large as the previous desktop distribution.
+`CrimsonHue.asi` draws an interactive ImGui mixer directly into the game's D3D12
+backbuffer. It consumes CDT's neutral HTTP/WebSocket API and keeps the existing
+C# mapping, pairing, DPAPI credentials and ownership-aware Hue stream lifecycle.
+There is no separate EXE/process or visible WPF settings window.
 
 ## Installation and use
 
-1. Close Crimson Desert and stop the old CrimsonHue desktop app's sync.
-2. Keep the working CDT installation and its existing x64 ASI loader.
-3. Place these two entries together in that loader's ASI directory:
+1. Install [Microsoft .NET 8 **Desktop Runtime x64**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
+   Plain .NET or ASP.NET Runtime alone does not supply WindowsDesktop/WPF.
+   .NET 9/10 alone does not satisfy the .NET 8 framework requirement.
+2. Close Crimson Desert and stop the old CrimsonHue desktop app's sync.
+   Keep the working CDT installation and its existing x64 ASI loader.
+3. Import the versioned ZIP through DMM, or manually copy the archive's
+   `CrimsonHue/CrimsonHue.asi` beside CDT's ASI. Only this ASI needs deploying.
+   The package root also contains guides and license notices. There are no loose
+   DLL, JSON, CFG or EXE companions, no runtime installer and no ASI loader.
+4. Start the game. The mixer opens in-game. **Ctrl + Shift + F10** shows/hides it
+   while the game has focus. The open overlay captures mouse/keyboard input;
+   hide it to resume game controls. Move/resize the panel using its title/border.
+5. In Setup, edit addresses and click **Apply addresses** before Find/reconnect.
+   Pair and select an existing Entertainment area as described in the
+   [user guide](USER-GUIDE.md). All 28 numeric controls and both boundary switches
+   are available, with the room output, distance curve and frozen raw readout.
+   The Presets tab accepts absolute `.json` file paths and previews selected
+   section changes before applying. Space remains off by default for imports.
+6. **Start lighting sync** is explicit; loading or demo preview never starts it.
+   **Hide settings** and the shortcut keep active sync running. The panel's X
+   stops sync, saves and hides it. Reopen it with the shortcut.
+7. Before quitting the game, click **Stop** and wait for stopped status. This
+   releases the owned area and restores captured states where the bridge is
+   reachable and stream ownership still matches.
 
-   ```text
-   CrimsonHue.asi
-   CrimsonHue/
-       CrimsonHue.dll
-       CrimsonHue.Core.dll
-       CrimsonHue.runtimeconfig.json
-       CrimsonHue.deps.json
-       hostfxr.dll
-       hostpolicy.dll
-       coreclr.dll
-       ...all remaining bundled DLLs, resources and license files...
-   ```
+Existing settings and current-user protected credentials are reused from
+`%LOCALAPPDATA%\CrimsonHue`. Run only one CrimsonHue consumer at a time.
+Neither takes over another application's active Entertainment area.
 
-   Do not scatter the payload DLLs into the game's root, rename the payload
-   directory, or remove individual DLLs. The ASI resolves the payload relative
-   to its own location, independently of the game's current directory. This ZIP
-   contains no ASI loader and does not replace CDT.
-4. Start the game. The mixer opens; physical sync remains stopped until you click
-   **Start lighting sync**. Existing settings/credentials from 0.3.3 are reused
-   from `%LOCALAPPDATA%\CrimsonHue` under the same Windows account.
-5. Use **Ctrl + Shift + F10** while the game or mixer has focus to show/hide the
-   mixer. **Hide settings** also hides it while sync continues. Closing the window
-   stops sync, saves settings and hides it. The shortcut reopens the same window.
-   A conflicting hotkey is reported in the footer; Hide settings becomes Minimize
-   settings and Close minimizes after stopping sync, keeping taskbar access.
-6. Before quitting the game, click **Stop** and wait for stopped status. This
-   releases the owned area and restores the previously captured light states
-   where the bridge remains reachable and ownership still matches.
+## Runtime and cache
 
-Both the old desktop consumer and the ASI share settings and bridge credentials.
-Run only one consumer at a time. Neither automatically takes over an active area.
-Removing the ASI/payload with the game closed returns to the earlier desktop
-distribution; no saved credentials or mapping values are migrated or deleted.
+The installed Desktop Runtime supplies CoreCLR/WPF. Static nethost discovers
+its hostfxr; no dotnet.exe is launched and no global DLL search path is changed.
+The existing WPF controller runs unshown on its own STA, allowing the native UI
+to reuse the verified consumer logic. The production path never calls Show on
+that window. A bounded credential-free UI snapshot and command queue connect
+the renderer and controller; Present never calls the bridge or CoreCLR.
 
-## Lifetime and limits
+Five application/dependency files are compressed inside the ASI, then extracted
+under `%LOCALAPPDATA%\CrimsonHue\asi-cache\<cabinet-sha256>`. Each start verifies
+file names, count, sizes and SHA-256. Interrupted extraction is not published;
+an invalid cache is preserved and rebuilt, with a fresh private copy used when
+the old cache is locked. Cache DLLs/metadata stay outside the game and DMM
+directories. Removing the ASI disables the plugin; cache/settings stay local
+and do not execute independently. Old immutable release ZIPs are preserved.
 
-CLR initialization, UI creation and all network operations occur on a worker
-outside `DllMain`. WPF runs on a dedicated STA with its own dispatcher. Runtime
-DLLs are loaded from the payload; the process DLL search path is not changed.
-The ASI is pinned for the process lifetime because CLR delegates cannot safely
-survive unloading their native host. Hot reload/unload is unsupported: close the
-game before replacing or removing the ASI.
+The single-ASI layout avoids companion deployment/removal problems documented
+in CDT's `docs/MOD_MANAGER_VALIDATION.md`, including DMM retaining DLL/CFG files
+and classifying loose JSON as patches. Actual DMM import/removal of this new
+package still requires validation.
 
-Normal UI Stop/close uses the existing bounded DTLS, freshness, stream ownership
-and restoration logic. The exported `CrimsonHueStop` queues that same shutdown
-without blocking the loader lock. It shuts down only the plugin UI, never the
-game process. `CrimsonHueStatus` reports 0 starting, 1 ready, 2 stopped, and negative
-values for initialization failure. `CrimsonHueToggleWindow` queues show/hide.
+## Graphics and lifetime limits
 
-Ending the host process kills the ASI's threads. No bridge restoration is promised
-on game exit, crash or forced termination, and this preview installs no exit hook.
-Explicit Stop before game exit is therefore part of normal use. Its window and
-background work cannot remain alive once the game exits. Interaction with other
-mods that already host CoreCLR is unverified; incompatible runtime initialization
-fails without starting a stream. A hosted UI failure requests stream shutdown;
-this does not isolate arbitrary native faults from the game process.
+The native renderer tracks the command queue supplied to DXGI swapchain creation,
+then hooks Present/Present1, resizing and color-space changes. It waits for
+graphics wrappers to finish creation, initializes GPU resources on a worker,
+fences in-flight buffers and skips a draw if its upload slot is busy. It uses a
+private ImGui context and chains the window procedure. SDR, scRGB and HDR10 have
+explicit output paths; HDR UI uses 200-nit paper white. Unsupported output or
+graphics faults disable drawing; a draw fault requests stream Stop and releases
+captured input. Coexistence with CDT, other input hooks and real graphics wrappers
+has not yet been game-tested. A late load can miss swapchain creation: restart
+the game. Helper processes such as crashpad_handler.exe are ignored.
 
-Build/testing require the .NET SDK and Visual Studio; end users need neither.
-Removing EXEs addresses the previous package's EXE content, but does not establish
-Nexus upload approval or antivirus acceptance.
+CLR initialization and graphics work occur outside DllMain. The ASI is pinned
+until process exit; hot unload/reload is unsupported. Close the game before
+replacing/removing it. Native `CrimsonHueStop` requests bounded controller cleanup
+without ending the game process. `CrimsonHueStatus` is 0 starting, 1 ready,
+2 stopped, 3 ignored helper and negative on failure; graphics readiness is
+separate from controller readiness.
+
+Process termination kills the plugin's threads. This preview installs no exit
+hook and cannot promise restoration on game exit, crash or forced termination.
+Stop before exit remains necessary. Other mods hosting CoreCLR/WPF can conflict;
+initialization failure does not start physical output. Arbitrary native faults
+are not isolated from the game process. Removing EXEs does not guarantee Nexus
+moderation or antivirus acceptance.
 
 ## Build and evidence
+
+Use the .NET 8 SDK/host pack and Visual Studio 2022 C++/CMake tools on Windows.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/Build-Asi.ps1
 dotnet run --project tests/CrimsonHue.Tests -c Release
-artifacts\native-asi\Release\CrimsonHue.AsiSmoke.exe artifacts\asi\CrimsonHue.asi artifacts\asi-smoke.png
+artifacts\native-asi\Release\CrimsonHue.OverlaySmoke.exe artifacts\asi\CrimsonHue.asi artifacts\overlay-smoke\ingame.png
+artifacts\native-asi\Release\CrimsonHue.HdrTests.exe
 powershell -ExecutionPolicy Bypass -File scripts/Publish-Asi.ps1
 ```
 
-The native harness is a development EXE and is never packaged. It loads the ASI
-through `LoadLibraryEx` in an ordinary native process, with a synthetic-only
-`CRIMSONHUE_ASI_SMOKE_PATH`. In that mode the UI does not load credentials, open
-network connections or enable physical output. It verifies the existing control
-coverage, renders six panels, exercises hide/reopen/close, then requests orderly
-UI shutdown and confirms its own host process survives.
+The developer harnesses are never packaged. OverlaySmoke loads the exact ASI
+into a native process with a hidden synthetic-only controller: no saved
+credentials, network connection or physical stream. It checks all 30 controls,
+command validation, actual D3D12/WARP pixel readback, hide/reopen, resize and
+host-preserving shutdown. HdrTests checks offscreen composition against scRGB,
+PQ/BT.2020 and SDR pixel values. The older AsiSmoke renders synthetic WPF panels
+and supports cancellation/missing runtime/resource/cache checks; it is not the
+production UI. Publish checks the exact candidate and hash-compares the ZIP's
+seven whitelisted files with its staging folder.
 
-The harness also accepts `--stop-early`, `--stop-ready` and `--missing-payload`.
-The latter requires a copy of the ASI in a test directory without its payload.
-These checks cover startup cancellation, native-triggered shutdown and load
-failure while keeping the native host alive.
-
-Synthetic native/WPF loading and the existing mock HTTPS/DTLS tests are distinct
-from CDT/game integration and physical lamp acceptance. The repository's
-`docs/HANDOVER.md` records exact evidence and the next owner action.
+Synthetic native/GPU evidence is distinct from actual Crimson Desert, DMM,
+physical lamp and HDR-display acceptance. Exact results and next owner action
+are recorded in [HANDOVER](HANDOVER.md).
 
 Hosting follows the [.NET native hosting design](https://github.com/dotnet/runtime/blob/main/docs/design/features/native-hosting.md),
-using `hostfxr_initialize_for_dotnet_command_line` and `hdt_get_function_pointer`
-with `UnmanagedCallersOnly` entry points in the default assembly context. The
-command-line API prepares the app-local runtime without executing a managed Main.
+using hostfxr command-line initialization without executing a managed Main.
+Generic graphics/HDR code is adapted under MIT from CrimsonDesertTelemetry;
+there is no telemetry implementation or game-memory reader in this repository.

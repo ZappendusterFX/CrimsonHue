@@ -215,6 +215,7 @@ public partial class MainWindow : Window
             Color = new SolidColorBrush(RoomView.ColorFrom(colors.FirstOrDefault(v => v.Id == c.Id)?.Rgb ?? default))
         }).ToArray();
         if (session != null && streamCancel?.IsCancellationRequested != true) StreamStatus.Text = session.Status;
+        PublishOverlay();
     }
     private void UpdateButtons()
     {
@@ -271,7 +272,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
-            if (!smoke) MessageBox.Show(this, FriendlyError(ex), "CrimsonHue", MessageBoxButton.OK, MessageBoxImage.Information);
+            if (!smoke && !overlayController) MessageBox.Show(this, FriendlyError(ex), "CrimsonHue", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         finally { bridge?.Dispose(); lifetime.Dispose(); allowClose = true; _ = Dispatcher.BeginInvoke(new Action(Close)); }
     }

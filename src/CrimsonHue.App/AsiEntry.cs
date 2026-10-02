@@ -11,6 +11,35 @@ public static class AsiEntry
     private static App? current;
     private static int started;
     private static int stopping;
+    private static byte[] state = "{}"u8.ToArray();
+    private static int queuedCommands;
+    internal static void PublishState(byte[] bytes) { if (bytes.Length <= 256 * 1024) Volatile.Write(ref state, bytes); }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+    public static int ReadState(nint destination, int capacity)
+    {
+        try { var bytes = Volatile.Read(ref state); if (destination == 0 || capacity < bytes.Length) return -bytes.Length;
+            Marshal.Copy(bytes, 0, destination, bytes.Length); return bytes.Length; }
+        catch { return 0; }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+    public static int SendCommand(nint source, int length)
+    {
+        if (source == 0 || length is <= 0 or > 16384 || Volatile.Read(ref stopping) != 0) return 0;
+        var app = Volatile.Read(ref current);
+        if (app == null || app.Dispatcher.HasShutdownStarted) return 0;
+        if (Interlocked.Increment(ref queuedCommands) > 64) { Interlocked.Decrement(ref queuedCommands); return 0; }
+        try
+        {
+            var bytes = new byte[length]; Marshal.Copy(source, bytes, 0, length);
+            app.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+            { try { if (app.MainWindow is MainWindow window) window.OverlayCommand(bytes); }
+              finally { Interlocked.Decrement(ref queuedCommands); } }));
+            return 1;
+        }
+        catch { Interlocked.Decrement(ref queuedCommands); return 0; }
+    }
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     private delegate void ReadyCallback();
 

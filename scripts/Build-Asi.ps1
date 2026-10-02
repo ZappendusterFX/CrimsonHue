@@ -1,4 +1,4 @@
-param([string]$Version = '0.4.0-asi.3')
+param([string]$Version = '0.4.0-asi.4')
 $ErrorActionPreference = 'Stop'
 if ($Version -notmatch '^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$') { throw 'Invalid version.' }
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -23,6 +23,8 @@ $component = Join-Path $stage 'component'
 & dotnet publish (Join-Path $projectRoot 'src\CrimsonHue.App\CrimsonHue.App.csproj') -c Release -r win-x64 --self-contained false -o $component "-p:Version=$Version" -p:UseAppHost=false -p:DebugType=None "-p:RestorePackagesPath=$projectRoot\artifacts\packages"
 if ($LASTEXITCODE -ne 0) { throw 'Managed publish failed.' }
 $files = @(Get-ChildItem -LiteralPath $component -Recurse -File | Sort-Object FullName)
+$expectedComponent = @('BouncyCastle.Cryptography.dll', 'CrimsonHue.Core.dll', 'CrimsonHue.dll', 'CrimsonHue.deps.json', 'CrimsonHue.runtimeconfig.json')
+if (@(Compare-Object ($expectedComponent | Sort-Object) ($files.Name | Sort-Object)).Count -ne 0) { throw 'Embedded component differs from the application-only manifest; no runtime files may be bundled.' }
 if ($files.Count -lt 4 -or $files.Count -gt 32) { throw 'Unexpected managed component size.' }
 if ($files | Where-Object { $_.Extension -in @('.exe', '.secrets', '.pdb', '.obj') -or $_.Name -in @('hostfxr.dll', 'hostpolicy.dll', 'coreclr.dll', 'settings.json') }) {
     throw 'Unexpected executable, bundled runtime or local settings in component.'

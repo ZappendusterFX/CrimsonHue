@@ -4,7 +4,7 @@ BouncyCastle.Cryptography 2.7.0: https://github.com/bcgit/bc-csharp
 
 Copyright (c) 2000-2026 The Legion of the Bouncy Castle Inc. (https://www.bouncycastle.org).
 
-Microsoft .NET, WPF and System.Security.Cryptography.ProtectedData 8.0.0:
+Microsoft .NET native hosting discovery helper (statically linked nethost):
 https://github.com/dotnet/runtime and https://github.com/dotnet/wpf
 
 Copyright (c) .NET Foundation and Contributors
@@ -29,6 +29,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-Additional .NET runtime notices, when supplied by its packages, accompany the
-ASI's `CrimsonHue` payload folder as `microsoft.*-LICENSE.TXT` and
-`microsoft.*-THIRD-PARTY-NOTICES.TXT`.
+The .NET/Desktop Runtime is installed separately and is not redistributed.
+The native renderer statically includes Dear ImGui 1.91.9b (including its default
+ProggyClean font and stb helpers), MinHook 1.3.4 and JSON for Modern C++ 3.12.0.
+Generic DXGI/HDR rendering code and HDR tests are adapted from
+CrimsonDesertTelemetry, Copyright (c) 2026 CrimsonDesertTelemetry contributors.
+Their complete license texts accompany this package in
+`NATIVE-THIRD-PARTY-NOTICES.txt`; the source license is preserved in
+`licenses/CDT-MIT.txt`. Installed Windows fonts are not redistributed.

@@ -1,4 +1,72 @@
-# Current checkpoint — ASI prototype saved; in-game UI required, 2026-10-01, Codex
+# Current checkpoint — 0.4.0-asi.4 in-game overlay candidate, 2026-10-02, Codex
+
+Owner resumed the independent-ASI work. The visible mixer now renders through
+ImGui into the game's D3D12 backbuffer; production never shows the WPF window
+or launches a separate EXE/process. The existing controller remains unshown on
+its own STA and reuses the C# core, telemetry API clients, imported layout,
+pairing, DPAPI settings and ownership-aware DTLS cleanup. Native snapshot and
+command queues are bounded; the render thread does not call CoreCLR or devices.
+CDT source and telemetry contracts were not changed or recreated here.
+
+All 28 numeric mixer controls and two boundaries are exposed. Output/Ambient/
+Color/Space, Setup, room/channel output, source preview, distance curve, raw
+input/freeze and preset section previews are in-game. Presets use an absolute
+.json path in the overlay rather than external file/dialog windows. Imports
+still default to Output/Ambient/Color, with Space off. Setup requires Apply
+addresses before Find/reconnect. Loading and demo never start physical output.
+Ctrl+Shift+F10 toggles the overlay while the game has focus; Hide keeps sync
+running, X stops/saves/hides. Stop before game exit remains required.
+
+The native renderer adapts generic MIT DXGI/HDR code from CDT, with its license
+preserved in licenses/CDT-MIT.txt and packaged notices. It tracks the actual
+presentation queue, defers initialization after graphics-wrapper creation,
+uses private ImGui state, fences GPU resources, and handles resize/output-space
+changes. SDR, scRGB and HDR10 have explicit paths (200-nit UI paper white).
+Foreground window input is chained/captured while open. Rendering failure
+releases input and requests stream Stop. FIFO Start/Stop ordering is preserved;
+cleanup is retried if the STA queue temporarily refuses it. Other CoreCLR/WPF
+mods, actual game input and CDT/graphics-wrapper coexistence remain unverified.
+ASI/process pinning and game-exit cleanup limits from docs/ASI.md still apply.
+
+Users install .NET 8 Desktop Runtime x64 separately. Build-Asi embeds exactly
+five application/dependency files, including the BouncyCastle assembly and
+runtime metadata, but no .NET runtime. SHA-verified extraction stays in the
+current user's LocalAppData cache. One ASI plus six documentation/license files
+ship under one CrimsonHue/ ZIP root; no loose DLL/JSON/CFG/EXE companions.
+Publish-Asi now tests the exact candidate and validates all seven ZIP entries
+byte-for-byte against staging. Existing releases/candidates remain immutable.
+
+Verification: native /W4 /WX and managed Release builds passed. 73/73 existing
+nonphysical tests passed (mock HTTPS/WS, loopback OpenSSL DTLS, synthetic DPAPI).
+The exact .asi.4 packaged ASI passed hidden-controller checks, all 30 controls,
+valid/invalid command exchange, actual D3D12/WARP pixel readback (828,535 visible
+pixels), hide/reopen, ResizeBuffers rebuild and host-preserving shutdown.
+Evidence: artifacts/asi-package-0.4.0-asi.4/ingame.png (synthetic, not the game).
+The earlier equivalent .asi.3 render was visually inspected. Offscreen HDR
+goldens passed for scRGB, PQ/BT.2020, alpha/background preservation and SDR.
+BridgeTests passed bounded queue, FIFO Start/Stop, cleanup retry and snapshots.
+Cache cold/reuse/repair and missing runtime/resource/early-stop/ready-stop
+passed on the .asi.3 candidate before the final version/queue correction.
+The .asi.4 validator passed staging/ZIP equality and a negative control rejecting
+an extra loose JSON companion. No live telemetry or lamp session was run.
+
+Package profile/version: independent ASI, win-x64, 0.4.0-asi.4.
+ZIP: dist/CrimsonHue-0.4.0-asi.4-asi-win-x64.zip (3,294,107 bytes).
+SHA-256: 5431DC4F98A047C970C6DC8146C0F1E5CA35ACDF011F923AE3B808EE0CD0D3C2.
+ASI: 3,815,424 bytes; SHA-256
+96C2FFA09FF63588573A4DE00E4ADB76901B27D8E757A176B4D9DED83FD22320.
+The intermediate .asi.3 ZIP and old bundled-runtime .asi.2 ZIP are preserved.
+README/ASI/user guide now describe this in-game layout. AGENTS and CLAUDE are
+byte-identical. Work is saved on codex/crimsonhue-asi; no push/upload/install.
+
+Next owner action: with the game closed and old desktop sync stopped, import
+the new ZIP through DMM and start the game. Validate real overlay opening,
+mouse/keyboard, hide/reopen, Setup and Start/Stop alongside CDT; check exact
+deployed ASI hash and DMM removal. This candidate has not been game/DMM installed
+or accepted with physical lamps/HDR display. Do not infer that from WARP smoke.
+Stop and wait before game exit. End the turn when owner action is needed.
+
+# Previous checkpoint — ASI prototype saved; in-game UI required, 2026-10-01, Codex
 
 Owner's latest instruction: **do not finish the implementation now; record it
 and stop.** The required result is an independent CrimsonHue ASI with an actual
