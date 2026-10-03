@@ -11,6 +11,8 @@ using Json = nlohmann::json;
 using read_fn = int(__stdcall*)(void*, int);
 using send_fn = int(__stdcall*)(const void*, int);
 void Start() noexcept;
+void InitializeDiagnostics() noexcept;
+void Diagnostic(const std::string& message) noexcept;
 void SetBridge(read_fn read, send_fn send) noexcept;
 void RefreshBridge() noexcept;
 void Command(Json value) noexcept;

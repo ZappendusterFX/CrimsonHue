@@ -1,4 +1,60 @@
-# Current checkpoint — 0.4.0-asi.4 in-game overlay candidate, 2026-10-02, Codex
+# Current checkpoint — 0.4.0-asi.5 shortcut/graphics diagnostics, 2026-10-03, Codex
+
+Owner entered Crimson Desert with the exact `.asi.4` ASI loaded (SHA-256
+96C2FFA09FF63588573A4DE00E4ADB76901B27D8E757A176B4D9DED83FD22320). Module inspection
+also found installed CoreCLR/WindowsDesktop 8.0.31 and extracted CrimsonHue
+assemblies. The owner reported no visible mixer; Ctrl+Shift+F10 only toggled CDT
+light markers. This is a failed real-game UI acceptance, not a runtime failure
+or proof of a particular graphics cause. ReShade and Streamline were loaded;
+CDT's overlay log reached ready. No CrimsonHue graphics log existed. TCP listener
+inspection was access-denied, so CDT API progress was not established this turn.
+Owner explicitly declined Computer Use: game actions remain manual.
+
+Owner requested a configurable shortcut. Setup now selects a keyboard key and
+Ctrl/Shift/Alt modifiers; Save shortcut applies/persists it in existing local
+settings. Default is Ctrl+Shift+F7, avoiding CDT's F8–F11. Missing or invalid
+key bindings use the default. All save/preset-import paths preserve the binding;
+mixer exports still contain no local setup. Main-key edges require exact modifiers
+and foreground ownership; holding, refocusing and rebinding a held key do not
+re-toggle. The graphics worker polls the shortcut even if capture/rendering failed.
+
+New native logs live in LocalAppData/CrimsonHue/diagnostics (PID/tick filenames,
+64-KiB bound). Only fixed statuses and error codes are written: hook slots/failure,
+swapchain rejection, D3D12 initialization HRESULT, first submitted frame and
+shortcut events. Controller ready is also recorded. Hook installation failure
+gets at most ten attempts, 500 ms apart. This supplies evidence for the remaining
+game failure; it is not a confirmed fix for that failure. No game-file replacement,
+UI automation, physical stream or upstream source change was performed.
+
+Verification: managed/native Release builds passed (/W4 /WX). 74/74 nonphysical
+tests passed including legacy-settings/shortcut persistence and preset exclusion.
+BridgeTests passed shortcut modifiers, edges, repeat, focus and rebind controls,
+plus existing FIFO/cleanup/snapshot checks. OverlaySmoke exercised valid/invalid
+shortcut commands and all 30 mixer controls with the hidden controller. Two
+synthetic modes loaded a separate MinHook DLL before/after CrimsonHue; factory
+and Present hooks in both DLLs received calls while CrimsonHue drew/resized.
+Both passed with 828,535 visible pixels. These are generic-hook controls, not
+CDT/ReShade/Streamline game acceptance. The exact final packaged candidate passed
+ordinary D3D12/WARP render, command validation, hide/reopen, resize and shutdown.
+Its log showed controller/graphics ready and first submitted frame. Evidence:
+artifacts/asi-package-0.4.0-asi.5/ and artifacts/overlay-shortcut-foreign-{before,after}/.
+
+Package profile/version: independent ASI, win-x64, 0.4.0-asi.5. Validator confirmed
+seven exact files in one CrimsonHue/ root, no loose DLL/JSON/CFG/EXE, no runtime,
+settings or credentials. The older immutable candidates are preserved.
+ZIP: dist/CrimsonHue-0.4.0-asi.5-asi-win-x64.zip (3,337,582 bytes), SHA-256
+B5C1DFA65C2861E30B58C2E9691FA7C8444C788EDE88D3B777760B582D73FD98.
+ASI: 3,863,040 bytes, SHA-256
+675B8C72701D6DCB7ACFC4BF6180DAA1ADD547E3EA5527789F194EB99E928052.
+This candidate is not installed/game-tested; physical input, DMM removal and
+real lamps remain pending. Branch codex/crimsonhue-asi; no push/upload.
+
+Next owner action: close the game, import the new ZIP through DMM and restart;
+try Ctrl+Shift+F7 and report whether the mixer appears. Read the new local native
+diagnostics before proposing another graphics fix. End whenever owner action is
+needed, with no waiting/polling. AGENTS.md and CLAUDE.md remain byte-identical.
+
+# Previous checkpoint — 0.4.0-asi.4 in-game overlay candidate, 2026-10-02, Codex
 
 Owner resumed the independent-ASI work. The visible mixer now renders through
 ImGui into the game's D3D12 backbuffer; production never shows the WPF window

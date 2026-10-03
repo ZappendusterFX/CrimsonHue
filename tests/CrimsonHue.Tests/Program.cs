@@ -911,6 +911,24 @@ Add("DPAPI secrets roundtrip without plaintext in settings", () =>
     // Only delete the exact synthetic files created by this test.
     File.Delete(Path.Combine(directory, "bridge.secrets")); File.Delete(Path.Combine(directory, "settings.json")); Directory.Delete(directory);
 });
+Add("Overlay shortcut keeps old settings compatible and persists independently of mixer presets", () =>
+{
+    var legacy = JsonSerializer.Deserialize<AppSettings>("{\"BridgeAddress\":\"127.0.0.1\",\"Mapping\":{\"Brightness\":0.42}}")!;
+    Assert(legacy.Shortcut == null && new OverlayShortcut().Key == 0x76);
+    var shortcut = new OverlayShortcut('H', Control: false, Shift: false, Alt: true); shortcut.Validate();
+    Reject(() => new OverlayShortcut(0x11).Validate()); Reject(() => new OverlayShortcut(256).Validate());
+    var directory = Path.Combine(Path.GetTempPath(), "CrimsonHue-shortcut-" + Guid.NewGuid().ToString("N"));
+    var store = new SettingsStore(directory);
+    try
+    {
+        store.SaveSettings(legacy with { Shortcut = shortcut });
+        var saved = store.LoadSettings();
+        Assert(saved.Shortcut == shortcut && saved.Mapping!.Brightness == .42 && saved.BridgeAddress == "127.0.0.1");
+        var preset = MappingPreset.Export("Mixer", saved.Mapping!);
+        Assert(!preset.Contains("Shortcut") && !preset.Contains("shortcut"), "Mixer preset captured a local shortcut");
+    }
+    finally { File.Delete(Path.Combine(directory, "settings.json")); Directory.Delete(directory); }
+});
 if (args.Contains("--live") || args.Contains("--live-bridge")) Async("LIVE read-only bridge identity", async () =>
 {
     var probe = await BridgeClient.ProbeAsync("192.168.2.109");

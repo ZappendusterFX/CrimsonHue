@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.4 — independent in-game mixer
+# CrimsonHue 0.4.0-asi.5 — independent in-game mixer
 
 `CrimsonHue.asi` draws an interactive ImGui mixer directly into the game's D3D12
 backbuffer. It consumes CDT's neutral HTTP/WebSocket API and keeps the existing
@@ -16,9 +16,12 @@ There is no separate EXE/process or visible WPF settings window.
    `CrimsonHue/CrimsonHue.asi` beside CDT's ASI. Only this ASI needs deploying.
    The package root also contains guides and license notices. There are no loose
    DLL, JSON, CFG or EXE companions, no runtime installer and no ASI loader.
-4. Start the game. The mixer opens in-game. **Ctrl + Shift + F10** shows/hides it
+4. Start the game. The mixer opens in-game. **Ctrl + Shift + F7** shows/hides it
    while the game has focus. The open overlay captures mouse/keyboard input;
    hide it to resume game controls. Move/resize the panel using its title/border.
+   **Setup → Overlay shortcut** lets you choose a key and Ctrl/Shift/Alt modifiers.
+   Click **Save shortcut** to apply and persist it. CDT's F8–F11 shortcuts also
+   react with modifiers held; choose another key when running both mods.
 5. In Setup, edit addresses and click **Apply addresses** before Find/reconnect.
    Pair and select an existing Entertainment area as described in the
    [user guide](USER-GUIDE.md). All 28 numeric controls and both boundary switches
@@ -71,6 +74,22 @@ captured input. Coexistence with CDT, other input hooks and real graphics wrappe
 has not yet been game-tested. A late load can miss swapchain creation: restart
 the game. Helper processes such as crashpad_handler.exe are ignored.
 
+Native graphics diagnostics are generated in
+`%LOCALAPPDATA%\CrimsonHue\diagnostics\overlay-<pid>-<tick>.log` (at most 64 KiB
+per launch). They record fixed graphics/controller status, hook failures,
+D3D12 initialization error codes, first submitted frame and shortcut events.
+They do not contain settings, credentials or UI/API snapshots. Installation
+failure is retried at most ten times, 500 ms apart. Shortcut polling continues
+even without a captured swapchain, so a nonworking toggle leaves a diagnosis.
+The owner reported no visible overlay with `.asi.4` on 2026-10-03. This candidate
+adds diagnostics; the actual game failure has not yet been located or resolved.
+
+The shortcut is stored in the existing local `settings.json` as
+`"Shortcut": { "Key": 118, "Control": true, "Shift": true, "Alt": false }`.
+`Key` is the Windows virtual-key value; 118 is F7. Missing/invalid key bindings
+fall back to this default. Modifier-only and mouse keys are rejected. No game
+directory configuration file is needed. Loading a mixer preset preserves it.
+
 CLR initialization and graphics work occur outside DllMain. The ASI is pinned
 until process exit; hot unload/reload is unsupported. Close the game before
 replacing/removing it. Native `CrimsonHueStop` requests bounded controller cleanup
@@ -94,6 +113,9 @@ powershell -ExecutionPolicy Bypass -File scripts/Build-Asi.ps1
 dotnet run --project tests/CrimsonHue.Tests -c Release
 artifacts\native-asi\Release\CrimsonHue.OverlaySmoke.exe artifacts\asi\CrimsonHue.asi artifacts\overlay-smoke\ingame.png
 artifacts\native-asi\Release\CrimsonHue.HdrTests.exe
+artifacts\native-asi\Release\CrimsonHue.BridgeTests.exe
+artifacts\native-asi\Release\CrimsonHue.OverlaySmoke.exe artifacts\asi\CrimsonHue.asi artifacts\foreign-before\ingame.png --foreign-before
+artifacts\native-asi\Release\CrimsonHue.OverlaySmoke.exe artifacts\asi\CrimsonHue.asi artifacts\foreign-after\ingame.png --foreign-after
 powershell -ExecutionPolicy Bypass -File scripts/Publish-Asi.ps1
 ```
 
@@ -106,6 +128,12 @@ PQ/BT.2020 and SDR pixel values. The older AsiSmoke renders synthetic WPF panels
 and supports cancellation/missing runtime/resource/cache checks; it is not the
 production UI. Publish checks the exact candidate and hash-compares the ZIP's
 seven whitelisted files with its staging folder.
+
+The two foreign-hook modes also load a developer-only DLL with its own static
+MinHook and forwarding factory/Present hooks, before or after CrimsonHue.
+Both must receive creation/Present calls while CrimsonHue draws and resizes.
+This tests generic hook coexistence; it does not reproduce ReShade/Streamline
+or prove coexistence in Crimson Desert.
 
 Synthetic native/GPU evidence is distinct from actual Crimson Desert, DMM,
 physical lamp and HDR-display acceptance. Exact results and next owner action

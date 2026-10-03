@@ -1,4 +1,5 @@
 #include "overlay.h"
+#include "overlay_shortcut.h"
 #include <imgui.h>
 #include <algorithm>
 #include <array>
@@ -75,6 +76,28 @@ void Controls(const Json& view, const char* group) {
     ImGui::SameLine(); if (Button("Save settings")) Action("save");
 }
 void Setup(const Json& view) {
+    static Shortcut chosen;
+    static bool shortcutSeeded = false;
+    if (!shortcutSeeded && view.value("ready", false)) { chosen = CurrentShortcut(); shortcutSeeded = true; }
+    ImGui::SeparatorText("Overlay shortcut");
+    const auto& keys = ShortcutKeys();
+    std::string keyName;
+    for (const auto& [key, label] : keys) if (key == chosen.key) keyName = label;
+    if (ImGui::BeginCombo("Key", keyName.c_str())) {
+        for (const auto& [key, label] : keys) {
+            if (ImGui::Selectable(label.c_str(), chosen.key == key)) chosen.key = key;
+            if (chosen.key == key) ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::Checkbox("Ctrl", &chosen.control); ImGui::SameLine();
+    ImGui::Checkbox("Shift", &chosen.shift); ImGui::SameLine(); ImGui::Checkbox("Alt", &chosen.alt);
+    Wrap("Current: " + ShortcutLabel(CurrentShortcut()));
+    if (Button("Save shortcut")) Command({{"action", "shortcut"}, {"key", chosen.key},
+        {"control", chosen.control}, {"shift", chosen.shift}, {"alt", chosen.alt}});
+    ImGui::SameLine(); if (Button("Default shortcut")) chosen = Shortcut{};
+    Wrap("CDT uses F8-F11 even with modifiers. Choose another key to avoid triggering both mods.");
+    ImGui::SeparatorText("Connection");
     static std::array<char, 2048> bridge{}, telemetry{};
     static bool seeded = false;
     if (!seeded && view.value("ready", false)) {
@@ -140,7 +163,7 @@ void DrawUi(const Json& view, bool& visible) {
     ImGui::SetNextWindowSizeConstraints({720, 480}, ImGui::GetIO().DisplaySize);
     bool open = true;
     if (ImGui::Begin("CrimsonHue - live lighting mixer", &open, ImGuiWindowFlags_NoCollapse)) {
-        ImGui::TextColored({.95f, .55f, .65f, 1}, "IN-GAME ASI  /  Ctrl + Shift + F10");
+        ImGui::TextColored({.95f, .55f, .65f, 1}, "IN-GAME ASI  /  %s", ShortcutLabel(CurrentShortcut()).c_str());
         Wrap(Text(view, "telemetry")); Wrap(Text(view, "capture")); Wrap(Text(view, "ambient"));
         if (!view.value("ready", false)) { Wrap("Starting CrimsonHue. Requires .NET 8 Desktop Runtime x64."); Wrap(GraphicsStatus()); }
         else {

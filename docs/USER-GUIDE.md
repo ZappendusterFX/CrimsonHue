@@ -38,7 +38,11 @@ alone does not include WPF, and .NET 9/10 alone does not fulfill this requiremen
 Source builds also
 need Visual Studio's C++/CMake tools; see the [README](../README.md).
 
-**Ctrl + Shift + F10** shows/hides the mixer while the game has focus.
+**Ctrl + Shift + F7** is the default show/hide shortcut while the game has focus.
+In **Setup → Overlay shortcut**, choose the key and Ctrl/Shift/Alt modifiers,
+then click **Save shortcut**. It applies immediately and is remembered across
+launches. Mixer presets do not change it. Avoid F8–F11 alongside CDT, which
+also reacts to those keys when modifiers are held.
 **Hide settings** keeps sync running. Closing the overlay stops sync, saves and
 hides it; the shortcut reopens it. Mouse and keyboard input are captured while
 the overlay is open in the foreground; hide it to resume normal game controls.

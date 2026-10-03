@@ -35,6 +35,7 @@ public partial class MainWindow : Window
     private BridgeClient? bridge;
     private BridgeProbe? probe;
     private MappingSettings mapping = new();
+    private OverlayShortcut shortcut = new();
     private string? selectedAreaId;
     private bool initialized;
     private bool updatingSettings;
@@ -57,6 +58,8 @@ public partial class MainWindow : Window
                 BridgeAddress.Text = saved.BridgeAddress;
                 TelemetryAddress.Text = saved.TelemetryAddress;
                 selectedAreaId = saved.AreaId;
+                // A malformed shortcut must not discard the owner's existing bridge/layout.
+                if (saved.Shortcut is { } savedShortcut && OverlayShortcut.IsAllowedKey(savedShortcut.Key)) shortcut = savedShortcut;
                 var m = saved.Mapping ?? new(); LightMapper.Validate(m);
                 mapping = m;
                 var credentials = store.LoadCredentials();
@@ -239,7 +242,7 @@ public partial class MainWindow : Window
     }
     private void SaveSettings()
     {
-        if (!smoke) store.SaveSettings(new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(), SelectedArea?.Id ?? selectedAreaId, mapping));
+        if (!smoke) store.SaveSettings(new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(), SelectedArea?.Id ?? selectedAreaId, mapping, Shortcut: shortcut));
     }
     private async void OnClosing(object? sender, CancelEventArgs e)
     {

@@ -1,5 +1,6 @@
 #include "overlay.h"
 #include "overlay_hdr.h"
+#include "overlay_shortcut.h"
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <wrl/client.h>
@@ -22,7 +23,11 @@ namespace crimson::overlay
 namespace
 {
 using Microsoft::WRL::ComPtr;
-void Check(HRESULT hr) { if (FAILED(hr)) throw std::runtime_error("Graphics operation failed"); }
+struct GraphicsError : std::runtime_error {
+    HRESULT code;
+    explicit GraphicsError(HRESULT hr) : std::runtime_error("Graphics operation failed"), code(hr) {}
+};
+void Check(HRESULT hr) { if (FAILED(hr)) throw GraphicsError(hr); }
 bool SameObject(IUnknown* first, IUnknown* second)
 {
     if (!first || !second) return false;
@@ -286,7 +291,8 @@ struct State
     ComPtr<IDXGISwapChain3> candidate;
     ComPtr<ID3D12CommandQueue> queue;
     HWND window{};
-    bool visible = true, toggleDown{}, resizing{}, failed{}, failureNotified{};
+    bool visible = true, resizing{}, failed{}, failureNotified{};
+    ShortcutGate shortcutGate;
     bool changingColorSpace{}, explicitColorSpace{};
     DXGI_COLOR_SPACE_TYPE outputColorSpace = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
     std::atomic<const char*> outputLabel{"D3D12 / waiting"};
@@ -320,14 +326,20 @@ template<class T> bool Hook(void* target, void* replacement, T& original, size_t
 {
     auto& state = Data();
     if (state.targets[slot]) return state.targets[slot] == target;
-    if (MH_CreateHook(target, replacement, reinterpret_cast<void**>(&original)) != MH_OK) return false;
-    if (MH_EnableHook(target) != MH_OK)
+    const auto created = MH_CreateHook(target, replacement, reinterpret_cast<void**>(&original));
+    if (created != MH_OK) {
+        Diagnostic("Hook slot " + std::to_string(slot) + " create failed: " + MH_StatusToString(created)); return false;
+    }
+    const auto enabled = MH_EnableHook(target);
+    if (enabled != MH_OK)
     {
+        Diagnostic("Hook slot " + std::to_string(slot) + " enable failed: " + MH_StatusToString(enabled));
         MH_RemoveHook(target);
         original = nullptr;
         return false;
     }
     state.targets[slot] = target;
+    Diagnostic("Hook slot " + std::to_string(slot) + " installed.");
     return true;
 }
 bool Draw(IDXGISwapChain* chain, UINT flags) noexcept
@@ -338,11 +350,6 @@ bool Draw(IDXGISwapChain* chain, UINT flags) noexcept
     if (!lock.owns_lock() || state.resizing || state.changingColorSpace || !SameObject(chain, state.candidate.Get())) return false;
     try
     {
-        const bool foreground = GetForegroundWindow() == GetAncestor(state.window, GA_ROOT);
-        const bool toggle = (GetAsyncKeyState(VK_F10) & 0x8000) &&
-            (GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(VK_SHIFT) & 0x8000);
-        if (foreground && toggle && !state.toggleDown) state.visible = !state.visible;
-        state.toggleDown = toggle;
         if (!state.renderer) return false;
         // Color-space changes are rebuilt on the worker after our GPU fence, not
         // in Present. Never draw an SDR/PQ pipeline into the newly selected space.
@@ -487,13 +494,19 @@ void Track(IUnknown* suppliedDevice, IDXGISwapChain* chain) noexcept
         if (!suppliedDevice || !chain) return;
         ComPtr<ID3D12CommandQueue> queue;
         ComPtr<IDXGISwapChain3> chain3;
-        if (FAILED(suppliedDevice->QueryInterface(IID_PPV_ARGS(&queue))) || FAILED(chain->QueryInterface(IID_PPV_ARGS(&chain3)))) return;
+        if (FAILED(suppliedDevice->QueryInterface(IID_PPV_ARGS(&queue))) || FAILED(chain->QueryInterface(IID_PPV_ARGS(&chain3)))) {
+            Diagnostic("Swapchain ignored: no D3D12 presentation queue or IDXGISwapChain3."); return;
+        }
         DXGI_SWAP_CHAIN_DESC desc{};
-        if (FAILED(chain->GetDesc(&desc)) || !desc.OutputWindow) return;
+        if (FAILED(chain->GetDesc(&desc)) || !desc.OutputWindow) {
+            Diagnostic("Swapchain ignored: no HWND descriptor."); return;
+        }
         DWORD process{};
         GetWindowThreadProcessId(desc.OutputWindow, &process);
         RECT client{};
-        if (process != GetCurrentProcessId() || !GetClientRect(desc.OutputWindow, &client) || client.right < 320 || client.bottom < 200) return;
+        if (process != GetCurrentProcessId() || !GetClientRect(desc.OutputWindow, &client) || client.right < 320 || client.bottom < 200) {
+            Diagnostic("Swapchain ignored: window is foreign, missing or smaller than 320x200."); return;
+        }
         auto& state = Data();
         {
             std::lock_guard lock(state.hooksMutex);
@@ -618,15 +631,18 @@ bool InstallGraphics() noexcept
     try
     {
         auto& state = Data();
+        std::lock_guard lock(state.hooksMutex);
         const auto hookInit = MH_Initialize();
-        if (hookInit != MH_OK && hookInit != MH_ERROR_ALREADY_INITIALIZED) return false;
+        if (hookInit != MH_OK && hookInit != MH_ERROR_ALREADY_INITIALIZED) {
+            Diagnostic(std::string("MinHook initialization failed: ") + MH_StatusToString(hookInit)); return false;
+        }
         ComPtr<IDXGIFactory2> factory;
         Check(CreateDXGIFactory1(IID_PPV_ARGS(&factory)));
         auto** table = *reinterpret_cast<void***>(factory.Get());
         return Hook(table[10], reinterpret_cast<void*>(&OnCreateChain), state.createChain, 0) &&
             Hook(table[15], reinterpret_cast<void*>(&OnCreateHwnd), state.createHwnd, 1);
     }
-    catch (...) { return false; }
+    catch (...) { Diagnostic("DXGI factory discovery failed."); return false; }
 }
 void MaintainGraphics() noexcept
 {
@@ -635,6 +651,17 @@ void MaintainGraphics() noexcept
     {
         ProcessPendingSwapchains();
         std::lock_guard lock(state.mutex);
+        const auto shortcut = CurrentShortcut();
+        DWORD foregroundProcess{};
+        GetWindowThreadProcessId(GetForegroundWindow(), &foregroundProcess);
+        const auto down = [](int key) { return (GetAsyncKeyState(key) & 0x8000) != 0; };
+        if (state.shortcutGate.Update(shortcut, down(shortcut.key), down(VK_CONTROL), down(VK_SHIFT),
+            down(VK_MENU), foregroundProcess == GetCurrentProcessId())) {
+            state.visible = !state.visible;
+            if (!state.visible) ReleaseInput();
+            Diagnostic(!state.candidate ? "Shortcut received, but no game swapchain has been captured." :
+                state.visible ? "Shortcut shows overlay." : "Shortcut hides overlay.");
+        }
         if (!state.candidate || state.resizing || state.changingColorSpace || state.failed) return;
         DXGI_SWAP_CHAIN_DESC1 desc{};
         if (FAILED(state.candidate->GetDesc1(&desc))) return;
@@ -664,10 +691,17 @@ void MaintainGraphics() noexcept
             state.renderer = std::move(renderer);
             SetReadyStatus(state, mode);
         }
+        catch (const GraphicsError& error)
+        {
+            state.failed = true;
+            Diagnostic("D3D12 renderer initialization failed with HRESULT " + std::to_string(error.code));
+            state.status = "Overlay graphics initialization failed; see the LocalAppData CrimsonHue diagnostics log.";
+        }
         catch (...)
         {
             state.failed = true;
-            state.status = "Overlay graphics initialization failed; see overlay log and D3D12 output settings. Telemetry continues.";
+            Diagnostic("Renderer initialization failed outside a D3D12 operation.");
+            state.status = "Overlay graphics initialization failed; see the LocalAppData CrimsonHue diagnostics log.";
         }
     }
     catch (...) { state.status = "Overlay maintenance stopped after an error."; }

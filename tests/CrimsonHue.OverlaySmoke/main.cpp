@@ -16,13 +16,26 @@ using Json = nlohmann::json;
 void Require(bool condition, const char* message) { if (!condition) throw std::runtime_error(message); }
 void Check(HRESULT hr) { Require(SUCCEEDED(hr), "D3D12 smoke operation failed"); }
 int wmain(int argc, wchar_t** argv) {
-    if (argc != 3) return 1;
+    if (argc != 3 && argc != 4) return 1;
     try {
         const auto asi = std::filesystem::absolute(argv[1]);
         const auto png = std::filesystem::absolute(argv[2]);
         std::filesystem::create_directories(png.parent_path());
         SetEnvironmentVariableW(L"CRIMSONHUE_ASI_SMOKE_PATH", png.c_str());
         SetEnvironmentVariableW(L"CRIMSONHUE_ASI_OVERLAY_SMOKE", L"1");
+        using Foreign = int(__stdcall*)(); Foreign foreignPassed{};
+        auto InstallForeign = [&] {
+            const auto path = std::filesystem::absolute(argv[0]).parent_path() / L"CrimsonHue.ForeignOverlay.dll";
+            const auto helper = LoadLibraryExW(path.c_str(), nullptr, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32);
+            Require(helper != nullptr, "Foreign overlay test DLL missing");
+            const auto install = reinterpret_cast<Foreign>(GetProcAddress(helper, "InstallForeignOverlay"));
+            foreignPassed = reinterpret_cast<Foreign>(GetProcAddress(helper, "ForeignOverlayPassed"));
+            Require(install && foreignPassed && install(), "Foreign overlay hooks failed");
+        };
+        const bool foreignBefore = argc == 4 && wcscmp(argv[3], L"--foreign-before") == 0;
+        const bool foreignAfter = argc == 4 && wcscmp(argv[3], L"--foreign-after") == 0;
+        Require(argc == 3 || foreignBefore || foreignAfter, "Unknown smoke mode");
+        if (foreignBefore) InstallForeign();
         const auto module = LoadLibraryExW(asi.c_str(), nullptr, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32);
         Require(module != nullptr, "ASI load failed");
         using Status = int(__stdcall*)(); using Read = int(__stdcall*)(void*, int); using Send = int(__stdcall*)(const char*, int);
@@ -38,10 +51,18 @@ int wmain(int argc, wchar_t** argv) {
         const auto start = GetTickCount64();
         while (status() == 0 && GetTickCount64() - start < 20000) Sleep(20);
         Require(status() == 1, "Managed engine not ready");
+        if (foreignAfter) InstallForeign();
         auto State = [&] { std::vector<char> bytes(256 * 1024); const int size = read(bytes.data(), static_cast<int>(bytes.size()));
             Require(size > 0, "No UI snapshot"); return Json::parse(bytes.data(), bytes.data() + size); };
         auto Command = [&](Json command) { const auto text = command.dump(); Require(send(text.data(), static_cast<int>(text.size())) == 1, "Command not accepted"); };
         auto state = State();
+        Require(state.at("shortcut").at("key") == 0x76, "Default shortcut still collides with CDT F10");
+        Command({{"action", "shortcut"}, {"key", 'H'}, {"control", false}, {"shift", false}, {"alt", true}});
+        Sleep(150); state = State();
+        Require(state.at("shortcut").at("key") == 'H' && state.at("shortcut").at("alt") == true, "Shortcut command did not reach controller");
+        Command({{"action", "shortcut"}, {"key", VK_CONTROL}, {"control", false}, {"shift", false}, {"alt", false}});
+        Sleep(100); Require(State().at("shortcut").at("key") == 'H', "Invalid shortcut overwrote saved binding");
+        Command({{"action", "shortcut"}, {"key", 0x76}, {"control", true}, {"shift", true}, {"alt", false}});
         Require(state.value("smoke", false) && state.value("demo", false) && !state.value("windowVisible", true), "Engine showed a WPF window or enabled live mode");
         Require(state.at("controls").size() == 28 && state.at("switches").size() == 2 && state.at("channels").size() == 6, "Missing mixer/layout controls");
         Command({{"action", "set"}, {"key", "Brightness"}, {"value", 23.0}});
@@ -78,6 +99,11 @@ int wmain(int argc, wchar_t** argv) {
         const auto graphicsStart = GetTickCount64();
         while (frames() < 5 && GetTickCount64() - graphicsStart < 15000) { Pump(); Check(chain->Present(0, 0)); Sleep(20); }
         std::cout << graphics() << '\n'; Require(frames() >= 5, "Overlay did not draw actual D3D12 frames"); Wait();
+        if (foreignPassed) {
+            Check(chain->Present(0, 0));
+            Require(foreignPassed(), "CrimsonHue bypassed or broke the second overlay's graphics hooks");
+            std::cout << "PASS two independent MinHook DLLs / " << (foreignBefore ? "foreign before" : "foreign after") << '\n';
+        }
 
         // Copy the actual overlay-rendered backbuffer to CPU memory and encode
         // it with Windows WIC. This never captures the real game or desktop.

@@ -31,6 +31,7 @@ __declspec(noinline) bool IsSupportedHost() {
 
 void __stdcall ReadyCallback() {
     status = 1;
+    crimson::overlay::Diagnostic("Managed hidden controller ready.");
     if (stopRequested) { if (const auto request = stop.load()) request(); }
 }
 

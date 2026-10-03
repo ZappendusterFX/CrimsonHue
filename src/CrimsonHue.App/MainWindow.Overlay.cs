@@ -31,6 +31,7 @@ public partial class MainWindow
         {
             ready = true, demo = DemoCheck.IsChecked == true, frozen = FreezeRawCheck.IsChecked == true,
             smoke, windowVisible = IsVisible,
+            shortcut,
             telemetry = TelemetryStatus.Text, capture = CaptureInfo.Text, ambient = AmbientStatus.Text,
             stream = StreamStatus.Text, tuning = TuningStatus.Text, bridgeStatus = BridgeStatus.Text,
             certificate = CertificateLabel.Text, pairing = PairPanel.Visibility == Visibility.Visible,
@@ -79,6 +80,14 @@ public partial class MainWindow
                     MixerTabs.SelectedItem = MixerTabs.Items.Cast<TabItem>().First(t => (string)t.Tag == Text("group"));
                     ResetTabClick(this, new()); break;
                 case "save": SaveTuningClick(this, new()); break;
+                case "shortcut":
+                    var nextShortcut = new OverlayShortcut(command.GetProperty("key").GetInt32(),
+                        command.GetProperty("control").GetBoolean(), command.GetProperty("shift").GetBoolean(),
+                        command.GetProperty("alt").GetBoolean());
+                    nextShortcut.Validate();
+                    if (!smoke) store.SaveSettings(new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(),
+                        SelectedArea?.Id ?? selectedAreaId, mapping, Shortcut: nextShortcut));
+                    shortcut = nextShortcut; TuningStatus.Text = "Overlay shortcut saved"; break;
                 case "demo":
                     if (streamTask == null) DemoCheck.IsChecked = smoke || command.GetProperty("value").GetBoolean(); break;
                 case "freeze": FreezeRawCheck.IsChecked = command.GetProperty("value").GetBoolean(); break;
@@ -115,7 +124,7 @@ public partial class MainWindow
                     if (overlayPreset == null) break;
                     var groups = (PresetGroups)command.GetProperty("groups").GetInt32();
                     var next = overlayPreset.ApplyTo(mapping, groups);
-                    if (!smoke) store.SaveSettings(new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(), SelectedArea?.Id ?? selectedAreaId, next));
+                    if (!smoke) store.SaveSettings(new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(), SelectedArea?.Id ?? selectedAreaId, next, Shortcut: shortcut));
                     Volatile.Write(ref mapping, next); SyncTuningValues();
                     TuningStatus.Text = $"Imported {overlayPreset.Name} ({SectionNames(groups)}) · saved";
                     overlayPreset = null; break;
