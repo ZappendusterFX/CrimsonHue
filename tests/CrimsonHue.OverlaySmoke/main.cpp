@@ -56,13 +56,13 @@ int wmain(int argc, wchar_t** argv) {
             Require(size > 0, "No UI snapshot"); return Json::parse(bytes.data(), bytes.data() + size); };
         auto Command = [&](Json command) { const auto text = command.dump(); Require(send(text.data(), static_cast<int>(text.size())) == 1, "Command not accepted"); };
         auto state = State();
-        Require(state.at("shortcut").at("key") == 0x76, "Default shortcut still collides with CDT F10");
+        Require(state.at("shortcut").at("key") == 'H', "Default shortcut must use H instead of a function key");
         Command({{"action", "shortcut"}, {"key", 'H'}, {"control", false}, {"shift", false}, {"alt", true}});
         Sleep(150); state = State();
         Require(state.at("shortcut").at("key") == 'H' && state.at("shortcut").at("alt") == true, "Shortcut command did not reach controller");
         Command({{"action", "shortcut"}, {"key", VK_CONTROL}, {"control", false}, {"shift", false}, {"alt", false}});
         Sleep(100); Require(State().at("shortcut").at("key") == 'H', "Invalid shortcut overwrote saved binding");
-        Command({{"action", "shortcut"}, {"key", 0x76}, {"control", true}, {"shift", true}, {"alt", false}});
+        Command({{"action", "shortcut"}, {"key", 'H'}, {"control", true}, {"shift", true}, {"alt", false}});
         Require(state.value("smoke", false) && state.value("demo", false) && !state.value("windowVisible", true), "Engine showed a WPF window or enabled live mode");
         Require(state.at("controls").size() == 28 && state.at("switches").size() == 2 && state.at("channels").size() == 6, "Missing mixer/layout controls");
         Command({{"action", "set"}, {"key", "Brightness"}, {"value", 23.0}});

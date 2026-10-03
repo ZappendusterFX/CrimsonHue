@@ -4,7 +4,7 @@
 
 namespace crimson::overlay {
 struct Shortcut {
-    int key = 0x76;
+    int key = 'H';
     bool control = true, shift = true, alt = false;
     bool operator==(const Shortcut&) const = default;
 };

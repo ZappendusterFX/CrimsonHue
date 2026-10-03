@@ -1,4 +1,30 @@
-# Current checkpoint — 0.4.0-asi.5 shortcut/graphics diagnostics, 2026-10-03, Codex
+# Current checkpoint — 0.4.0-asi.6 letter shortcut, 2026-10-03, Codex
+
+Owner reports F7 is fly mode and all F4–F12 are occupied. Default is now
+Ctrl+Shift+H (VK 72) in both managed and native code, including startup fallback,
+UI display and smoke expectations. Setup still freely selects a key/modifiers;
+explicit saved bindings are preserved. Read-only inspection found no saved
+shortcut for this owner, so the new default applies. No settings were written.
+
+Managed/native Release builds, exact candidate OverlaySmoke and seven-file
+staging/ZIP validation passed. Smoke verified H as default, valid/invalid
+binding commands, all mixer controls, 828,535 visible WARP pixels, hide/reopen,
+resize and host-preserving shutdown. BridgeTests passed with the new default.
+Full 74-test and foreign-hook results below are from `.asi.5`, not rerun for
+this default-only change. AGENTS/CLAUDE hashes still match.
+
+Independent ASI / win-x64 / 0.4.0-asi.6:
+ZIP dist/CrimsonHue-0.4.0-asi.6-asi-win-x64.zip (3,337,560 bytes), SHA-256
+5729B7325A2D1241CD41557480558D63429B177C497E4CECE8F310AF2D3C3CE4.
+ASI 3,863,040 bytes, SHA-256
+D7862B1EE8CA5E2FAAB7670BC811E9219C393C2BF2E823E99B004839DE03F650.
+Older ZIPs remain immutable. No install, game control, physical output or upload.
+The `.asi.4` invisible-overlay failure remains undiagnosed. The `.asi.6` candidate
+is not game-tested and retains `.asi.5` native diagnostics. Next: owner closes
+the game, installs `.asi.6` through DMM, restarts and tests Ctrl+Shift+H; inspect
+the generated native log on the owner's return. No Computer Use or waiting.
+
+# Previous checkpoint — 0.4.0-asi.5 shortcut/graphics diagnostics, 2026-10-03, Codex
 
 Owner entered Crimson Desert with the exact `.asi.4` ASI loaded (SHA-256
 96C2FFA09FF63588573A4DE00E4ADB76901B27D8E757A176B4D9DED83FD22320). Module inspection

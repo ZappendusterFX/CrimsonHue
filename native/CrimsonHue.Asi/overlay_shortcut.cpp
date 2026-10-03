@@ -4,7 +4,7 @@
 
 namespace crimson::overlay {
 namespace {
-std::atomic<unsigned> current{0x76 | 0x100 | 0x200};
+std::atomic<unsigned> current{'H' | 0x100 | 0x200};
 std::string KeyLabel(int key) {
     if ((key >= '0' && key <= '9') || (key >= 'A' && key <= 'Z')) return std::string(1, static_cast<char>(key));
     if (key >= VK_F1 && key <= VK_F24) return "F" + std::to_string(key - VK_F1 + 1);

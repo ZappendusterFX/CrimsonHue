@@ -3,7 +3,7 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**Branch preview: 0.4.0-asi.5.** `CrimsonHue.asi` draws an interactive mixer
+**Branch preview: 0.4.0-asi.6.** `CrimsonHue.asi` draws an interactive mixer
 directly into the game's D3D12 backbuffer. There is no separate settings window
 or process. The ZIP contains one ASI and documentation; application dependencies
 are embedded, and users install **.NET 8 Desktop Runtime x64** separately.
@@ -68,7 +68,7 @@ physical lamp brightness.
 7. **Stop**, or close the overlay, to release the stream and restore previously read
    on/off, brightness and color states of the selected lights, if CrimsonHue still
    owns the stream. Running effects/dynamic scenes are not resumed.
-   Close then hides the overlay; **Ctrl + Shift + F7** reopens it while the game
+   Close then hides the overlay; **Ctrl + Shift + H** reopens it while the game
    has focus. **Hide settings** and the shortcut hide without stopping
    sync. Press **Stop** and wait for the stopped status before leaving the game.
 

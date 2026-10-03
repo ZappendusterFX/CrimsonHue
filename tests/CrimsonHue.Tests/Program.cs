@@ -914,7 +914,7 @@ Add("DPAPI secrets roundtrip without plaintext in settings", () =>
 Add("Overlay shortcut keeps old settings compatible and persists independently of mixer presets", () =>
 {
     var legacy = JsonSerializer.Deserialize<AppSettings>("{\"BridgeAddress\":\"127.0.0.1\",\"Mapping\":{\"Brightness\":0.42}}")!;
-    Assert(legacy.Shortcut == null && new OverlayShortcut().Key == 0x76);
+    Assert(legacy.Shortcut == null && new OverlayShortcut().Key == 'H');
     var shortcut = new OverlayShortcut('H', Control: false, Shift: false, Alt: true); shortcut.Validate();
     Reject(() => new OverlayShortcut(0x11).Validate()); Reject(() => new OverlayShortcut(256).Validate());
     var directory = Path.Combine(Path.GetTempPath(), "CrimsonHue-shortcut-" + Guid.NewGuid().ToString("N"));

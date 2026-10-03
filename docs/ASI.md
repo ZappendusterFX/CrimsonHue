@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.5 — independent in-game mixer
+# CrimsonHue 0.4.0-asi.6 — independent in-game mixer
 
 `CrimsonHue.asi` draws an interactive ImGui mixer directly into the game's D3D12
 backbuffer. It consumes CDT's neutral HTTP/WebSocket API and keeps the existing
@@ -16,7 +16,7 @@ There is no separate EXE/process or visible WPF settings window.
    `CrimsonHue/CrimsonHue.asi` beside CDT's ASI. Only this ASI needs deploying.
    The package root also contains guides and license notices. There are no loose
    DLL, JSON, CFG or EXE companions, no runtime installer and no ASI loader.
-4. Start the game. The mixer opens in-game. **Ctrl + Shift + F7** shows/hides it
+4. Start the game. The mixer opens in-game. **Ctrl + Shift + H** shows/hides it
    while the game has focus. The open overlay captures mouse/keyboard input;
    hide it to resume game controls. Move/resize the panel using its title/border.
    **Setup → Overlay shortcut** lets you choose a key and Ctrl/Shift/Alt modifiers.
@@ -85,8 +85,8 @@ The owner reported no visible overlay with `.asi.4` on 2026-10-03. This candidat
 adds diagnostics; the actual game failure has not yet been located or resolved.
 
 The shortcut is stored in the existing local `settings.json` as
-`"Shortcut": { "Key": 118, "Control": true, "Shift": true, "Alt": false }`.
-`Key` is the Windows virtual-key value; 118 is F7. Missing/invalid key bindings
+`"Shortcut": { "Key": 72, "Control": true, "Shift": true, "Alt": false }`.
+`Key` is the Windows virtual-key value; 72 is H. Missing/invalid key bindings
 fall back to this default. Modifier-only and mouse keys are rejected. No game
 directory configuration file is needed. Loading a mixer preset preserves it.
 
