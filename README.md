@@ -3,13 +3,16 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**Branch preview: 0.4.0-asi.10.** CDT hosts the interactive Hue mixer in its own
+**Branch preview: 0.4.0-asi.12.** CDT hosts the interactive Hue mixer in its own
 D3D12 renderer. `CrimsonHue.asi` is the headless lamp controller and installs no
 graphics hooks. There is no separate settings window or process. The ZIP contains
 one ASI and documentation; application dependencies
 are embedded, and users install **.NET 8 Desktop Runtime x64** separately.
 See [ASI guide](docs/ASI.md) and [verification checkpoint](docs/HANDOVER.md).
-Use the matching **CDT 2.2.5-huepanel.3** preview; public CDT 2.2.4 lacks the panel.
+Use the matching **CDT 2.2.5-huepanel.5** preview; public CDT 2.2.4 lacks the panel.
+The Hue panel uses CDT's compact body-text size and blue/cyan palette. Setup
+guides the link-button pairing and confirms CONNECTED only after authenticated
+area loading; a matching saved pairing is reused. Physical output remains explicit.
 This preview has synthetic native/GPU verification; real game/input and DMM
 acceptance remain pending. The linked
 0.3.3 release is the earlier desktop EXE.

@@ -22,9 +22,11 @@ public partial class MainWindow
         {
             AreaBox.ItemsSource = new[] { DemoData.WallWasherArea };
             AreaBox.SelectedItem = DemoData.WallWasherArea;
+            bridgeConnected = true; bridgePhase = "connected";
+            BridgeStatus.Text = "Connected - synthetic bridge (no network or lamp output)";
             EnableSmokePreview(); VerifyDistanceControls();
         }
-        else _ = GuardAsync(async () => { await ConnectTelemetryAsync(); if (bridge != null) await LoadAreasAsync(); });
+        else _ = GuardAsync(async () => { await ConnectTelemetryAsync(); if (bridge != null) await LoadAreasAsync(); }, bridgeSetup: true);
         PublishOverlay();
     }
 
@@ -39,6 +41,7 @@ public partial class MainWindow
             shortcut,
             telemetry = TelemetryStatus.Text, capture = CaptureInfo.Text, ambient = AmbientStatus.Text,
             stream = StreamStatus.Text, tuning = TuningStatus.Text, bridgeStatus = BridgeStatus.Text,
+            bridgeConnected, bridgePhase, bridgeError, bridgeDiagnostic,
             certificate = CertificateLabel.Text, pairing = PairPanel.Visibility == Visibility.Visible,
             layout = LayoutInfo.Text, boundary = SpatialBoundaryStatus.Text,
             leftRight = mapping.SeparateLeftRight, frontRear = mapping.SeparateFrontRear,
@@ -47,11 +50,11 @@ public partial class MainWindow
             bridgeAddress = BridgeAddress.Text, telemetryAddress = TelemetryAddress.Text,
             canStart = StartButton.IsEnabled, canStop = StopButton.IsEnabled,
             canSetup = !busy && streamTask == null, canRefresh = RefreshButton.IsEnabled,
-            canIdentify = !smoke && !busy && streamTask == null && bridge != null && SelectedArea != null && DemoCheck.IsChecked != true,
+            canIdentify = !smoke && !busy && streamTask == null && bridgeConnected && bridge != null && SelectedArea != null && DemoCheck.IsChecked != true,
             identifying, wallWashers = WallWasherSnapshot(area),
             wallPreview, previewYaw = wallPreviewYaw, previewElevation = wallPreviewElevation,
             selectedArea = SelectedArea?.Id ?? "",
-            areas = (AreaBox.ItemsSource as IReadOnlyList<EntertainmentArea> ?? []).Select(a => new { a.Id, a.Name, a.Active }),
+            areas = ((bridgeConnected ? AreaBox.ItemsSource as IReadOnlyList<EntertainmentArea> : null) ?? []).Select(a => new { a.Id, a.Name, a.Active }),
             controls = parameters.Select(p => new { p.Key, p.Group, p.Title, p.Unit, p.Description,
                 p.Min, p.Max, p.Step, value = p.Get(mapping) * p.Scale, initial = p.Get(defaults) * p.Scale }),
             switches = switches.Select(p => new { p.Key, p.Group, p.Title, p.Description, value = p.Get(mapping) }),
@@ -101,9 +104,18 @@ public partial class MainWindow
                 case "freeze": FreezeRawCheck.IsChecked = command.GetProperty("value").GetBoolean(); break;
                 case "setup":
                     if (busy || streamTask != null) break;
-                    var address = Text("bridge"); var endpoint = Text("telemetry");
-                    _ = BridgeClient.NormalizeAddress(address); _ = TelemetryClient.ValidateEndpoint(endpoint);
-                    BridgeAddress.Text = address; TelemetryAddress.Text = endpoint; break;
+                    ApplyOverlayAddresses(Text("bridge"), Text("telemetry")); break;
+                case "connect":
+                    if (!smoke && !busy && streamTask == null)
+                    {
+                        var requestedBridge = Text("bridge"); var requestedTelemetry = Text("telemetry");
+                        _ = GuardAsync(async () =>
+                        {
+                            ApplyOverlayAddresses(requestedBridge, requestedTelemetry);
+                            await FindBridgeAsync();
+                        }, bridgeSetup: true);
+                    }
+                    break;
                 case "find": if (!smoke && FindButton.IsEnabled) ProbeClick(this, new()); break;
                 case "pair": if (!smoke && !busy && streamTask == null) PairClick(this, new()); break;
                 case "refresh": if (!smoke && RefreshButton.IsEnabled) RefreshClick(this, new()); break;
@@ -150,6 +162,19 @@ public partial class MainWindow
             TuningStatus.Text = ex is CrimsonHueException ? ex.Message : "Action failed. Check the selected value, setup or preset path.";
         }
         RefreshPreview(); PublishOverlay();
+    }
+
+    private void ApplyOverlayAddresses(string address, string endpoint)
+    {
+        var normalizedAddress = BridgeClient.NormalizeAddress(address);
+        _ = TelemetryClient.ValidateEndpoint(endpoint);
+        if (bridge == null || !string.Equals(normalizedAddress, bridge.Credentials.Address, StringComparison.OrdinalIgnoreCase))
+        {
+            bridgeConnected = false; bridgePhase = "disconnected"; probe = null;
+            bridgeError = bridgeDiagnostic = ""; PairPanel.Visibility = Visibility.Collapsed;
+            BridgeStatus.Text = "Address changed. Find the bridge, then follow the pairing steps.";
+        }
+        BridgeAddress.Text = address; TelemetryAddress.Text = endpoint;
     }
 
     private static string PresetPath(string input)

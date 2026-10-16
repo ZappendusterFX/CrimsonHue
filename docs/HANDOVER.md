@@ -1,4 +1,39 @@
-# Current checkpoint — startup cursor crash fixed, 2026-10-16, Codex
+# Current checkpoint — compact CDT-style Hue setup ready, 2026-10-16, Codex
+
+Owner is in-game with `.asi.10` + `huepanel.3`; startup works. PID 30092 was
+responsive, deployed hashes matched, screenshots show live CDT and Hue UI.
+Remember owner reports: cursor initially pulled upper-left with Hue open, now
+stopped; intermittent Hue flicker. No full input/flicker acceptance claimed.
+
+Owner wanted CDT's typography/style, physical bridge-button guidance and a
+connected confirmation. Implemented CDT 16px body text/screen scale, blue/cyan
+palette, bridge-first Setup with shortcut/telemetry collapsed; atomic Find
+applies the IP and discovers the bridge. Matching saved pairing reused, new
+pairing explicitly prompts round bridge button + Trust bridge & pair. Green
+CONNECTED requires authenticated areas and shows on every tab. Empty/disconnected
+area selectors explain why; failures show status and safe diagnostic codes.
+Sync/identify require connection. Cached last snapshot removes a panel-only
+frame skip under mutex contention (possible flicker cause, game confirmation pending).
+
+Final pair: **Hue 0.4.0-asi.12 + CDT 2.2.5-huepanel.5**, production/research OFF,
+build 25477059. Built/validated, not installed or game-tested. 86/86 Hue, 13/13
+focused CDT checks; exact final GPU Room/Setup/cursor/resize smoke passed.
+ZIP/ASI hashes, source/evidence and screenshots: [GUIDED-SETUP-VALIDATION.md](GUIDED-SETUP-VALIDATION.md).
+All old packages preserved; original CDT main/research untouched.
+
+Real bridge's unauthenticated probe and authenticated area GET both succeed
+outside the game with saved protected credentials: pin matches, Spieltisch,
+6 channels, inactive. Owner's current game screenshots show generic HTTPS
+failure and no areas. Its in-game cause is **not yet established/fixed**; don't
+mistake standalone success or new UI for game connection acceptance. No firewall,
+profile, game files/hooks or lamps were changed. No need to recreate the area.
+
+**Next:** at game shutdown install both final packages, verify hashes, confirm
+CONNECTED + Spieltisch in-game. If HTTPS still fails, use Connection details
+before transport/security changes. Then calibrate washers in Room. No declined
+A/B restarts or implicit physical output. Retain mouse drift/flicker observations.
+
+# Previous checkpoint — startup cursor crash fixed, 2026-10-16, Codex
 
 Owner installed `.asi.10` + `huepanel.2`; PID 8240 hung at startup. Exact deployed
 hashes matched. Live stacks showed a native exception in CDT's ImGui software

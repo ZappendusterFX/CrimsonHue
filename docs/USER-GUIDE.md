@@ -7,7 +7,7 @@ or a measurement of the physical lamps.
 
 ## What to install
 
-1. Install the matching **CDT 2.2.5-huepanel.3 preview** separately in the game.
+1. Install the matching **CDT 2.2.5-huepanel.5 preview** separately in the game.
    The public CDT 2.2.4 lacks this preview's Hue panel; obtain both matching ZIPs
    from this branch's validation checkpoint. Enable its server, rendered and upstream ManyLights
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
@@ -26,9 +26,14 @@ or a measurement of the physical lamps.
    development target. A physical Hue Bridge BSB002 with two Hue Play wall washers
    has passed pairing and read-only area/light-state import; physical
    Entertainment output on that bridge remains untested.
-4. In **Setup**, enter the bridge's own private IPv4 address, click **Apply addresses**,
-   find it, press its
-   link button, pair, and choose your Entertainment area. The address prefilled
+4. In **Setup**, enter the bridge's own private IPv4 address and click
+   **Find bridge**; it applies the address directly. For a new pairing, press the round link button **on the
+   physical Hue Bridge**, then click **Trust bridge & pair** within 30 seconds.
+   A saved pairing is reused only when address and certificate match.
+   Wait for the green **HUE BRIDGE: CONNECTED** confirmation, then select your
+   Entertainment area. Finding a bridge alone is not a connected confirmation.
+   A failed connection shows an explicit error; **Connection details** has bounded
+   error codes for diagnosis without credentials. The address prefilled
    in the application is a development example: replace it. CDT's local stream
    defaults to `ws://127.0.0.1:27311/v1/stream` on the same PC.
 5. Check the live preview and raw readout, tune, then stop other sync apps and

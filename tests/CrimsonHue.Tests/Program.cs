@@ -15,6 +15,25 @@ using Microsoft.Extensions.Logging;
 
 // Explicit read-only diagnostic: use the paired user's protected store in memory.
 // Never print credentials, full API responses or stream ownership tokens.
+if (args.Contains("--inspect-connection"))
+{
+    var credentials = new SettingsStore().LoadCredentials() ?? throw new Exception("Pair CrimsonHue first.");
+    try
+    {
+        var probe = await BridgeClient.ProbeAsync(credentials.Address);
+        Console.WriteLine($"Probe: {probe.Name}; certificate matches saved pairing: {string.Equals(probe.CertificateSha256, credentials.CertificateSha256, StringComparison.OrdinalIgnoreCase)}");
+        using var paired = new BridgeClient(credentials);
+        var areas = await paired.GetAreasAsync();
+        Console.WriteLine($"Authenticated connection: {areas.Count} Entertainment area(s)");
+        foreach (var connectionArea in areas) Console.WriteLine($"  {connectionArea.Name}: {connectionArea.Channels.Count} channels; active: {connectionArea.Active}");
+        return 0;
+    }
+    catch (HttpRequestException error)
+    {
+        Console.WriteLine($"Connection failed: {error.HttpRequestError}; HTTP {error.StatusCode}; {error.InnerException?.GetType().Name}; HRESULT 0x{error.HResult:X8}");
+        return 2;
+    }
+}
 if (args.Contains("--inspect-layout"))
 {
     var store = new SettingsStore();
@@ -35,6 +54,14 @@ void Async(string name, Func<Task> run) => tests.Add((name, run));
 WallWashTests.Register(Add, Async);
 void Assert(bool condition, string message = "Assertion failed") { if (!condition) throw new Exception(message); }
 void Reject(Action action) { try { action(); } catch { return; } throw new Exception("Expected rejection"); }
+Add("Saved bridge pairing is reused only for the same address and certificate", () =>
+{
+    var credentials = new BridgeCredentials("https://192.168.2.139", "test-app", new string('0', 32), "ABCDEF");
+    Assert(BridgeClient.MatchesPairing(new("192.168.2.139", "Bridge", "id", "abcdef"), credentials));
+    Assert(!BridgeClient.MatchesPairing(new("192.168.2.140", "Bridge", "id", "ABCDEF"), credentials));
+    Assert(!BridgeClient.MatchesPairing(new("192.168.2.139", "Bridge", "id", "different"), credentials));
+    Assert(!BridgeClient.MatchesPairing(new("192.168.2.139", "Bridge", "id", null), credentials));
+});
 async Task RejectAsync(Func<Task> action) { try { await action(); } catch { return; } throw new Exception("Expected rejection"); }
 var area = Fixtures.Area();
 var rearArea = area with { Channels = area.Channels.Select(c => c with { Position = new(c.Position.X, -c.Position.Y, c.Position.Z) }).ToArray() };

@@ -44,6 +44,10 @@ public partial class MainWindow : Window
     private bool busy;
     private bool closing;
     private bool allowClose;
+    private bool bridgeConnected;
+    private string bridgePhase = "disconnected";
+    private string bridgeError = "";
+    private string bridgeDiagnostic = "";
     private EntertainmentArea? SelectedArea => AreaBox.SelectedItem as EntertainmentArea;
 
     public MainWindow(bool smoke = false, bool asi = false)
@@ -73,7 +77,8 @@ public partial class MainWindow : Window
                 if (credentials != null)
                 {
                     bridge = new(credentials); BridgeAddress.Text = new Uri(credentials.Address).Host;
-                    BridgeStatus.Text = "Paired · credentials protected by Windows";
+                    BridgeStatus.Text = "Saved pairing found. Connecting to the bridge...";
+                    bridgePhase = "connecting";
                 }
             }
             catch (Exception ex) when (ex is IOException or JsonException or CryptographicException or CrimsonHueException or ArgumentException)
@@ -86,17 +91,32 @@ public partial class MainWindow : Window
         Loaded += async (_, _) =>
         {
             if (smoke) return;
-            await GuardAsync(async () => { await ConnectTelemetryAsync(); if (bridge != null) await LoadAreasAsync(); });
+            await GuardAsync(async () => { await ConnectTelemetryAsync(); if (bridge != null) await LoadAreasAsync(); }, bridgeSetup: true);
         };
     }
-    private async Task GuardAsync(Func<Task> action)
+    private async Task GuardAsync(Func<Task> action, bool bridgeSetup = false)
     {
         if (busy || closing) return;
         busy = true; UpdateButtons();
         try { await action(); }
         catch (OperationCanceledException) when (closing) { }
         catch (Exception ex) when (ex is HttpRequestException or IOException or JsonException or CrimsonHueException or CryptographicException or InvalidOperationException or FormatException or KeyNotFoundException or OperationCanceledException)
-        { StreamStatus.Text = FriendlyError(ex); }
+        {
+            StreamStatus.Text = FriendlyError(ex);
+            if (bridgeSetup)
+            {
+                bridgeConnected = false;
+                bridgeError = FriendlyError(ex);
+                var details = new List<string>();
+                if (ex is HttpRequestException httpError) details.Add($"{httpError.HttpRequestError}; HTTP {httpError.StatusCode}");
+                for (Exception? cause = ex; cause != null && details.Count < 5; cause = cause.InnerException)
+                    details.Add($"{cause.GetType().Name}: 0x{cause.HResult:X8}" +
+                        (cause is System.ComponentModel.Win32Exception nativeError ? $"; native 0x{nativeError.NativeErrorCode:X8}" : ""));
+                bridgeDiagnostic = string.Join(" -> ", details);
+                bridgePhase = probe != null && PairPanel.Visibility == Visibility.Visible ? "linkButton" : "failed";
+                BridgeStatus.Text = "Not connected. " + bridgeError;
+            }
+        }
         finally { busy = false; UpdateButtons(); }
     }
     private static string FriendlyError(Exception ex) => ex switch
@@ -107,38 +127,55 @@ public partial class MainWindow : Window
         CryptographicException => "Windows could not save or unlock the bridge credentials for this account.",
         _ => "The operation failed. Check the bridge connection and configuration, then try again."
     };
-    private async void ProbeClick(object sender, RoutedEventArgs e) => await GuardAsync(async () =>
+    private async void ProbeClick(object sender, RoutedEventArgs e) => await GuardAsync(FindBridgeAsync, bridgeSetup: true);
+    private async Task FindBridgeAsync()
     {
+        bridgeConnected = false; bridgeError = bridgeDiagnostic = ""; bridgePhase = "searching";
         BridgeStatus.Text = "Looking for bridge…";
         probe = null; PairPanel.Visibility = Visibility.Collapsed;
         probe = await BridgeClient.ProbeAsync(BridgeAddress.Text.Trim(), lifetime.Token);
         BridgeStatus.Text = $"Found {probe.Name}\nBridge ID: {probe.BridgeId}";
         CertificateLabel.Text = "Certificate SHA-256: " + probe.CertificateSha256;
+        if (bridge != null && BridgeClient.MatchesPairing(probe, bridge.Credentials))
+        {
+            await LoadAreasAsync();
+            StreamStatus.Text = "Bridge connected. Select your Entertainment area; lighting sync is still stopped.";
+            return;
+        }
+        bridgePhase = "linkButton";
         PairPanel.Visibility = Visibility.Visible;
-        StreamStatus.Text = "Bridge found. Press its link button, then pair CrimsonHue.";
-    });
+        BridgeStatus.Text = $"Found {probe.Name}. Press the round link button ON the bridge, then click Trust bridge & pair.";
+        StreamStatus.Text = "Bridge found, not connected yet. Press its round button, then confirm pairing within 30 seconds.";
+    }
     private async void PairClick(object sender, RoutedEventArgs e) => await GuardAsync(async () =>
     {
         if (probe == null || BridgeClient.NormalizeAddress(BridgeAddress.Text.Trim()) != probe.Address)
             throw new CrimsonHueException("Find this bridge before pairing it.");
+        bridgeConnected = false; bridgeError = bridgeDiagnostic = ""; bridgePhase = "pairing";
+        BridgeStatus.Text = "Pairing with bridge...";
         var credentials = await BridgeClient.PairAsync(probe, lifetime.Token);
         store.SaveCredentials(credentials);
         bridge?.Dispose(); bridge = new(credentials);
-        BridgeStatus.Text = "Paired · credentials protected by Windows";
         PairPanel.Visibility = Visibility.Collapsed;
         SaveSettings();
         await LoadAreasAsync();
-        StreamStatus.Text = "Bridge paired. Select your area, then start lighting sync.";
-    });
-    private async void RefreshClick(object sender, RoutedEventArgs e) => await GuardAsync(LoadAreasAsync);
+        StreamStatus.Text = "Bridge connected. Select your Entertainment area; lighting sync is still stopped.";
+    }, bridgeSetup: true);
+    private async void RefreshClick(object sender, RoutedEventArgs e) => await GuardAsync(LoadAreasAsync, bridgeSetup: true);
     private async Task LoadAreasAsync()
     {
         if (bridge == null) return;
+        if (BridgeClient.NormalizeAddress(BridgeAddress.Text.Trim()) != bridge.Credentials.Address)
+            throw new CrimsonHueException("Find and pair the bridge at the new address first.");
+        bridgeConnected = false; bridgePhase = "connecting"; bridgeError = bridgeDiagnostic = "";
+        BridgeStatus.Text = "Connecting and loading Entertainment areas...";
         var previous = SelectedArea?.Id ?? selectedAreaId;
         var areas = await bridge.GetAreasAsync(lifetime.Token);
         AreaBox.ItemsSource = areas;
         AreaBox.SelectedItem = areas.FirstOrDefault(a => a.Id == previous) ?? areas.FirstOrDefault();
         if (areas.Count == 0) LayoutInfo.Text = "No areas found. Create one in the Hue app, then refresh.";
+        bridgeConnected = true; bridgePhase = "connected";
+        BridgeStatus.Text = $"Connected - {probe?.Name ?? "Hue Bridge"} - {areas.Count} Entertainment area(s)";
         RefreshButton.IsEnabled = true;
     }
     private void AreaChanged(object sender, SelectionChangedEventArgs e)
@@ -238,7 +275,7 @@ public partial class MainWindow : Window
     {
         if (!initialized) return;
         var running = streamTask != null;
-        StartButton.IsEnabled = !busy && !running && bridge != null && SelectedArea?.Channels.Count > 0 && DemoCheck.IsChecked != true;
+        StartButton.IsEnabled = !busy && !running && bridgeConnected && bridge != null && SelectedArea?.Channels.Count > 0 && DemoCheck.IsChecked != true;
         StopButton.IsEnabled = running;
         FindButton.IsEnabled = PairButton.IsEnabled = !busy && !running;
         RefreshButton.IsEnabled = !busy && !running && bridge != null;

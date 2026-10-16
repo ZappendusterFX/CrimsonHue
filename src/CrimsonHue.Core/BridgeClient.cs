@@ -9,6 +9,9 @@ public sealed record BridgeProbe(string Address, string Name, string BridgeId, s
 
 public sealed class BridgeClient : IDisposable
 {
+    public static bool MatchesPairing(BridgeProbe probe, BridgeCredentials credentials) =>
+        string.Equals(NormalizeAddress(probe.Address), NormalizeAddress(credentials.Address), StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(probe.CertificateSha256, credentials.CertificateSha256, StringComparison.OrdinalIgnoreCase);
     private readonly HttpClient http;
     public BridgeCredentials Credentials { get; }
     public BridgeClient(BridgeCredentials credentials)
@@ -64,7 +67,7 @@ public sealed class BridgeClient : IDisposable
         if (item.TryGetProperty("error", out var error))
         {
             if (error.TryGetProperty("type", out var type) && type.GetInt32() == 101)
-                throw new CrimsonHueException("Press the bridge link button (in diyHue's web UI), then click Pair again within 30 seconds.");
+                throw new CrimsonHueException("Press the round link button ON the Hue Bridge (or the link button in diyHue's web UI), then click Trust bridge & pair within 30 seconds.");
             throw new CrimsonHueException("Bridge rejected pairing. Check the link button and try again.");
         }
         var success = item.GetProperty("success");

@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.10 — mixer hosted by CDT
+# CrimsonHue 0.4.0-asi.12 — mixer hosted by CDT
 
 CDT draws the interactive CrimsonHue mixer in its existing D3D12/ImGui frame.
 `CrimsonHue.asi` hosts the existing C# lamp controller on a hidden WPF STA. It
@@ -12,7 +12,7 @@ No separate EXE, process or visible WPF settings window is used.
    documented .NET 8 ASP.NET Core Runtime x64. Newer runtimes alone do not meet
    these .NET 8 requirements.
 2. Close Crimson Desert and stop any old desktop CrimsonHue sync. Use the matching
-   **CDT 2.2.5-huepanel.3** preview with this version. Public CDT 2.2.4 does not host
+   **CDT 2.2.5-huepanel.5** preview with this version. Public CDT 2.2.4 does not host
    the Hue panel. Replace both packages together with the game closed.
 3. Import both ZIPs through DMM using the existing x64 ASI loader. CrimsonHue's
    package contains one `CrimsonHue/CrimsonHue.asi` plus documentation/notices;
@@ -23,7 +23,12 @@ No separate EXE, process or visible WPF settings window is used.
    focus. CDT owns this shortcut and panel input. The binding remains editable
    in **Setup → Overlay shortcut** and is saved in CrimsonHue's user settings.
    Avoid CDT's F8–F11 bindings, which also react with modifiers held.
-5. Setup imports your existing Entertainment area and saved protected pairing.
+5. In Setup, enter the bridge IP and click **Find bridge**. Its guided steps
+   explain the round bridge button and **Trust bridge & pair** for new pairings.
+   A matching saved pairing is reused. Wait for green **HUE BRIDGE: CONNECTED**;
+   this confirms authenticated area loading. Failed connections show a distinct
+   error and optional bounded diagnostic codes. Shortcut/telemetry settings are
+   collapsed below the bridge flow. Setup imports your existing area and protected pairing.
    All 28 numeric mixer controls, both boundary switches, presets, raw readout
    and **Room** wall/segment calibration remain available. **Demo preview**
    never sends physical output. **Test CH** is an explicit two-second 10% white

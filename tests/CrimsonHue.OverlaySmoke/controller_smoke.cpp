@@ -43,6 +43,9 @@ int wmain(int argc, wchar_t** argv) {
             Require(size > 0, "No UI snapshot"); return Json::parse(bytes.data(), bytes.data() + size); };
         auto Command = [&](Json command) { const auto text = command.dump(); Require(send(text.data(), static_cast<int>(text.size())) == 1, "Command not accepted"); };
         auto state = State();
+        Require(state.value("bridgeConnected", false) && state.value("bridgePhase", std::string{}) == "connected" &&
+            !state.at("areas").empty() && !state.at("areas")[0].at("name").get<std::string>().empty(),
+            "Connected status or named Entertainment areas missing from controller snapshot");
         Require(state.at("shortcut").at("key") == 'H', "Default shortcut must use H instead of a function key");
         Command({{"action", "shortcut"}, {"key", 'H'}, {"control", false}, {"shift", false}, {"alt", true}});
         Sleep(150); state = State();

@@ -91,7 +91,7 @@ public partial class MainWindow
     {
         // A dedicated explicit action, mutually exclusive with sync. Demo and the
         // synthetic harness cannot reach the physical calibration path.
-        if (smoke || busy || streamTask != null || bridge == null || SelectedArea == null || DemoCheck.IsChecked == true) return;
+        if (smoke || busy || streamTask != null || !bridgeConnected || bridge == null || SelectedArea == null || DemoCheck.IsChecked == true) return;
         streamCancel = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
         session = new StreamingSession(bridge);
         identifying = true;
