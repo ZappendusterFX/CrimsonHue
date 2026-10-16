@@ -1,4 +1,28 @@
-# Current checkpoint — 0.4.0-asi.6 letter shortcut, 2026-10-03, Codex
+# Current checkpoint — real Hue Bridge paired, 2026-10-16, Codex
+
+Owner now has a physical Hue Bridge BSB002 and two Hue Play wall washers in
+an existing Entertainment area. The existing CrimsonHue core successfully
+probed HTTPS, paired after the owner's link-button press, pinned the observed
+certificate, and imported the area through API v2. No bridge/client code changed.
+
+Area `Spieltisch` has six channels: three segments per lamp, at X -0.4/+0.4,
+Y 0.8 and Z -0.4/0/0.4. Both lamps currently have the imported label `Back`.
+The area was inactive. Read-only capture of both physical light states passed.
+This verifies real-bridge pairing, protected storage and area/state parsing;
+it does not verify Entertainment DTLS output or visible lamp behavior.
+
+New credentials and area selection are saved in the actual owner's current-user
+DPAPI profile. Existing mixer, telemetry and shortcut settings were preserved;
+previous settings and encrypted diyHue credentials were backed up under the
+profile's `backups/20261016-before-hue-bridge-139/`. The temporary encrypted
+workspace pairing file was removed. No keys or API responses were logged.
+
+No physical stream, live telemetry, game launch, ASI replacement or package change.
+No game/desktop consumer was running at verification. Next: owner starts the
+game and checks the mixer with Ctrl+Shift+H; real output acceptance remains
+pending, as does the earlier overlay/game issue below. AGENTS/CLAUDE still match.
+
+# Previous checkpoint — 0.4.0-asi.6 letter shortcut, 2026-10-03, Codex
 
 Owner reports F7 is fly mode and all F4–F12 are occupied. Default is now
 Ctrl+Shift+H (VK 72) in both managed and native code, including startup fallback,

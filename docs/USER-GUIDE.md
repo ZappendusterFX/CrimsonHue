@@ -22,7 +22,9 @@ or a measurement of the physical lamps.
 3. Use Windows 10/11 x64 and a Hue-compatible bridge with HTTPS API v2,
    Entertainment DTLS 1.2/PSK, color lamps and an existing Entertainment area.
    Set the area and channel positions in the Hue app first. diyHue is the
-   development target; a physical Philips Hue bridge has not been verified.
+   development target. A physical Hue Bridge BSB002 with two Hue Play wall washers
+   has passed pairing and read-only area/light-state import; physical
+   Entertainment output on that bridge remains untested.
 4. In **Setup**, enter the bridge's own private IPv4 address, click **Apply addresses**,
    find it, press its
    link button, pair, and choose your Entertainment area. The address prefilled

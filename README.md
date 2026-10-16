@@ -92,7 +92,9 @@ Streaming never starts automatically when the ASI loads.
   original rendered-only feed without physics visibility filtering.
 - A Hue-compatible bridge with HTTPS API v2, Entertainment DTLS 1.2/PSK on UDP 2100,
   color lights and an existing Entertainment area.
-- Development target: diyHue. Physical Philips Hue bridges remain untested.
+- Development target: diyHue. A physical Hue Bridge BSB002 with two Hue Play wall
+  washers has passed pairing and read-only area/light-state import. Physical
+  Entertainment output on that bridge remains untested.
   Backend/lamp performance varies; 30 outgoing updates/s is a target, not a
   measured physical lamp refresh rate.
 
