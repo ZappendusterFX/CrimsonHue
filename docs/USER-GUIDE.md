@@ -7,7 +7,7 @@ or a measurement of the physical lamps.
 
 ## What to install
 
-1. Install the matching **CDT 2.2.5-huepanel.5 preview** separately in the game.
+1. Install the matching **CDT 2.2.5-huepanel.6 preview** separately in the game.
    The public CDT 2.2.4 lacks this preview's Hue panel; obtain both matching ZIPs
    from this branch's validation checkpoint. Enable its server, rendered and upstream ManyLights
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
@@ -109,8 +109,8 @@ cannot describe that area. Calibration is optional and starts disabled. The room
 preview keeps the imported Hue dots and draws calibrated wall areas in blue.
 
 An area can mix ordinary bulbs, multi-segment lights and wall washers. Leave
-**Use wall area** off for a light you want to represent by its imported Hue point.
-Enable it only for a light whose visible illumination should cover a wall region.
+**Point (Hue position)** selected for a light represented by its imported Hue point.
+Choose **Wall area** for a light whose visible illumination should cover a wall region.
 This choice is per light, not per area. A normal bulb directed at a wall may also
 benefit from a wall region; the model describes the visible result, not a product
 name or a physical spotlight beam.
@@ -125,7 +125,7 @@ extent of each segment without changing the Hue configuration.
 1. Select your actual Entertainment area. Turn on **Demo preview only** to tune
    safely with synthetic input on those channels. **Preview one light source**
    provides direction and height sliders instead of the animated demo sources.
-2. For each light that illuminates a wall region, enable **Use wall area**, then set **Direction** and **Wall width**.
+2. For each light that illuminates a wall region, select **Wall area**, then set **Direction** and **Wall width**.
    Direction 0 is the screen, -90 is left, +90 is right, and +/-180 is behind you.
    Width is the angular extent of the wall from your seat, not the emitter's beam
    angle. **Start left/right** supplies an editable starting point spanning
@@ -134,9 +134,19 @@ extent of each segment without changing the Hue configuration.
    Height initially follows the Hue data. Do not assume the segment order matches
    the physical wall: inspect it using the separate test below.
 4. **Save room calibration** persists it for this PC. Start and normal close also
-   save it. **Use imported Hue positions** removes that lamp's override. Room
+   save it. **Point (Hue position)** disables wall mapping but keeps its settings
+   for later. **Reset to imported Hue positions** removes that lamp's override. Room
    setup is stored per area/light/segment and is never exported or replaced by
    a shared mixer preset. Imported bridge positions and channel IDs are preserved.
+
+The panel shows the number of Hue segments for each light. If the Hue area later
+adds a segment to an existing calibration, its placement is marked for review.
+Adjust that segment and click **Confirm segment placement**. Until confirmed, it
+adds no local game-light contribution to wall mapping; Ambient remains available.
+Other calibrated segments keep working. A shared Hue channel still receives the
+combined contributions of its members and cannot isolate one physical segment.
+Removed segments are reported; changing a different angle or saving alone never
+confirms new segment placement. Point mode continues to use imported positions.
 
 For a physical segment check, stop sync, turn off **Demo preview only**, and click
 **Test CH ... (2 s, 10%)** for one channel. This explicitly sends white at 10% to

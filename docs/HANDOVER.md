@@ -1,4 +1,49 @@
-# Current checkpoint — mixed-light review and freshness correction, 2026-10-16, Codex
+# Current checkpoint — Point/Wall setup ready, 2026-10-16, Codex
+
+Owner clarified the Hue term was ColorCast and asked whether implementation
+needed more input. Implemented the software setup autonomously. Physical wall
+direction/extent still needs the owner's later observation; no saved real room
+configuration, credentials, bridge output or game files were changed.
+
+Room now offers Point (Hue position) / Wall area per light, imported segment count,
+ColorCast guidance and only the controls relevant to the selected mode. Point
+mode preserves wall settings for switching back; explicit Reset removes them.
+New segment indices in an existing calibration are marked NeedsReview, show an
+explicit placement-confirm button, and contribute no local light until confirmed
+instead of silently falling back to points. Existing segments and Ambient keep
+working; shared channels still combine their members. Flags persist locally,
+legacy saved segments default to accepted, presets exclude all room calibration.
+Removed segments are reported. Merely saving/editing another angle does not
+confirm a new segment. Hue channel identities and imported positions stay intact.
+
+**98/98 nonphysical tests passed**, including mixed rooms, changed membership,
+review/confirmation, Ambient independence, point fallback and settings migration.
+Exact final packaged controller smoke verifies segment summaries and Point/Wall
+switches preserving placement. Matching CDT production-renderer GPU smoke passed
+software cursor, readback (748580 pixels), hide/reopen, resize and cleanup; image
+artifacts/room-modes-final/room.png visually checked. No live-lamp acceptance.
+
+Final immutable pair, built and validated, **NOT installed/game-tested**:
+- Hue **0.4.0-asi.15**, headless .NET 8 Desktop x64:
+  dist/CrimsonHue-0.4.0-asi.15-asi-win-x64.zip
+  SHA256 CBD03CA5F901811370DFF0F9D359738DB8F8E614FF94BBAF6371D8F1CB8F6107
+- CDT **2.2.5-huepanel.6**, production/research OFF, native build 25477059:
+  artifacts/cdt-shared-overlay/artifacts/mod-manager/CrimsonDesertTelemetry-v2.2.5-huepanel.6-ModManagers.zip
+  SHA256 204C5BD2B50008F71428BFAA2C1FF5E8A2929D8F4217F4BF12030141242F481C
+
+Includes the previous motion smoothing/stream Ambient diagnostics and both audit
+freshness fixes. Builders validated exact payloads and ZIP/staging bytes. The
+preliminary .asi.14 is preserved, superseded by .15 correcting a remaining old
+CDT-version reference in its packaged user guide. Logs: room-modes-tests.log,
+room-modes-hue-final-package.log, room-modes-cdt-package.log, room-modes-gpu.log.
+All ZIP/ASI hashes: artifacts/room-modes-package-sha256.txt. AGENTS/CLAUDE match.
+
+Next: with game closed install BOTH matching packages, then calibrate visible
+wall regions using the explicit segment tests/preview. Owner observations needed
+only for actual wall direction, span and segment patches. Physical Ambient and
+motion acceptance remain pending. No installation or physical test was performed.
+
+# Previous checkpoint — mixed-light review and freshness correction, 2026-10-16, Codex
 
 Owner requested a short audit of CrimsonHue and CDT while away, specifically
 ordinary lights, wall washers, and Hue's native Entertainment features. Review

@@ -2,7 +2,8 @@ namespace CrimsonHue.Core;
 
 // Local room calibration, deliberately separate from shareable mixer presets.
 // Angles describe the visible wall from the seated viewer, not emitter aim.
-public sealed record WallWashSegment(int Index, double YawOffset = 0, double Elevation = 0, double VerticalSpan = 0);
+public sealed record WallWashSegment(int Index, double YawOffset = 0, double Elevation = 0, double VerticalSpan = 0,
+    bool NeedsReview = false);
 public sealed record WallWasher(string AreaId, string ServiceId, bool Enabled, double Yaw, double HorizontalSpan,
     IReadOnlyList<WallWashSegment> Segments);
 public readonly record struct WallWashSample(Vec3 Direction, double Weight);
@@ -40,7 +41,8 @@ public sealed record WallWashLayout(IReadOnlyList<WallWasher> Washers)
         var position = channels.Select(c => c.Position).Aggregate(default(Vec3), (sum, p) => sum + p) / channels.Length;
         var segments = channels.SelectMany(c => c.Members).Where(m => m.ServiceId == serviceId).Select(m => m.SegmentIndex).Distinct().Order()
             .Select(index => saved?.Segments.FirstOrDefault(s => s.Index == index) ?? new WallWashSegment(index,
-                Elevation: Math.Clamp(Elevation(channels.First(c => c.Members.Contains(new ChannelMember(serviceId, index))).Position), -89, 89))).ToArray();
+                Elevation: Math.Clamp(Elevation(channels.First(c => c.Members.Contains(new ChannelMember(serviceId, index))).Position), -89, 89),
+                NeedsReview: saved != null)).ToArray();
         // Seed from imported coordinates only. Outward placement is an explicit user choice.
         return new(area.Id, serviceId, saved?.Enabled ?? false, saved?.Yaw ?? Yaw(position), saved?.HorizontalSpan ?? 60, segments);
     }
@@ -59,13 +61,17 @@ public sealed record WallWashLayout(IReadOnlyList<WallWasher> Washers)
     {
         if (Washers.Count == 0) return null;
         var matches = channel.Members.Select(m => (Member: m, Washer: Washers.FirstOrDefault(w =>
-            w.Enabled && w.AreaId == area.Id && w.ServiceId == m.ServiceId && w.Segments.Any(s => s.Index == m.SegmentIndex)))).ToArray();
+            w.Enabled && w.AreaId == area.Id && w.ServiceId == m.ServiceId))).ToArray();
         if (!matches.Any(m => m.Washer != null)) return null;
         var result = new List<WallWashSample>();
         foreach (var (member, washer) in matches)
         {
             if (washer == null) { result.Add(new(channel.Position.Unit, 1.0 / matches.Length)); continue; }
-            var segment = washer.Segments.First(s => s.Index == member.SegmentIndex);
+            var segment = washer.Segments.FirstOrDefault(s => s.Index == member.SegmentIndex);
+            // A changed Hue layout must not silently turn an enabled wall region
+            // into a point light. New segments await explicit placement review;
+            // existing segments and the independent Ambient layer remain usable.
+            if (segment == null || segment.NeedsReview) continue;
             // Equal-area quadrature in yaw / sin(elevation). Integrate only the
             // source cap's bounding box so even a one-degree source cannot fall
             // through the grid of a wide wall. Weights retain the full wall area.

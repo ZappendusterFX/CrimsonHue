@@ -37,12 +37,15 @@ public partial class MainWindow
         {
             var washer = wallWash.GetOrCreate(area, id);
             var channels = area.Channels.Where(c => c.Members.Any(m => m.ServiceId == id)).ToArray();
+            var saved = wallWash.Washers.FirstOrDefault(w => w.AreaId == area.Id && w.ServiceId == id);
             yield return new
             {
                 serviceId = id, label = channels[0].Label, washer.Enabled, washer.Yaw, washer.HorizontalSpan,
+                segmentCount = washer.Segments.Count,
+                removedSegmentCount = saved?.Segments.Count(s => !washer.Segments.Any(current => current.Index == s.Index)) ?? 0,
                 segments = washer.Segments.Select(s => new
                 {
-                    s.Index, s.YawOffset, s.Elevation, s.VerticalSpan,
+                    s.Index, s.YawOffset, s.Elevation, s.VerticalSpan, s.NeedsReview,
                     channels = channels.Where(c => c.Members.Contains(new ChannelMember(id, s.Index))).Select(c => new { c.Id, canIdentify = c.Members.Count == 1 })
                 })
             };
@@ -58,6 +61,12 @@ public partial class MainWindow
         var key = command.GetProperty("key").GetString();
         var next = current;
         if (key == "enabled") next = current with { Enabled = command.GetProperty("value").GetBoolean() };
+        else if (key == "confirmSegment")
+        {
+            var index = command.GetProperty("index").GetInt32();
+            if (!current.Segments.Any(s => s.Index == index)) throw new CrimsonHueException("Choose a current Hue segment.");
+            next = current with { Segments = current.Segments.Select(s => s.Index == index ? s with { NeedsReview = false } : s).ToArray() };
+        }
         else if (key == "reset")
         {
             Volatile.Write(ref wallWash, wallWash.Remove(area.Id, id)); previewMapper.Reset();

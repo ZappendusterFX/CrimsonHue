@@ -87,6 +87,75 @@ static class WallWashTests
                 "Washer footprint was lost in a mixed area or leaked to the ordinary bulb");
             Assert(wallOutput.Select(c => c.Id).SequenceEqual(new byte[] { 0, 1, 2, 9 }), "Mixed mapping changed Hue channel identities");
         });
+        add("Changed Hue segmentation preserves calibrated segments and holds new wall segments for review", () =>
+        {
+            var added = new EntertainmentChannel(9, WallWashLayout.Direction(-60, 0), [new("left", 3)], "Left");
+            var area = Area with { Channels = Area.Channels.Append(added).ToArray() };
+            var layout = Layout;
+            var resolved = layout.GetOrCreate(area, "left");
+            Assert(resolved.Enabled && resolved.Yaw == layout.Washers[0].Yaw && resolved.HorizontalSpan == layout.Washers[0].HorizontalSpan,
+                "Membership refresh changed the existing wall setup");
+            Assert(resolved.Segments.Take(3).SequenceEqual(layout.Washers[0].Segments) && resolved.Segments[3].NeedsReview,
+                "Membership refresh lost calibrated values or silently accepted a new segment");
+            Assert(layout.Washers[0].Segments.Count == 3, "Resolving membership mutated the saved layout");
+            var samples = layout.Samples(area, added);
+            Assert(samples is { Count: 0 }, "A new wall segment fell back to an imported point before review");
+            var frame = Frame(-60);
+            Assert(new LightMapper().Map(frame, area, Settings, 1).Single(c => c.Id == 9).Rgb.X > .99,
+                "Regression fixture does not expose the imported-point fallback");
+            var mapped = new LightMapper().Map(frame, area, Settings, 1, wallWash: layout);
+            Assert(mapped.Single(c => c.Id == 9).Rgb == default, "Unreviewed segment received local light");
+            Assert(mapped.Take(6).SequenceEqual(new LightMapper().Map(frame, Area, Settings, 1, wallWash: layout)),
+                "Adding an unreviewed segment changed established channel output");
+            Assert(mapped.SequenceEqual(new LightMapper().Map(frame, area, Settings, 1, wallWash: layout.Set(resolved))),
+                "Live mapping and the resolved UI calibration disagree");
+            Assert(mapped.Select(c => c.Id).SequenceEqual(area.Channels.Select(c => c.Id)), "Membership refresh changed channel identities");
+        });
+        add("Wall segment review gates local output while preserving Ambient and explicit point mode", () =>
+        {
+            var channel = new EntertainmentChannel(9, WallWashLayout.Direction(-60, 0), [new("left", 3)], "Left");
+            var area = Area with { Channels = [channel] };
+            var washer = Layout.GetOrCreate(area, "left") with { HorizontalSpan = 0 };
+            var pending = Layout.Set(washer);
+            Assert(washer.Segments.Single().NeedsReview, "Changed segment did not require review");
+            var settings = Settings with { AmbientSensitivity = 1, AmbientSmoothingMs = 0, AmbientFloor = .1,
+                AmbientOutput = .2, AmbientTintHue = 120, AmbientTintSaturation = 1 };
+            var ambient = new AmbientFrame(42, DateTimeOffset.UtcNow, 0, 0, 1);
+            var withAmbient = new LightMapper().Map(Frame(-60), area, settings, 1, ambient, pending).Single().Rgb;
+            var ambientOnly = new LightMapper().Map(Frame(-60) with { Lights = [] }, area, settings, 1, ambient, pending).Single().Rgb;
+            Assert(withAmbient == ambientOnly && withAmbient.Y > 0 && withAmbient.X == 0,
+                "Review suppressed independent Ambient or let unconfirmed local output through");
+            var confirmed = pending.Set(washer with { Segments = washer.Segments.Select(s => s with { NeedsReview = false }).ToArray() });
+            Assert(confirmed.Samples(area, channel) is { Count: > 0 } &&
+                new LightMapper().Map(Frame(-60), area, Settings, 1, wallWash: confirmed).Single().Rgb.X > .99,
+                "Explicit segment confirmation did not enable calibrated mapping");
+            var point = pending.Set(washer with { Enabled = false });
+            Assert(point.GetOrCreate(area, "left").Segments.Single().NeedsReview && point.Samples(area, channel) is null,
+                "Point mode erased review state or retained wall sampling");
+            Assert(new LightMapper().Map(Frame(-60), area, Settings, 1, wallWash: point)
+                .SequenceEqual(new LightMapper().Map(Frame(-60), area, Settings, 1)), "Point mode did not retain imported-position behavior");
+        });
+        add("Removed segments and replacement services cannot inherit unrelated wall calibration", () =>
+        {
+            var layout = Layout.Set(Layout.Washers[0] with { Segments = Layout.Washers[0].Segments.Select(s => s.Index == 1
+                ? s with { YawOffset = 12, NeedsReview = true } : s).ToArray() });
+            var reduced = Area with { Channels = Area.Channels.Where(c => c.Id is 1 or 2).ToArray() };
+            var resolved = layout.GetOrCreate(reduced, "left");
+            Assert(resolved.Segments.Select(s => s.Index).SequenceEqual(new[] { 1, 2 }) &&
+                resolved.Segments.SequenceEqual(layout.GetOrCreate(Area, "left").Segments.Skip(1)),
+                "Removed segments persisted in the active setup or surviving calibration/review state was lost");
+            var replacement = reduced with { Channels = [new(1, WallWashLayout.Direction(30, 0), [new("replacement", 1)], "Replacement")] };
+            var created = layout.GetOrCreate(replacement, "replacement");
+            Assert(!created.Enabled && created.Segments.All(s => !s.NeedsReview) && Math.Abs(created.Yaw - 30) < 1e-10,
+                "A replacement service inherited the old channel's wall geometry or review state");
+            Assert(layout.Samples(replacement, replacement.Channels[0]) is null &&
+                new LightMapper().Map(Frame(30), replacement, Settings, 1, wallWash: layout).Single().Rgb.X > .99,
+                "An unrelated service was hijacked by saved wall calibration");
+            var otherArea = Area with { Id = Guid.NewGuid().ToString() };
+            var inOtherArea = layout.GetOrCreate(otherArea, "left");
+            Assert(!inOtherArea.Enabled && inOtherArea.Segments.All(s => !s.NeedsReview),
+                "A different entertainment area inherited local review state");
+        });
         add("Wall calibration validates finite angles, keys, segments and exact axis directions", () =>
         {
             Layout.Validate(); var washer = Layout.Washers[0];
@@ -109,9 +178,15 @@ static class WallWashTests
             var store = new SettingsStore(directory);
             try
             {
-                store.SaveSettings(new(WallWash: Layout, Shortcut: new(Key: 75), Mapping: Settings));
+                var layout = Layout.Set(Layout.Washers[0] with { Segments = Layout.Washers[0].Segments.Select(s => s.Index == 2
+                    ? s with { NeedsReview = true } : s).ToArray() });
+                store.SaveSettings(new(WallWash: layout, Shortcut: new(Key: 75), Mapping: Settings));
                 var saved = store.LoadSettings(); saved.WallWash!.Validate();
-                Assert(JsonSerializer.Serialize(saved.WallWash) == JsonSerializer.Serialize(Layout) && saved.Shortcut!.Key == 75, "Local calibration did not persist");
+                Assert(JsonSerializer.Serialize(saved.WallWash) == JsonSerializer.Serialize(layout) && saved.Shortcut!.Key == 75, "Local calibration did not persist");
+                Assert(saved.WallWash.GetOrCreate(Area, "left").Segments.Single(s => s.Index == 2).NeedsReview,
+                    "Reload or membership refresh silently confirmed an unreviewed segment");
+                Assert(!JsonSerializer.Deserialize<WallWashSegment>("{\"Index\":2,\"YawOffset\":10,\"Elevation\":20,\"VerticalSpan\":5}")!.NeedsReview,
+                    "Legacy calibrated segments unexpectedly require confirmation");
                 var preset = MappingPreset.Export("Shared", saved.Mapping!);
                 Assert(!preset.Contains("WallWash", StringComparison.OrdinalIgnoreCase) && !preset.Contains("ServiceId", StringComparison.OrdinalIgnoreCase), "Preset exposed local layout");
                 var applied = saved with { Mapping = MappingPreset.Import(System.Text.Encoding.UTF8.GetBytes(preset)).ApplyTo(new(), PresetGroups.All) };
