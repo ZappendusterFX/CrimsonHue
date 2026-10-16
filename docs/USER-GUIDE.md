@@ -1,14 +1,15 @@
 # CrimsonHue 0.4.0 ASI preview — setup and tuning guide
 
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
-existing Hue Entertainment area. It is an independent ASI with an in-game mixer. Its
+existing Hue Entertainment area. Its headless ASI uses CDT's in-game mixer panel. Its
 output is an artistic lighting estimate, not a sample of the displayed pixels
 or a measurement of the physical lamps.
 
 ## What to install
 
-1. Install [CrimsonDesertTelemetry (CDT) 2.2.1](https://github.com/ZappendusterFX/CrimsonDesertTelemetry/releases/tag/v2.2.1)
-   separately in the game. Enable its server, rendered and upstream ManyLights
+1. Install the matching **CDT 2.2.5-huepanel.2 preview** separately in the game.
+   The public CDT 2.2.4 lacks this preview's Hue panel; obtain both matching ZIPs
+   from this branch's validation checkpoint. Enable its server, rendered and upstream ManyLights
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
    For all-around light sources, CrimsonHue needs CDT's fresh confirmed-clear
    visibility results. A missing or blocked source does not light a channel.

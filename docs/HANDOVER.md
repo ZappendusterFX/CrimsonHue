@@ -1,4 +1,32 @@
-# Current checkpoint — overlay hook race reproduced, 2026-10-16, Codex
+# Current checkpoint — CDT-hosted Hue panel ready, 2026-10-16, Codex
+
+Owner explicitly authorized the UI-hosting change while playing. Implemented:
+CDT owns the sole renderer/ImGui context/input; CrimsonHue is a headless ASI
+with protocol-1 bounded snapshot/command exports. Hue mapping, protected settings,
+wall/segment calibration, preview and stream ownership/cleanup remain separate.
+No graphics imports/hooks remain in the production Hue ASI. Telemetry API unchanged.
+A final review fixed a worker-shortcut/render visibility race before the final pair.
+
+Final pair: **CrimsonHue 0.4.0-asi.10** and **CDT 2.2.5-huepanel.2** (production,
+research OFF, build 25477059). Both ZIPs validated, not installed/published/game-tested.
+Hue 85/85, CDT managed 79, native 39/39, exact Hue controller + CDT shared GPU
+smoke passed (850889 pixels, independent hide/Hue-only reopen/resize/queue cleanup).
+Source paths, ZIP/ASI hashes, screenshot and evidence limits:
+[SHARED-OVERLAY-VALIDATION.md](SHARED-OVERLAY-VALIDATION.md).
+
+CDT changes are in its isolated worktree at
+`C:\DEV\CrimsonHue\artifacts\cdt-shared-overlay`, branch `codex/hue-shared-overlay`
+from `3284601`; preserve that checkout. Original CDT research/untracked files untouched.
+Panel source is maintained in `native/CrimsonHue.Panel`, synchronized into CDT
+using `scripts/Sync-CdtPanel.ps1`. Historical independent-overlay sources remain
+for developer reproductions; production no longer links them. Old packages preserved.
+
+No running-game module, game hook or physical lamp was changed. ReShade remains
+out of this test. **Next:** owner closes game, then install both final packages
+and verify deployed hashes for one combined game/input check. No more declined A/B
+restarts. Physical washer acceptance is still pending; do not auto-start sync.
+
+# Previous checkpoint — overlay hook race reproduced, 2026-10-16, Codex
 
 Owner installed `.asi.8` and entered the game, PID 11096, build 25477059. Both
 CDT HUD/markers and CrimsonHue UI are reported invisible. Read-only module checks

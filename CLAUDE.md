@@ -3,8 +3,8 @@
 CrimsonHue is the independent Windows Hue Entertainment consumer in this repository.
 Read docs/HANDOVER.md on takeover. Core code is in src/CrimsonHue.Core; WPF UI is in
 src/CrimsonHue.App. Branch codex/crimsonhue-asi hosts the existing controller
-unshown and draws the UI as an independent D3D12/ImGui in-game overlay in
-native/CrimsonHue.Asi. It ships one ASI with embedded application files, no EXE
+unshown; CDT hosts its UI in the single shared D3D12/ImGui renderer. The headless
+native/CrimsonHue.Asi ships one ASI with embedded application files, no EXE
 or loose runtime companions. Users install .NET 8 Desktop Runtime x64 separately.
 The owner resumed implementation on 2026-10-02. Synthetic GPU/controller tests
 are separate from pending game/input/DMM acceptance. Build/test/package commands

@@ -3,13 +3,15 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**Branch preview: 0.4.0-asi.8.** `CrimsonHue.asi` draws an interactive mixer
-directly into the game's D3D12 backbuffer. There is no separate settings window
-or process. The ZIP contains one ASI and documentation; application dependencies
+**Branch preview: 0.4.0-asi.10.** CDT hosts the interactive Hue mixer in its own
+D3D12 renderer. `CrimsonHue.asi` is the headless lamp controller and installs no
+graphics hooks. There is no separate settings window or process. The ZIP contains
+one ASI and documentation; application dependencies
 are embedded, and users install **.NET 8 Desktop Runtime x64** separately.
 See [ASI guide](docs/ASI.md) and [verification checkpoint](docs/HANDOVER.md).
-This preview has synthetic native/GPU verification; real game, input coexistence
-with CDT/graphics wrappers and DMM installation are still pending. The linked
+Use the matching **CDT 2.2.5-huepanel.2** preview; public CDT 2.2.4 lacks the panel.
+This preview has synthetic native/GPU verification; real game/input and DMM
+acceptance remain pending. The linked
 0.3.3 release is the earlier desktop EXE.
 
 **Downloads and guides:** [CrimsonHue releases](https://github.com/ZappendusterFX/CrimsonHue/releases) ·
@@ -295,8 +297,7 @@ with Desktop development with C++ and CMake tools on Windows:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/Build-Asi.ps1
 dotnet run --project tests/CrimsonHue.Tests -c Release
-artifacts\native-asi\Release\CrimsonHue.OverlaySmoke.exe artifacts\asi\CrimsonHue.asi artifacts\overlay-smoke\ingame.png
-artifacts\native-asi\Release\CrimsonHue.HdrTests.exe
+artifacts\native-asi\Release\CrimsonHue.ControllerSmoke.exe artifacts\asi\CrimsonHue.asi artifacts\controller-smoke\controller.png
 powershell -ExecutionPolicy Bypass -File scripts/Publish.ps1
 ```
 
@@ -325,12 +326,13 @@ Windows user who paired the app. It performs GET requests only, does not start a
 stream or change settings, and does not print keys or full API responses. Use this
 to compare the bridge's saved layout with the Hue app before changing mapping axes.
 
-The developer-only overlay smoke harness loads the actual ASI and installed runtime
-into its own process, verifies the hidden controller and all 30 mixer controls,
-renders the real UI through a synthetic D3D12/WARP swapchain, checks CPU pixel
-readback, hide/reopen, resize and orderly shutdown. It never
-loads saved credentials or connects to devices. The harness is excluded from
-the release. The publish script smoke-checks the exact candidate, rejects EXEs,
+The developer-only ControllerSmoke loads the actual headless ASI and installed
+runtime, verifies the hidden controller, all 30 controls, wall calibration,
+command validation and orderly shutdown. The matching CDT checkout supplies
+`CrimsonHue.OverlaySmoke.exe`, which loads this ASI and renders both panels with
+CDT's sole renderer, checking pixel readback, independent hide, Hue-only drawing
+and resize. These harnesses never load saved credentials or connect to devices
+and are excluded from releases. The publish script checks the exact controller candidate, rejects EXEs,
 settings and secrets, and creates an ASI ZIP in `dist/` without overwriting versions.
 
 ## Distribution

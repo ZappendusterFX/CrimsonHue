@@ -1,4 +1,4 @@
-param([string]$Version = '0.4.0-asi.8')
+param([string]$Version = '0.4.0-asi.10')
 $ErrorActionPreference = 'Stop'
 if ($Version -notmatch '^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$') { throw 'Invalid version.' }
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -15,10 +15,11 @@ $guide = Join-Path $package 'docs'
 New-Item -ItemType Directory -Path $guide | Out-Null
 Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\USER-GUIDE.md'), (Join-Path $projectRoot 'docs\AMBIENT-INTEGRATION.md'), (Join-Path $projectRoot 'docs\ASI.md') -Destination $guide
 & (Join-Path $projectRoot 'tests\Test-AsiPackage.ps1') -Folder $output
-# Exact release candidate, hidden synthetic controller, actual D3D12 readback.
-$smoke = Join-Path $projectRoot "artifacts\asi-package-$Version\ingame.png"
-& (Join-Path $projectRoot 'artifacts\native-asi\Release\CrimsonHue.OverlaySmoke.exe') (Join-Path $package 'CrimsonHue.asi') $smoke
-if ($LASTEXITCODE -ne 0) { throw 'Packaged ASI overlay smoke failed.' }
+# Exact release candidate, hidden synthetic controller. GPU checks belong to CDT.
+$smoke = Join-Path $projectRoot "artifacts\asi-package-$Version\controller.png"
+New-Item -ItemType Directory -Path (Split-Path -Parent $smoke) -Force | Out-Null
+& (Join-Path $projectRoot 'artifacts\native-asi\Release\CrimsonHue.ControllerSmoke.exe') (Join-Path $package 'CrimsonHue.asi') $smoke
+if ($LASTEXITCODE -ne 0) { throw 'Packaged ASI controller smoke failed.' }
 Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
 $archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Create)
 try {
