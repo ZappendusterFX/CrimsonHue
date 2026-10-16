@@ -16,18 +16,14 @@ public partial class MainWindow
     private readonly Dictionary<string, CheckBox> tuningSwitches = [];
     private readonly DistanceCurveView distanceCurve = new() { Height = 115, Margin = new Thickness(0, 8, 0, 4) };
     private static readonly MappingSettings defaults = new();
-    private static readonly SwitchParameter[] switches =
-    [
-        new("SeparateLeftRight", "Space", "Strict left / right", "On: a local source on the left adds no new light to right lamps, and vice versa. Previous output fades with Local light transition.", m => m.SeparateLeftRight, (m,v) => m with { SeparateLeftRight=v }),
-        new("SeparateFrontRear", "Space", "Strict front / rear", "On: a local source in front adds no new light to rear lamps, and vice versa. Previous output fades with Local light transition.", m => m.SeparateFrontRear, (m,v) => m with { SeparateFrontRear=v })
-    ];
+    private static readonly SwitchParameter[] switches = [];
     private static readonly Parameter[] parameters =
     [
         new("Brightness", "Output", "Maximum brightness", "%", "Final limit for every lamp; imported channel balance still applies.", 0, 100, 1, 100, m => m.Brightness, (m,v) => m with { Brightness=v }),
         new("Gain", "Output", "Light sensitivity", "×", "Exposure of each local source before distance fade. Zero removes local sources.", 0, 10, .05, 1, m => m.Gain, (m,v) => m with { Gain=v }),
         new("LocalStrength", "Output", "Local light mix", "%", "Amount of local light added to the Ambient layer.", 0, 400, 5, 100, m => m.LocalStrength, (m,v) => m with { LocalStrength=v }),
         new("OutputGamma", "Output", "Output gamma", "", "1 is neutral. Higher values lift dim output; black stays black.", .1, 4, .05, 1, m => m.OutputGamma, (m,v) => m with { OutputGamma=v }),
-        new("SmoothingMs", "Output", "Local light transition", "ms", "Smooths local brightness and color changes in every input mode, including strict boundaries. Briefly fades the previous color; 0 changes immediately. Ambient has its own transition.", 0, 1000, 10, 1, m => m.SmoothingMs, (m,v) => m with { SmoothingMs=v }),
+        new("SmoothingMs", "Output", "Local light transition", "ms", "Smooths local brightness and color changes over time in every input mode. Briefly fades the previous color; 0 changes immediately. Ambient has its own transition.", 0, 1000, 10, 1, m => m.SmoothingMs, (m,v) => m with { SmoothingMs=v }),
         new("AmbientSensitivity", "Ambient", "Ambient exposure", "×", "Scales CDT's local Ambient level. Zero disables the Ambient layer.", 0, 10, .05, 1, m => m.AmbientSensitivity, (m,v) => m with { AmbientSensitivity=v }),
         new("AmbientReferenceLevel", "Ambient", "Ambient reference level", "raw units", "At 1× exposure: level after the black threshold that produces 63% response.", .01, 100, .1, 1, m => m.AmbientReferenceLevel, (m,v) => m with { AmbientReferenceLevel=v }),
         new("AmbientOutput", "Ambient", "Ambient mix", "%", "Maximum linear contribution of the Ambient layer before the master limit.", 0, 100, 1, 100, m => m.AmbientOutput, (m,v) => m with { AmbientOutput=v }),
@@ -43,13 +39,13 @@ public partial class MainWindow
         new("AmbientTintHue", "Color", "Ambient tint hue", "°", "Your chosen tint; this is not a conversion of CDT sky RGB.", 0, 360, 1, 1, m => m.AmbientTintHue, (m,v) => m with { AmbientTintHue=v }),
         new("AmbientTintSaturation", "Color", "Ambient tint saturation", "%", "0 keeps Ambient neutral white. Increase to apply the chosen tint.", 0, 100, 1, 100, m => m.AmbientTintSaturation, (m,v) => m with { AmbientTintSaturation=v }),
         new("DirectionOriginBlend", "Space", "Direction origin", "% camera", "0% = player position; 100% = camera position. In between moves the origin along that line. Viewing axes always follow the camera.", 0, 100, 1, 100, m => m.DirectionOriginBlend, (m,v) => m with { DirectionOriginBlend=v }),
-        new("SourceDiscRadiusDegrees", "Space", "Source disc radius", "°", "Size of a 2D circle around each source direction, including off-screen sources. Strict boundaries clip the circle.", 1, 89, 1, 1, m => m.SourceDiscRadiusDegrees, (m,v) => m with { SourceDiscRadiusDegrees=v }),
-        new("SourceDiscSoftness", "Space", "Source disc soft edge", "%", "Outer fraction of the circle that fades to zero. 0 is a hard edge; outside the circle is always zero.", 0, 100, 1, 100, m => m.SourceDiscSoftness, (m,v) => m with { SourceDiscSoftness=v }),
+        new("SourceDiscRadiusDegrees", "Space", "Source influence radius", "°", "Angular radius around each source on the sphere. Blends across left/right, front/rear and above/below without axis splits; 180° reaches every direction.", 1, 180, 1, 1, m => m.SourceDiscRadiusDegrees, (m,v) => m with { SourceDiscRadiusDegrees=v }),
+        new("SourceDiscSoftness", "Space", "Spherical edge softness", "%", "Outer fraction of the angular radius that fades to zero. 0 is a hard edge; outside the source radius is always zero.", 0, 100, 1, 100, m => m.SourceDiscSoftness, (m,v) => m with { SourceDiscSoftness=v }),
         new("FadeStart", "Space", "Fade starts", "game units", "Sources keep full distance strength inside this player-relative distance.", 0, Math.BitDecrement(1000), .5, 1, m => m.FadeStart, (m,v) => m with { FadeStart=v }),
         new("Radius", "Space", "Off beyond", "game units", "Sources at or beyond this distance contribute nothing.", 1, 1000, .5, 1, m => m.Radius, (m,v) => m with { Radius=v }),
         new("FadeExponent", "Space", "Distance falloff", "", "Higher values remove distant influence faster; see the curve above.", .1, 8, .1, 1, m => m.FadeExponent, (m,v) => m with { FadeExponent=v }),
-        new("Spread", "Space", "Directional focus", "", "Weights lamps within the allowed sides. 0 reaches them equally; higher values concentrate direction.", 0, 16, .1, 1, m => m.Spread, (m,v) => m with { Spread=v }),
-        new("DirectionNormalization", "Space", "Strongest-channel compensation", "%", "100 gives each source full angular strength at its best allowed channel. Never crosses an enabled boundary.", 0, 100, 1, 100, m => m.DirectionNormalization, (m,v) => m with { DirectionNormalization=v }),
+        new("Spread", "Space", "Directional focus", "", "Weights lamps within the source's spherical influence. 0 reaches them equally; higher values concentrate direction.", 0, 16, .1, 1, m => m.Spread, (m,v) => m with { Spread=v }),
+        new("DirectionNormalization", "Space", "Strongest-channel compensation", "%", "100 gives each source full angular strength at its best receiving channel while preserving spherical blending.", 0, 100, 1, 100, m => m.DirectionNormalization, (m,v) => m with { DirectionNormalization=v }),
         new("CameraYawOffset", "Space", "Room direction offset", "°", "Rotate the camera-to-room alignment without moving imported Hue positions.", -180, 180, 1, 1, m => m.CameraYawOffset, (m,v) => m with { CameraYawOffset=v })
     ];
 
@@ -77,7 +73,7 @@ public partial class MainWindow
             tuningSwitches.Add(p.Key, control);
             panels[p.Group].Children.Add(panel);
         }
-        SpatialControls.Children.Add(new TextBlock { Text = "Camera orientation sets front/right/up. The origin sets which side a source is on. Lamps exactly on a center line can receive either adjacent side. Ambient has its own controls.",
+        SpatialControls.Children.Add(new TextBlock { Text = "Camera orientation sets front/right/up. Local light blends by angular distance on the sphere, including above and below. The origin sets the source direction. Ambient has its own controls.",
             TextWrapping = TextWrapping.Wrap, FontSize = 11, Foreground = (System.Windows.Media.Brush)FindResource("Muted"), Margin = new Thickness(0, 0, 0, 8) });
         foreach (var p in parameters)
         {
@@ -119,7 +115,7 @@ public partial class MainWindow
             foreach (var p in parameters) tuningControls[p.Key].SetDisplayValue(p.Get(mapping) * p.Scale);
             foreach (var p in switches) tuningSwitches[p.Key].IsChecked = p.Get(mapping);
             SpatialBoundaryStatus.Text = $"Direction origin: {mapping.DirectionOriginBlend * 100:G}% toward camera · view: camera\n" +
-                $"Local boundaries: left/right {(mapping.SeparateLeftRight ? "ON" : "OFF")} · front/rear {(mapping.SeparateFrontRear ? "ON" : "OFF")}";
+                "Spherical blending · all directions";
             distanceCurve.Settings = mapping;
             distanceCurve.InvalidateVisual();
         }
@@ -152,7 +148,9 @@ public partial class MainWindow
         {
             var fields = typeof(MappingSettings).GetProperties().Where(p => p.PropertyType == typeof(double) && p.Name != "FadeEnd").Select(p => p.Name).Order().ToArray();
             if (!fields.SequenceEqual(parameters.Select(p => p.Key).Order())) throw new InvalidOperationException("A mapping setting has no visible control.");
-            var flags = typeof(MappingSettings).GetProperties().Where(p => p.PropertyType == typeof(bool)).Select(p => p.Name).Order();
+            // Old presets retain these flags; the spherical mapper ignores them.
+            var flags = typeof(MappingSettings).GetProperties().Where(p => p.PropertyType == typeof(bool) &&
+                p.Name is not ("SeparateLeftRight" or "SeparateFrontRear")).Select(p => p.Name).Order();
             if (!flags.SequenceEqual(switches.Select(p => p.Key).Order())) throw new InvalidOperationException("A mapping switch has no visible control.");
             foreach (var p in switches)
             {

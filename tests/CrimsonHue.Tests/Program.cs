@@ -131,32 +131,37 @@ Add("Confirmed visibility expires independently of a fresh light capture", () =>
     Assert(state.Read(out var message, DateTimeOffset.UtcNow.AddMilliseconds(40))!.Lights.Count == 0);
     Assert(message.Contains("0/4 confirmed visible"));
 });
-Add("Republished light captures do not renew a physics visibility verdict", () =>
+Add("Physics visibility age starts at publication, independently of GPU capture age", () =>
 {
     var now = DateTimeOffset.UtcNow;
     var node = JsonNode.Parse(Fixtures.CurrentSnapshot())!;
     node["capturedAt"] = now;
-    node["lights"]!["upstream"]!["sources"]![0]!["sourceVisibility"]!["volumeAgeMillisecondsAtCapture"] = 350;
-    var state = new TelemetryState();
-    state.Accept(Encoding.UTF8.GetBytes(node.ToJsonString()));
-    Assert(state.Read(out _, now)!.Lights.Count == 1, "Fresh ray was rejected");
-
-    node["sequence"] = 2;
     foreach (var feed in new[] { "rendered", "upstream" })
     {
-        node["lights"]![feed]!["capturedAt"] = now.AddMilliseconds(-200);
-        node["lights"]![feed]!["ageMilliseconds"] = 200;
+        node["lights"]![feed]!["capturedAt"] = now.AddMilliseconds(-150);
+        node["lights"]![feed]!["ageMilliseconds"] = 150;
     }
+    node["lights"]!["upstream"]!["sources"]![0]!["sourceVisibility"]!["volumeAgeMillisecondsAtCapture"] = 400;
+    var state = new TelemetryState();
     state.Accept(Encoding.UTF8.GetBytes(node.ToJsonString()));
-    Assert(state.Read(out _, now)!.Lights.Count == 0,
-        "Fresh envelope renewed a 350 + 200 ms visibility verdict");
+    Assert(state.Read(out _, now)!.Lights.Count == 1, "GPU capture age prematurely expired a fresh ray");
+    Assert(state.Read(out _, now.AddMilliseconds(50))!.Lights.Count == 1, "Fresh ray expired before its 500 ms limit");
+    Assert(state.Read(out _, now.AddMilliseconds(120))!.Lights.Count == 0, "Transport age failed to expire a ray");
 
-    // If wall-clock age underreports elapsed capture age, the producer age must
-    // still expire the same verdict without discarding the valid local frame.
-    node["sequence"] = 3;
-    foreach (var feed in new[] { "rendered", "upstream" }) node["lights"]![feed]!["capturedAt"] = now;
+    // CDT republishes the same GPU capture with an updated measurement age.
+    node["sequence"] = 2;
+    node["capturedAt"] = now.AddMilliseconds(50);
+    foreach (var feed in new[] { "rendered", "upstream" }) node["lights"]![feed]!["ageMilliseconds"] = 200;
+    node["lights"]!["upstream"]!["sources"]![0]!["sourceVisibility"]!["volumeAgeMillisecondsAtCapture"] = 450;
     state.Accept(Encoding.UTF8.GetBytes(node.ToJsonString()));
-    Assert(state.Read(out _, now)!.Lights.Count == 0, "Clock skew bypassed producer capture age");
+    Assert(state.Read(out _, now.AddMilliseconds(50))!.Lights.Count == 1, "Republished metadata inherited GPU capture age");
+    Assert(state.Read(out _, now.AddMilliseconds(120))!.Lights.Count == 0, "Republication renewed an expired ray");
+
+    // A backwards wall clock must not erase transport delay observed on receipt.
+    node["sequence"] = 3;
+    node["capturedAt"] = DateTimeOffset.UtcNow.AddMilliseconds(-100);
+    state.Accept(Encoding.UTF8.GetBytes(node.ToJsonString()));
+    Assert(state.Read(out _, now.AddMilliseconds(-100))!.Lights.Count == 0, "Clock skew erased received transport age");
 });
 Add("Schema 1.6 treats missing or non-physics visibility as unconfirmed", () =>
 {
@@ -352,7 +357,7 @@ Add("Camera yaw keeps off-screen sources on matching rear channels", () =>
     var colors = new LightMapper().Map(reversed, rear, new(1, 1, 35, 8, 0), 0.1);
     Assert(colors[0].Rgb.Z > 0 && colors[0].Rgb.X == 0);
 });
-Add("Strict boundaries keep every opposite quadrant exactly black while the camera turns", () =>
+Add("A bounded spherical footprint follows camera rotation through every quadrant", () =>
 {
     var layout = new EntertainmentArea(Fixtures.Id, "Four corners", false,
     [
@@ -375,11 +380,11 @@ Add("Strict boundaries keep every opposite quadrant exactly black while the came
             var camera = frame.Camera with { Right = new(Math.Cos(yaw), 0, -Math.Sin(yaw)), Forward = new(Math.Sin(yaw), 0, Math.Cos(yaw)) };
             var colors = mapper.Map(frame with { Camera = camera }, layout, settings, .001);
             Assert(colors[corner].Rgb.X > 0, "Allowed corner lost its source");
-            Assert(colors.Where((_, i) => i != corner).All(c => c.Rgb == default), "Excluded corner retained color after camera rotation");
+            Assert(colors.Where((_, i) => i != corner).All(c => c.Rgb == default), "A channel outside the angular footprint retained color after camera rotation");
         }
     }
 });
-Add("Recorded left brazier has zero right and rear contribution at the owner's broad focus", () =>
+Add("Recorded brazier uses its spherical footprint independently of legacy side switches", () =>
 {
     // Read-only CDT capture from the reported forest scene; replay is synthetic evidence.
     var layout = new EntertainmentArea(Fixtures.Id, "Recorded room", false,
@@ -397,12 +402,13 @@ Add("Recorded left brazier has zero right and rear contribution at the owner's b
             new(new(-10492.526, 606.91095, -4446.793), new(1.9406164, .59905326, .14772636))]
     };
     var settings = new MappingSettings(Brightness: .6, Radius: 20, FadeStart: 6, FadeExponent: 1.2);
-    var strict = new LightMapper().Map(frame, layout, settings, 1);
-    var broad = new LightMapper().Map(frame, layout, settings with { SeparateLeftRight = false, SeparateFrontRear = false,
-        SourceDiscRadiusDegrees = 89, SourceDiscSoftness = 0, DirectionOriginBlend = 1 }, 1);
-    Assert(strict[0].Rgb == default && strict[1].Rgb == default, "Recorded left fire still reaches right/rear");
-    Assert(strict[2].Rgb == broad[2].Rgb && strict[2].Rgb.X > .5, "Boundary unnecessarily changed left fire output");
-    Assert(broad[1].Rgb.X > .5, "Replay no longer reproduces the reported broad spill");
+    var output = new LightMapper().Map(frame, layout, settings, 1);
+    Assert(output[2].Rgb.X > .5 && output.All(c => c.Rgb.IsFinite), "Recorded fire lost its main room contribution");
+    foreach (var leftRight in new[] { false, true })
+    foreach (var frontRear in new[] { false, true })
+        Assert(output.SequenceEqual(new LightMapper().Map(frame, layout, settings with
+            { SeparateLeftRight = leftRight, SeparateFrontRear = frontRear }, 1)),
+            "Legacy side switches reintroduced axis cuts");
 });
 Add("Direction origin interpolates player and camera positions exactly and preserves camera axes", () =>
 {
@@ -447,18 +453,18 @@ Add("Recorded nearby fires switch front or rear with the chosen player-camera or
     var settings = new MappingSettings(Brightness: .6, Radius: 15, FadeStart: 6, FadeExponent: 1.2, SmoothingMs: 0);
     var mapper = new LightMapper();
     var lens = mapper.Map(frame, layout, settings with { DirectionOriginBlend = 1 }, .001);
-    Assert(lens[0].Rgb == default && lens[1].Rgb.X > .5 && lens[2].Rgb.X > .5, "Lens endpoint did not reproduce the reported front output");
+    Assert(lens[1].Rgb.X > .5 && lens[2].Rgb.X > .5, "Lens endpoint did not reproduce the reported front output");
     var player = mapper.Map(frame, layout, settings with { DirectionOriginBlend = 0 }, .001);
-    Assert(player[0].Rgb.X > .5 && player.Skip(1).All(c => c.Rgb == default), "Player endpoint did not move the source to the rear");
+    Assert(player[0].Rgb.X > .5 && player[0].Rgb.X > lens[0].Rgb.X, "Player endpoint did not move the source toward the rear");
     var quarter = mapper.Map(frame, layout, settings with { DirectionOriginBlend = .25 }, .001);
-    Assert(quarter[0].Rgb.X > 0 && quarter.Skip(1).All(c => c.Rgb == default));
+    Assert(quarter[0].Rgb.X > 0 && quarter.All(c => c.Rgb.IsFinite));
     var half = mapper.Map(frame, layout, settings, .001);
-    Assert(half.All(c => c.Rgb.IsFinite) && half.Skip(1).All(c => c.Rgb == default));
+    Assert(half.All(c => c.Rgb.IsFinite));
     var translatedCamera = frame with { Camera = frame.Camera with { Position = new(0, 500, 0) } };
     var fixedPlayer = mapper.Map(translatedCamera, layout, settings with { DirectionOriginBlend = 0 }, .001);
     Assert(player.SequenceEqual(fixedPlayer), "Camera translation changed output at the player endpoint");
 });
-Add("A missing matching lamp never redirects sources across a boundary", () =>
+Add("A missing matching lamp never revives output outside the spherical footprint", () =>
 {
     var frame = TelemetryParser.Parse(Fixtures.Snapshot(), out _)! with
     {
@@ -469,25 +475,30 @@ Add("A missing matching lamp never redirects sources across a boundary", () =>
     foreach (var focus in new[] { 0.0, 16 })
     {
         var colors = new LightMapper().Map(frame, rightOnly, new(Spread: focus, OutputGamma: 4, LocalStrength: 4), 1);
-        Assert(colors.Single().Rgb == default, "Normalization revived a forbidden channel");
+        Assert(colors.Single().Rgb == default, "Normalization revived a channel outside the footprint");
     }
     Assert(new LightMapper().Map(frame, area with { Channels = [] }, new(), 1).Count == 0);
 });
-Add("Center lines are shared but sources immediately either side are strictly separated", () =>
+Add("Crossing the center line keeps point lamps continuous without temporal smoothing", () =>
 {
     var frame = TelemetryParser.Parse(Fixtures.Snapshot(), out _)! with
     {
         Camera = new(default, new(1, 0, 0), new(0, 1, 0), new(0, 0, 1))
     };
     var layout = area with { Channels = [.. area.Channels, new(8, new(0, 1, 0), [], "Center")] };
-    foreach (var x in new[] { -1e-12, 0, 1e-12 })
+    IReadOnlyList<ChannelColor>? previous = null;
+    foreach (var x in new[] { -1e-8, 0, 1e-8 })
     {
-        var colors = new LightMapper().Map(frame with { Lights = [new(new(x, 0, 5), new(1, 0, 0))] }, layout, new(Spread: 0), 1);
-        Assert((colors[0].Rgb.X > 0) == (x <= 0) && (colors[1].Rgb.X > 0) == (x >= 0));
+        var colors = new LightMapper().Map(frame with { Lights = [new(new(x, 0, 5), new(1, 0, 0))] }, layout,
+            new(Spread: 0, SmoothingMs: 0), 0.001);
+        Assert(colors[0].Rgb.X > 0 && colors[1].Rgb.X > 0, "An axis cut extinguished an overlapping footprint");
         Assert(colors[2].Rgb.X > 0, "A lamp exactly on the center line lost an adjacent source");
+        if (previous != null) Assert(colors.Zip(previous).All(pair => (pair.First.Rgb - pair.Second.Rgb).Length < 1e-6),
+            "An infinitesimal center crossing changed a channel discontinuously");
+        previous = colors;
     }
 });
-Add("Boundary switches and room offset act immediately without altering Ambient or raw input", () =>
+Add("Legacy side switches cannot cut spherical output or alter Ambient and raw input", () =>
 {
     var layout = new EntertainmentArea(Fixtures.Id, "Corners", false,
     [
@@ -499,26 +510,29 @@ Add("Boundary switches and room offset act immediately without altering Ambient 
         Camera = new(default, new(1, 0, 0), new(0, 1, 0), new(0, 0, 1)),
         Lights = [new(new(-2, 0, 5), new(1, 0, 0))]
     };
-    var settings = new MappingSettings(Spread: 0, SmoothingMs: 0, AmbientSmoothingMs: 0, SourceDiscRadiusDegrees: 89, SourceDiscSoftness: 0);
+    var settings = new MappingSettings(Spread: 0, SmoothingMs: 0, AmbientSmoothingMs: 0, SourceDiscRadiusDegrees: 140, SourceDiscSoftness: .5);
     var mapper = new LightMapper();
     var broad = mapper.Map(frame, layout, settings with { SeparateLeftRight = false, SeparateFrontRear = false }, 1);
     Assert(broad.Take(2).All(c => c.Rgb.X > 0));
-    var strict = mapper.Map(frame, layout, settings, .001);
-    Assert(strict[0].Rgb.X > 0 && strict.Skip(1).All(c => c.Rgb == default), "Enabling boundaries retained previous spread");
+    var unchanged = mapper.Map(frame, layout, settings, .001);
+    Assert(unchanged.SequenceEqual(broad), "Legacy side booleans changed spherical output");
     var frontOnly = mapper.Map(frame, layout, settings with { SeparateLeftRight = false }, .001);
-    Assert(frontOnly.Take(2).All(c => c.Rgb.X > 0) && frontOnly.Skip(2).All(c => c.Rgb == default));
+    Assert(frontOnly.SequenceEqual(broad), "Legacy front/rear flag reintroduced a cut");
     var beside = frame with { Lights = [new(new(-5, 0, 2), new(1, 0, 0))] };
     var leftOnly = mapper.Map(beside, layout, settings with { SeparateFrontRear = false }, .001);
-    Assert(leftOnly[0].Rgb.X > 0 && leftOnly[2].Rgb.X > 0 && leftOnly[1].Rgb == default && leftOnly[3].Rgb == default);
+    Assert(leftOnly.SequenceEqual(mapper.Map(beside, layout, settings, .001)), "Legacy left/right flag reintroduced a cut");
     var offset = mapper.Map(frame, layout, settings with { CameraYawOffset = -90 }, .001);
-    Assert(offset[1].Rgb.X > 0 && offset.Where((_, i) => i != 1).All(c => c.Rgb == default));
+    Assert((offset[1].Rgb - broad[0].Rgb).Length < 1e-10 && (offset[3].Rgb - broad[1].Rgb).Length < 1e-10,
+        "Room offset failed to rotate the spherical field");
     var ambient = new AmbientFrame(42, DateTimeOffset.UtcNow, 0, 0, .01);
     var mixed = mapper.Map(frame, layout, settings, .001, ambient);
     var ambientOnly = mapper.Map(frame with { Lights = [] }, layout, settings, .001, ambient);
-    Assert(mixed.Skip(1).Zip(ambientOnly.Skip(1)).All(p => p.First.Rgb == p.Second.Rgb), "Forbidden local light changed the Ambient baseline");
+    var ambientLegacyOff = mapper.Map(frame with { Lights = [] }, layout,
+        settings with { SeparateLeftRight = false, SeparateFrontRear = false }, .001, ambient);
+    Assert(ambientOnly.SequenceEqual(ambientLegacyOff) && mixed.All(c => c.Rgb.IsFinite), "Legacy switches changed independent Ambient");
     Assert(frame.Lights.Single() == new LightContribution(new(-2, 0, 5), new(1, 0, 0)), "Mapping changed raw CDT data");
 });
-Add("The source footprint is a bounded 2D circle with equal horizontal and vertical radius", () =>
+Add("The spherical source footprint has equal angular radius horizontally and vertically", () =>
 {
     Vec3 Ray(double angle, double around)
     {
@@ -545,7 +559,7 @@ Add("The source footprint is a bounded 2D circle with equal horizontal and verti
     Assert(new LightMapper().Map(frame, single, settings with { SourceDiscRadiusDegrees = 50, SourceDiscSoftness = 1 }, 1)[0].Rgb == soft[4].Rgb,
         "A lone edge channel was boosted to full intensity");
 });
-Add("An enlarged off-screen source disc is still clipped at every enabled side boundary", () =>
+Add("A spherical source footprint crosses front/rear axes continuously off screen", () =>
 {
     var layout = new EntertainmentArea(Fixtures.Id, "Side probes", false,
     [new(0, new(-1, .1, 0), [], "Left front"), new(1, new(-1, -.1, 0), [], "Left rear"), new(2, new(1, .1, 0), [], "Right front")]);
@@ -555,10 +569,11 @@ Add("An enlarged off-screen source disc is still clipped at every enabled side b
         Lights = [new(new(-5, 0, .1), new(1, 0, 0))]
     };
     var settings = new MappingSettings(Spread: 0, SourceDiscRadiusDegrees: 89, SourceDiscSoftness: 0);
-    var strict = new LightMapper().Map(frame, layout, settings, 1);
-    Assert(strict[0].Rgb.X > 0 && strict.Skip(1).All(c => c.Rgb == default), "Off-screen disc crossed a boundary");
+    var output = new LightMapper().Map(frame, layout, settings, 1);
+    Assert(output[0].Rgb.X > 0 && output[1].Rgb.X > 0 && output[2].Rgb == default,
+        "Off-screen footprint was split by an axis or leaked beyond its angular radius");
     var withoutFrontRear = new LightMapper().Map(frame, layout, settings with { SeparateFrontRear = false }, 1);
-    Assert(withoutFrontRear[1].Rgb.X > 0, "Boundary switch did not expose the adjacent part of the disc");
+    Assert(withoutFrontRear.SequenceEqual(output), "Legacy front/rear switch changed spherical interpolation");
 });
 Add("Hue axes preserve front/back and height independently", () =>
 {
@@ -581,6 +596,127 @@ Add("Hue axes preserve front/back and height independently", () =>
         Assert(colors[i].Rgb.X > 0.5);
         Assert(colors.Where((_, j) => j != i).All(c => c.Rgb.X < colors[i].Rgb.X * 0.1));
     }
+});
+Add("Spherical interpolation is invariant when source and point or calibrated segment geometry rotate together", () =>
+{
+    Vec3 Rotate(Vec3 p) => new(p.Z, p.X, p.Y); // A proper rotation permutes all three room axes.
+    var directions = from x in new[] { -1.0, 1 } from y in new[] { -1.0, 1 } from z in new[] { -1.0, 1 }
+                     select new Vec3(x, y, z).Unit;
+    var layout = new EntertainmentArea(Fixtures.Id, "Rotating room", false, directions.Select((p, i) =>
+        new EntertainmentChannel((byte)i, p, [new("segment-" + i, 0)], "Segment " + i)).ToArray());
+    WallWashLayout Calibrate(EntertainmentArea room) => new(room.Channels.Select(c => new WallWasher(room.Id,
+        c.Members.Single().ServiceId, true, Math.Atan2(c.Position.X, c.Position.Y) * 180 / Math.PI, 0,
+        [new(0, Elevation: Math.Asin(c.Position.Unit.Z) * 180 / Math.PI)])).ToArray());
+    var settings = new MappingSettings(Brightness: 1, FadeStart: 5, SmoothingMs: 0,
+        SourceDiscRadiusDegrees: 140, SourceDiscSoftness: .6, Spread: 3, DirectionNormalization: .7);
+    var direction = new Vec3(-.3, .8, .52).Unit;
+    var rotated = layout with { Channels = layout.Channels.Select(c => c with { Position = Rotate(c.Position) }).ToArray() };
+    foreach (var calibrated in new[] { false, true })
+    {
+        var before = new LightMapper().Map(Fixtures.DirectionalFrame(direction), layout, settings, .001,
+            wallWash: calibrated ? Calibrate(layout) : null);
+        var after = new LightMapper().Map(Fixtures.DirectionalFrame(Rotate(direction)), rotated, settings, .001,
+            wallWash: calibrated ? Calibrate(rotated) : null);
+        Assert(before.Zip(after).All(pair => (pair.First.Rgb - pair.Second.Rgb).Length < 1e-9),
+            "Spherical response depends on a named room axis");
+    }
+});
+Add("Point-light spherical handoff is continuous through all axes without temporal smoothing", () =>
+{
+    var axes = new[] { new Vec3(1, 0, 0), new Vec3(0, 1, 0), new Vec3(0, 0, 1) };
+    var layout = new EntertainmentArea(Fixtures.Id, "Six directions", false,
+        axes.Concat(axes.Select(a => a * -1)).Select((p, i) => new EntertainmentChannel((byte)i, p, [], "Axis " + i)).ToArray());
+    var settings = new MappingSettings(Brightness: 1, FadeStart: 5, SmoothingMs: 0,
+        SourceDiscRadiusDegrees: 110, SourceDiscSoftness: .6, Spread: 2);
+    for (var plane = 0; plane < 3; plane++)
+    {
+        var u = axes[plane]; var v = axes[(plane + 1) % 3];
+        IReadOnlyList<ChannelColor>? first = null, previous = null;
+        var mapper = new LightMapper();
+        for (var angle = -180; angle <= 180; angle++)
+        {
+            var radians = angle * Math.PI / 180;
+            var output = mapper.Map(Fixtures.DirectionalFrame(u * Math.Cos(radians) + v * Math.Sin(radians)), layout, settings, .001);
+            Assert(output.All(c => c.Rgb.IsFinite && c.Rgb.X >= 0 && c.Rgb.X <= 1), "Nonfinite spherical output");
+            if (previous != null)
+                Assert(output.Zip(previous).All(pair => (pair.First.Rgb - pair.Second.Rgb).Length < .08),
+                    $"A spatial step occurred in plane {plane}, angle {angle}, with temporal smoothing disabled");
+            first ??= output; previous = output;
+        }
+        Assert(first!.Zip(previous!).All(pair => (pair.First.Rgb - pair.Second.Rgb).Length < 1e-9), "Spherical wrap seam is discontinuous");
+        double previousU = 2, previousV = -1;
+        for (var angle = 0; angle <= 90; angle++)
+        {
+            var radians = angle * Math.PI / 180;
+            var output = mapper.Map(Fixtures.DirectionalFrame(u * Math.Cos(radians) + v * Math.Sin(radians)), layout, settings, .001);
+            var currentU = output[plane].Rgb.X; var currentV = output[(plane + 1) % 3].Rgb.X;
+            Assert(currentU <= previousU + 1e-10 && currentV >= previousV - 1e-10, "Adjacent spherical channels do not hand off monotonically");
+            if (angle == 45) Assert(Math.Abs(currentU - currentV) < 1e-9, "Equal angular distances are not balanced");
+            previousU = currentU; previousV = currentV;
+        }
+    }
+});
+Add("Mixed ordinary lamp and six calibrated wall segments flow across horizontal and vertical axes", () =>
+{
+    var layout = new EntertainmentArea(Fixtures.Id, "Mixed spherical room", false,
+        Enumerable.Range(0, 6).Select(i => new EntertainmentChannel((byte)i,
+            WallWashLayout.Direction(i < 3 ? -45 : 45, (i % 3 - 1) * 30),
+            [new(i < 3 ? "left" : "right", i % 3)], "Wall " + i))
+        .Append(new EntertainmentChannel(9, new(0, 1, 0), [new("bulb", 0)], "Ordinary bulb")).ToArray());
+    var walls = new WallWashLayout([
+        new(Fixtures.Id, "left", true, -45, 40, [new(0, Elevation: -30, VerticalSpan: 12), new(1, VerticalSpan: 12), new(2, Elevation: 30, VerticalSpan: 12)]),
+        new(Fixtures.Id, "right", true, 45, 40, [new(0, Elevation: -30, VerticalSpan: 12), new(1, VerticalSpan: 12), new(2, Elevation: 30, VerticalSpan: 12)])]);
+    var settings = new MappingSettings(Brightness: 1, FadeStart: 5, SmoothingMs: 0,
+        SourceDiscRadiusDegrees: 120, SourceDiscSoftness: 1, Spread: 0);
+    var axes = new[] { new Vec3(1, 0, 0), new Vec3(0, 1, 0), new Vec3(0, 0, 1) };
+    for (var plane = 0; plane < 3; plane++)
+    {
+        IReadOnlyList<ChannelColor>? previous = null;
+        var mapper = new LightMapper();
+        for (var angle = -180; angle <= 180; angle++)
+        {
+            var radians = angle * Math.PI / 180;
+            var direction = axes[plane] * Math.Cos(radians) + axes[(plane + 1) % 3] * Math.Sin(radians);
+            var output = mapper.Map(Fixtures.DirectionalFrame(direction), layout, settings, .001, wallWash: walls);
+            Assert(output.Select(c => c.Id).SequenceEqual(new byte[] { 0, 1, 2, 3, 4, 5, 9 }), "Spherical interpolation changed segment identity");
+            if (previous != null) Assert(output.Zip(previous).All(pair => (pair.First.Rgb - pair.Second.Rgb).Length < .08),
+                $"Calibrated wall discontinuity in plane {plane}, angle {angle}");
+            previous = output;
+        }
+    }
+    var center = new LightMapper().Map(Fixtures.DirectionalFrame(new(0, 1, 0)), layout, settings, .001, wallWash: walls);
+    Assert(center.Take(3).Zip(center.Skip(3).Take(3)).All(pair => (pair.First.Rgb - pair.Second.Rgb).Length < 1e-9),
+        "Mirrored wall segments disagree at the middle");
+    Assert(Math.Abs(center[0].Rgb.X - center[2].Rgb.X) < 1e-9 && center[6].Rgb.X > 0,
+        "Above/below symmetry or uncalibrated ordinary lamp mapping was lost");
+    double previousLeft = 2, previousRight = -1;
+    for (var yaw = -45; yaw <= 45; yaw++)
+    {
+        var output = new LightMapper().Map(Fixtures.DirectionalFrame(WallWashLayout.Direction(yaw, 0)),
+            layout, settings, .001, wallWash: walls);
+        Assert(output[1].Rgb.X <= previousLeft + 1e-9 && output[4].Rgb.X >= previousRight - 1e-9,
+            "Mirrored wall regions do not hand off monotonically");
+        previousLeft = output[1].Rgb.X; previousRight = output[4].Rgb.X;
+    }
+    var ambient = new AmbientFrame(1, DateTimeOffset.UtcNow, 0, 0, 2);
+    var ambientSettings = settings with { AmbientSmoothingMs = 0 };
+    var empty = Fixtures.DirectionalFrame(new(0, 1, 0)) with { Lights = [] };
+    var ambientWide = new LightMapper().Map(empty, layout, ambientSettings, .001, ambient, walls);
+    var ambientNarrow = new LightMapper().Map(empty, layout, ambientSettings with { SourceDiscRadiusDegrees = 1, Spread = 16 }, .001, ambient, walls);
+    Assert(ambientWide.SequenceEqual(ambientNarrow) && ambientWide.All(c => c.Rgb.X > 0), "Spherical local geometry altered independent Ambient");
+});
+Add("Spherical radius accepts the full sphere and validates its bounds", () =>
+{
+    foreach (var radius in new[] { 1.0, 60, 90, 120, 180 }) LightMapper.Validate(new(SourceDiscRadiusDegrees: radius));
+    foreach (var radius in new[] { 0.99, 180.01, double.NaN, double.PositiveInfinity })
+        Reject(() => LightMapper.Validate(new(SourceDiscRadiusDegrees: radius)));
+    var layout = new EntertainmentArea(Fixtures.Id, "Beyond hemisphere", false,
+        [new(0, WallWashLayout.Direction(120, 0), [], "Rear side")]);
+    var frame = Fixtures.DirectionalFrame(new(0, 1, 0));
+    var settings = new MappingSettings(Brightness: 1, FadeStart: 5, SmoothingMs: 0, SourceDiscRadiusDegrees: 180, SourceDiscSoftness: 1);
+    Assert(new LightMapper().Map(frame, layout, settings, .001).Single().Rgb.X > 0, "A hemisphere cut rejected a valid rear-side direction");
+    Assert(new LightMapper().Map(frame, layout, settings with { SourceDiscRadiusDegrees = 90 }, .001).Single().Rgb == default,
+        "Angular support escaped the selected radius");
 });
 Add("Empty feed, cutoff and brightness cap", () =>
 {
@@ -738,7 +874,7 @@ Add("Smoothing releases the previous color after leaving the fade range", () =>
     for (var i = 0; i < 10; i++) released = mapper.Map(DistanceFrame(15, new(1e8, 0, 0)), fadeArea, smooth, 0.1)[0].Rgb.X;
     Assert(released < 0.0001);
 });
-Add("Local transition damps alternating visibility with confirmed feeds and every boundary mode", () =>
+Add("Local transition damps alternating visibility with confirmed feeds and legacy side flags", () =>
 {
     var source = TelemetryParser.Parse(Fixtures.CurrentSnapshot(), out _)!;
     foreach (var mode in new[] { (true, false, false), (false, true, false), (false, false, true), (true, true, true) })
@@ -761,7 +897,7 @@ Add("Local transition damps alternating visibility with confirmed feeds and ever
         }
     }
 });
-Add("Camera motion between calibrated washers fades old output and converges to strict spatial targets", () =>
+Add("Camera motion between calibrated washers fades old output and converges to bounded spatial targets", () =>
 {
     var layout = new EntertainmentArea(Fixtures.Id, "Motion washers", false,
         Enumerable.Range(0, 6).Select(i => new EntertainmentChannel((byte)i, new(i < 3 ? -.4 : .4, .8, (i % 3 - 1) * .4),
@@ -884,7 +1020,7 @@ Add("Legacy radius migrates to fade end and new fade settings round-trip", () =>
     var saved = JsonSerializer.Deserialize<AppSettings>(legacy)!;
     Assert(saved.Mapping is { FadeStart: 0, FadeEnd: 47.5, Gain: 2, Brightness: 0.4, Spread: 3, SmoothingMs: 250, AmbientSensitivity: 1 });
     Assert(saved.Mapping is { SeparateLeftRight: true, SeparateFrontRear: true, SourceDiscRadiusDegrees: 60, SourceDiscSoftness: 0.25, DirectionOriginBlend: 0.5 },
-        "Older settings must load with the visible strict boundaries and bounded disc defaults");
+        "Older settings must retain compatible fields and the bounded footprint defaults");
     var directory = Path.Combine(Path.GetTempPath(), "CrimsonHue-fade-test-" + Guid.NewGuid().ToString("N"));
     var store = new SettingsStore(directory);
     try
@@ -929,7 +1065,7 @@ Add("Shareable preset round-trips every mixer control without local setup", () =
         BlueGain: .8, OutputGamma: 1.4, DirectionNormalization: .75,
         CameraYawOffset: -20, FadeExponent: 3, AmbientTintHue: 220,
         AmbientTintSaturation: .3, SeparateLeftRight: false, SeparateFrontRear: false,
-        SourceDiscRadiusDegrees: 45, SourceDiscSoftness: .4, DirectionOriginBlend: .2);
+        SourceDiscRadiusDegrees: 145, SourceDiscSoftness: .4, DirectionOriginBlend: .2);
     var json = MappingPreset.Export("Warm fire", custom);
     Assert(!json.Contains("BridgeAddress", StringComparison.OrdinalIgnoreCase) &&
         !json.Contains("AreaId", StringComparison.OrdinalIgnoreCase) &&
@@ -1333,6 +1469,13 @@ static class Fixtures
 {
     public const string Id = "12345678-1234-1234-1234-123456789abc";
     private static readonly JsonSerializerOptions Options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    public static TelemetryFrame DirectionalFrame(Vec3 roomDirection)
+    {
+        var direction = roomDirection.Unit * 5;
+        return new(1, 1, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, 0, default,
+            new(default, new(1, 0, 0), new(0, 1, 0), new(0, 0, 1)),
+            [new(new(direction.X, direction.Z, direction.Y), new(1, 0, 0))]);
+    }
     public static byte[] Snapshot(long sequence = 1, DateTimeOffset? at = null)
     {
         var now = at ?? DateTimeOffset.UtcNow;

@@ -35,11 +35,13 @@ static class WallWashTests
         });
         add("Wall area overlap stays proportional under strongest-channel compensation", () =>
         {
-            var output = new LightMapper().Map(Frame(-60), Area, Settings, 1, wallWash: Layout);
+            // A uniform angular field isolates geometric coverage from focus.
+            var settings = Settings with { Spread = 0 };
+            var output = new LightMapper().Map(Frame(-60), Area, settings, 1, wallWash: Layout);
             // A +/-10-degree source covers one third of a 60-degree wall.
             var expected = 1.055 * Math.Pow(1.0 / 3, 1 / 2.4) - .055;
             Assert(Math.Abs(output[1].Rgb.X - expected) < 1e-10, "Normalization amplified a partial wall intersection");
-            var right = new LightMapper().Map(Frame(60), Area, Settings, 1, wallWash: Layout);
+            var right = new LightMapper().Map(Frame(60), Area, settings, 1, wallWash: Layout);
             Assert(Math.Abs(right[4].Rgb.X - expected) < 1e-10 && right.Take(3).All(c => c.Rgb == default), "Left/right response is asymmetric");
         });
         add("Segment calibration preserves channel IDs and independently maps height and side offsets", () =>

@@ -44,7 +44,8 @@ public partial class MainWindow
             bridgeConnected, bridgePhase, bridgeError, bridgeDiagnostic,
             certificate = CertificateLabel.Text, pairing = PairPanel.Visibility == Visibility.Visible,
             layout = LayoutInfo.Text, boundary = SpatialBoundaryStatus.Text,
-            leftRight = mapping.SeparateLeftRight, frontRear = mapping.SeparateFrontRear,
+            // Compatible CDT renderers use these flags only for axis lines.
+            leftRight = false, frontRear = false,
             curveEnd = mapping.FadeEnd,
             curve = Enumerable.Range(0, 101).Select(i => LightMapper.DistanceWeight(mapping.FadeEnd * i / 100, mapping)),
             bridgeAddress = BridgeAddress.Text, telemetryAddress = TelemetryAddress.Text,

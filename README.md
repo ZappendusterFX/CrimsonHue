@@ -3,13 +3,16 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**Branch preview: 0.4.0-asi.15.** CDT hosts the interactive Hue mixer in its own
+**Branch preview: 0.4.0-asi.16.** CDT hosts the interactive Hue mixer in its own
 D3D12 renderer. `CrimsonHue.asi` is the headless lamp controller and installs no
 graphics hooks. There is no separate settings window or process. The ZIP contains
 one ASI and documentation; application dependencies
 are embedded, and users install **.NET 8 Desktop Runtime x64** separately.
 See [ASI guide](docs/ASI.md) and [verification checkpoint](docs/HANDOVER.md).
 Use the matching **CDT 2.2.5-huepanel.6** preview; public CDT 2.2.4 lacks the panel.
+Upgrading from Hue .asi.15 with that CDT version requires only the new Hue
+controller, with the game closed. This update replaces hard axis splits with
+spherical blending; physical-lamp verification of the change remains pending.
 The Hue panel uses CDT's compact body-text size and blue/cyan palette. Setup
 guides the link-button pairing and confirms CONNECTED only after authenticated
 area loading; a matching saved pairing is reused. Physical output remains explicit.
@@ -25,7 +28,9 @@ the CrimsonHue ZIP. Install CDT separately alongside CrimsonHue using your
 existing ASI loader; CrimsonHue still consumes only CDT's neutral local API.
 
 **0.3.3 — early preview.** **Export preset** writes a versioned, readable JSON
-file containing only the 30 mixer controls. **Import preset** previews the
+file containing only mixer values. Its two original axis flags remain in the
+format for compatibility; the current spherical mapper ignores them and exposes
+28 numeric controls. **Import preset** previews the
 differences and lets users apply Output, Ambient, Color and Space independently.
 Space is off by default because it depends on the room. Import saves the chosen
 values; bridge address, Entertainment area, telemetry address and protected
@@ -34,11 +39,11 @@ credentials stay local. See [Sharing presets](docs/USER-GUIDE.md#sharing-presets
 Since 0.3.2, **Direction origin** blends the room's game-space
 reference point between the player (0%) and camera lens (100%), starting at 50%.
 Viewing axes always follow the paired camera. This lets you choose where nearby
-sources belong around a third-person view. Local sources use a bounded 2D disc
-around their direction from that origin. Strict left/right and front/rear boundaries are on by
-default: an enlarged source cannot light the opposite side. Sources outside the
-image still reach matching room lamps. Disc radius, soft edge and both boundaries
-are visible in the Space tab. CrimsonHue shows the raw CDT light and Ambient values
+sources belong around a third-person view. Local sources now blend by angular
+distance on the sphere around their direction from that origin, across left/right,
+front/rear and above/below alike. Sources outside the image still reach matching
+room lamps. Source influence radius and spherical edge softness are visible in
+the Space tab. CrimsonHue shows the raw CDT light and Ambient values
 beside the mapped lamp output. Sliders and numeric inputs expose the brightness,
 Ambient response, color and spatial adjustments. **Extra background light**
 defaults to 0% and color adjustments are neutral: zero Ambient plus no confirmed-clear
@@ -143,25 +148,26 @@ be classified as in front; at 0% it can be behind. At 50%, the origin is halfway
 The camera's right/up/forward axes supply orientation at every percentage.
 Changing the origin does not change the player-relative distance cutoff.
 
-Each source has a
-2D circular footprint whose size is **Source disc radius** in degrees. A lamp's
-direction must intersect this disc and remain on the source's side of every
-enabled boundary. **Strict left / right** and **Strict front / rear** are on by
-default and clip the disc at the room center lines, before any weighting.
-Opposite-side contributions are exactly zero, even at Directional focus 0.
-If no lamp matches, that source contributes nothing; it is never reassigned to a
-forbidden side. A source or lamp exactly on a center line can use either adjoining
-half. Height participates in the circular footprint and angular weighting.
+Each source has a spherical angular influence with **Source influence radius**
+of 60° by default, adjustable from 1° to 180°. Contribution depends on the angle
+between the source and receiving direction. The same rule applies to left/right,
+front/rear, above/below and diagonals; no axis sign cuts a source off.
 
-**Source disc soft edge** controls the outer fraction that fades to zero; all
-directions outside the disc are zero. This is a planar angular footprint, not a
-volume or a simulated reflection. It works around all camera directions,
-including outside the game image, without a screen-frustum filter.
-**Directional focus** weights the allowed channels within the disc.
-**Strongest-channel compensation** controls normalization against the strongest
-allowed channel; it does not undo the disc's soft edge or either boundary.
-Both boundaries, the disc defaults and the 50% origin are loaded for older saved configurations;
-existing numeric choices are retained. Ambient is a separate, non-directional
+**Spherical edge softness** controls the outer fraction that fades to zero, 25%
+by default. Choosing 0% explicitly gives the source radius a sharp edge. All
+directions outside the radius are zero. This angular distribution works around
+all camera directions, including outside the game image, without a screen-frustum
+filter; it does not simulate reflections or a physical volume.
+**Directional focus** favors closer directions within the source influence.
+**Strongest-channel compensation** uses the full room geometry independently of
+which channels currently intersect the source radius. A channel entering or
+leaving the radius therefore cannot suddenly change the compensation denominator.
+Wall mapping averages contributions over the calibrated region; a small lit
+intersection stays a small contribution. This can change intensity compared with
+older normalization based only on the covered part of a wall.
+Existing numeric settings are retained. Serialized `SeparateLeftRight` and
+`SeparateFrontRear` remain for settings/preset compatibility but are ignored by
+the mapper and have no HUD switches. Ambient is a separate, non-directional
 layer controlled in the Ambient tab; it does not represent reflected local light.
 Hue X points right, Y towards the screen and
 Z up. The preview is top-down; cards show channel height, which participates in
@@ -177,9 +183,9 @@ are combined in linear RGB and overflow is scaled down. Output is sRGB-encoded,
 corrected by the displayed gamma control and brightness-limited. Imported Hue
 brightness balance is applied where provided.
 **Local light transition** smooths brightness/color changes in every feed mode,
-including confirmed-visible input and strict boundaries. The mapped local layer
+including confirmed-visible input and spherical spatial mapping. The mapped local layer
 is smoothed in sRGB space, then decoded before mixing the independent Ambient layer.
-A previous local color briefly fades after a visibility or side change; the spatial
+A previous local color briefly fades after a visibility or direction change; the spatial
 rules apply to the new target. Zero transition gives immediate changes. Missing
 local telemetry clears all output/history immediately. This is an artistic estimate, not
 game pixels, physical lux, measured room distances or full scene lighting.
@@ -188,8 +194,7 @@ decision; CrimsonHue does not perform its own occlusion test.
 
 ### Controls and raw values
 
-Numeric tuning controls have a slider and numeric input; the two strict boundaries
-have on/off switches. Adjustments affect preview
+All 28 numeric tuning controls have a slider and numeric input. Adjustments affect preview
 and active sync immediately. **Reset this tab** restores that tab's defaults;
 **Save settings** stores the current configuration. Settings are also saved on
 Start and normal window close. Existing saved brightness is retained as entered; the 85% default
@@ -208,7 +213,7 @@ incomplete or out-of-range files are rejected without changing settings.
 | Output | Maximum brightness (85%; 0–100%), Light sensitivity (1.5×; 0–10×), Local light mix (100%; 0–400%), Output gamma (1; 0.1–4), Local light transition (100 ms; 0–1000 ms) |
 | Ambient | Ambient exposure (1×; 0–10×), Ambient reference level (4; 0.01–100 raw units), Ambient mix (40%; 0–100%), Extra background light (0%; 0–100%), Ambient black threshold (0; 0–100 raw units), Local mix in bright Ambient (100%; 0–200%), Ambient transition (400 ms; 0–5000 ms) |
 | Color | Local hue shift (0°; −180–180°), Local saturation (100%; 0–200%), Red balance / Green balance / Blue balance (each 1×; 0–4×), Ambient tint hue (0°; 0–360°), Ambient tint saturation (0%; 0–100%) |
-| Space | Strict left / right (On), Strict front / rear (On), Direction origin (50%; 0% player–100% camera), Fade starts (0; below Off beyond, up to just under 1000 game units), Off beyond (35; 1–1000 game units), Distance falloff (2; 0.1–8), Source disc radius (60°; 1–89°), Source disc soft edge (25%; 0–100%), Directional focus (2; 0–16), Strongest-channel compensation (100%; 0–100%), Room direction offset (0°; −180–180°) |
+| Space | Direction origin (50%; 0% player–100% camera), Fade starts (0; below Off beyond, up to just under 1000 game units), Off beyond (35; 1–1000 game units), Distance falloff (2; 0.1–8), Source influence radius (60°; 1–180°), Spherical edge softness (25%; 0–100%, 0 gives a sharp radius edge), Directional focus (2; 0–16), Strongest-channel compensation (100%; 0–100%), Room direction offset (0°; −180–180°) |
 | Setup | Bridge pairing, imported Entertainment area and local telemetry address |
 
 The raw readout shows CDT's global sky RGB, camera sky visibility, camera-local
@@ -320,7 +325,7 @@ CDT light WebSocket control, `--live-bridge` probes the development bridge, and
 reads the protected saved area and fresh CDT streams, then prints calculated
 channel RGB for the actual camera, a simulated 180° turn, Ambient only and local
 lights only, plus local-only comparisons at 0% player and 100% camera origin,
-and the active boundary, disc and origin settings;
+and the spherical influence and origin settings;
 it never starts an Entertainment stream. `--live-lamps` is a
 separate, explicitly requested physical test. It reads the
 paired current-user credentials and saved area, refuses to take over any active
@@ -336,7 +341,7 @@ stream or change settings, and does not print keys or full API responses. Use th
 to compare the bridge's saved layout with the Hue app before changing mapping axes.
 
 The developer-only ControllerSmoke loads the actual headless ASI and installed
-runtime, verifies the hidden controller, all 30 controls, wall calibration,
+runtime, verifies the hidden controller, all 28 controls, wall calibration,
 command validation and orderly shutdown. The matching CDT checkout supplies
 `CrimsonHue.OverlaySmoke.exe`, which loads this ASI and renders both panels with
 CDT's sole renderer, checking pixel readback, independent hide, Hue-only drawing

@@ -1,4 +1,4 @@
-# Ambient and mapping controls — CrimsonHue 0.3.3
+# Ambient and mapping controls — CrimsonHue 0.4.0-asi.16
 
 CrimsonHue consumes CDT's independent `/v1/ambient/stream` and local-light feed.
 CDT owns capture and the neutral contracts. CrimsonHue shows the received values
@@ -103,35 +103,36 @@ use the same shared direction function; the origin percentage is displayed below
 the room preview. CDT's visibility measurement remains producer-owned.
 
 **Room direction offset** rotates that source direction in camera-local coordinates.
-**Strict left / right** and **Strict front / rear** default to On, including when
-loading older settings. They reject channels whose X or Y sign, respectively,
-opposes the source's sign. These hard boundaries act before normalization.
-An exact zero coordinate belongs to both adjoining halves. Height is weighted
-without an additional top/bottom boundary. No matching channel means no local
-contribution, with no fallback to another side. The preview draws the active
-center lines and labels both switches' state.
+All directions use one spherical weighting rule. There are no left/right,
+front/rear or above/below cuts. Legacy `SeparateLeftRight` and `SeparateFrontRear`
+values remain in saved settings and version-1 presets for compatibility, but
+have no mapping effect and are no longer controls in the HUD.
 
-Each source is expanded into a bounded **2D circular footprint** on the plane
-normal to its direction from the selected origin at unit depth. A channel ray with angle
-`theta` to that direction intersects this plane at radius `tan(theta)`. Divide
-that radius by `tan(Source disc radius)` to obtain normalized radius `r`.
-Rays with nonpositive dot product or `r >= 1` contribute zero. The default radius
-is 60 degrees, adjustable from 1 to 89 degrees; this is apparent angular size,
-not a game-world sphere. All directions, including off-screen and rear sources,
-use the same rule. Distance fade remains separate.
+Each source covers a spherical cap around its direction. For unit source and
+channel directions, `theta = acos(clamp(dot, -1, 1))` is their great-circle angle.
+Divide by **Source influence radius** to obtain normalized radius `r`; `r >= 1`
+contributes zero. The default radius is 60 degrees, adjustable from 1 to 180.
+The same angle works across every axis, diagonal, rear direction and pole.
+This is angular coverage around the viewer; world-distance fade stays separate.
+A point lamp at the exact room center has no direction and remains omnidirectional.
 
-**Source disc soft edge** defaults to 25% of the disc's radius. Its inner circle
+**Spherical edge softness** defaults to 25% of the angular radius. Its inner cap
 (`r <= 1 - softness`) has coverage one; the outer ring uses smoothstep down to
-zero at the edge. Zero softness gives a hard edge. Both strict boundaries clip
-this footprint regardless of its size or softness. This footprint is a mapping
+zero at the edge. Zero softness explicitly selects a sharp circular edge, so use
+a positive softness for continuous movement. This footprint is a mapping
 choice, not a reflection estimate or a claim about the renderer's light volume.
 
-Within the surviving footprint, imported channel positions supply angular weight
+Imported channel positions supply geometric angular affinity
 `exp(Directional focus × (dot - 1))`. **Strongest-channel compensation** blends
-this absolute weight with the weight divided by the strongest allowed angular
-weight. Its range is 0–100%. Multiply by disc coverage *after* compensation so
-the soft edge cannot be boosted back to full intensity, even with a single lamp.
-No blocked side or outside-disc channel participates in normalization.
+the absolute contribution with the contribution divided by the strongest
+geometric affinity. Its range is 0–100%. The denominator uses all room directions,
+independent of cap membership, preventing jumps as a channel enters the footprint.
+Cap coverage remains outside compensation and cannot be boosted back to full.
+Wall channels integrate coverage times affinity over their calibrated regions;
+their denominator uses full-region average affinity, not only the covered patch.
+This changes wall intensity compared with the previous covered-patch normalization.
+The cap integral is numerically bounded by the full-region affinity. Neither this
+control nor spatial weighting claims constant total physical room brightness.
 
 **Local light mix**, divided by 100, scales the summed contributions before
 overflow normalization.
@@ -143,7 +144,7 @@ larger values brighten intermediate output and smaller values darken it. The
 Color controls, gain and gamma all preserve zero input as zero output.
 
 **Local light transition** applies in all input modes, including confirmed-clear
-input and either enabled boundary. After local summation/overflow normalization,
+input. After local summation/overflow normalization,
 encode the local RGB to sRGB and use the exponential response
 `alpha = 1 - exp(-elapsedSeconds * 1000 / transitionMs)`. Decode the smoothed local
 RGB back to linear before combining Ambient and applying output gamma/brightness.

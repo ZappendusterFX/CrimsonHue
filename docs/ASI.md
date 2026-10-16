@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.15 — mixer hosted by CDT
+# CrimsonHue 0.4.0-asi.16 — mixer hosted by CDT
 
 CDT draws the interactive CrimsonHue mixer in its existing D3D12/ImGui frame.
 `CrimsonHue.asi` hosts the existing C# lamp controller on a hidden WPF STA. It
@@ -13,9 +13,10 @@ No separate EXE, process or visible WPF settings window is used.
    these .NET 8 requirements.
 2. Close Crimson Desert and stop any old desktop CrimsonHue sync. Use the matching
    **CDT 2.2.5-huepanel.6** preview with this version. Public CDT 2.2.4 does not host
-   the Hue panel. This Room setup update replaces both the Hue controller and
-   CDT's panel renderer, with the game closed.
-3. Import both ZIPs through DMM using the existing x64 ASI loader. CrimsonHue's
+   the Hue panel. Upgrading from Hue .asi.15 with CDT huepanel.6 requires only
+   the new Hue controller, with the game closed; the CDT renderer is unchanged.
+3. For a new installation, import both ZIPs through DMM using the existing x64
+   ASI loader. For the upgrade above, import only the Hue ZIP. CrimsonHue's
    package contains one `CrimsonHue/CrimsonHue.asi` plus documentation/notices;
    it embeds its five application/dependency files. No loose DLL, JSON, CFG, EXE,
    runtime installer or loader is shipped in the Hue ZIP. Keep all CDT companions
@@ -30,7 +31,7 @@ No separate EXE, process or visible WPF settings window is used.
    this confirms authenticated area loading. Failed connections show a distinct
    error and optional bounded diagnostic codes. Shortcut/telemetry settings are
    collapsed below the bridge flow. Setup imports your existing area and protected pairing.
-   All 28 numeric mixer controls, both boundary switches, presets, raw readout
+   All 28 numeric mixer controls, presets, raw readout
    and **Room** wall/segment calibration remain available. **Demo preview**
    never sends physical output. **Test CH** is an explicit two-second 10% white
    segment identification with ownership-aware cleanup; demo must be off.
@@ -49,6 +50,16 @@ Existing settings and current-user DPAPI credentials stay under
 `%LOCALAPPDATA%\CrimsonHue`. CDT receives only credential-free presentation state
 and control actions. Run one Hue consumer at a time; it refuses another app's
 active Entertainment stream. Room calibration is local and presets preserve it.
+
+This controller blends local sources by angular distance on the sphere across
+every axis, replacing the previous left/right and front/rear gates. Space offers
+**Source influence radius** (60° by default, 1–180°) and **Spherical edge softness**
+(25% by default; 0% explicitly selects a sharp radius edge). The old axis flags
+remain serialized for compatibility but are ignored and have no HUD switches.
+Compensation uses full room geometry independently of source-radius membership;
+wall contributions average over the calibrated region. Existing wall output can
+therefore differ from the old covered-region normalization. Physical acceptance
+of these changes remains pending.
 
 ## Runtime and cache
 
@@ -101,7 +112,7 @@ pwsh -File scripts/Publish-Asi.ps1
 ```
 
 The headless controller smoke verifies the actual ASI's ABI, hidden controller,
-30 controls, washer/segment calibration, synthetic direction preview, rejected
+28 controls, spherical-radius commands, washer/segment calibration, synthetic direction preview, rejected
 physical identify, validation and host-preserving shutdown. CDT's shared overlay
 smoke adds actual D3D12/WARP rendering, pixel readback, independent hiding,
 Hue-only reopen and resize. Neither loads saved credentials or connects to lamps.

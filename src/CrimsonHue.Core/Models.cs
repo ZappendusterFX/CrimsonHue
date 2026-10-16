@@ -54,6 +54,8 @@ public sealed record MappingSettings(double Gain = 1.5, double Brightness = 0.85
 {
     // Retain Radius in stored settings and the constructor for 0.1.0 compatibility.
     [JsonIgnore] public double FadeEnd => Radius;
+    // SeparateLeftRight/SeparateFrontRear remain in saved settings and version-1
+    // presets for compatibility only. Spherical mapping has no axis cut switches.
 }
 public sealed record ChannelColor(byte Id, Vec3 Rgb);
 

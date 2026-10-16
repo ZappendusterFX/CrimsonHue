@@ -45,51 +45,46 @@ public sealed class LightMapper
             contributions.Add((local, bounded * fade));
         }
         var directions = area.Channels.Select(channel => channel.Position.Unit).ToArray();
+        // Use full, fixed room geometry for compensation. Its strength must not
+        // jump when a channel enters/leaves the source's angular footprint.
+        var wallRegions = area.Channels.Select(channel => wallWash?.Samples(area, channel)).ToArray();
         var sums = new Vec3[area.Channels.Count];
         foreach (var contribution in contributions)
         {
-            var angular = new double[directions.Length];
-            var coverage = new double[directions.Length];
+            var weights = new double[directions.Length];
             var strongest = 0.0;
             for (var i = 0; i < directions.Length; i++)
             {
-                if (wallWash?.Samples(area, area.Channels[i], contribution.Direction, settings.SourceDiscRadiusDegrees) is { } samples)
+                if (wallRegions[i] is { } region)
                 {
-                    double covered = 0, weighted = 0;
+                    var fullAffinity = region.Sum(sample => sample.Weight *
+                        Math.Exp(settings.Spread * (Math.Clamp(sample.Direction.Dot(contribution.Direction), -1, 1) - 1)));
+                    var samples = wallWash!.Samples(area, area.Channels[i], contribution.Direction, settings.SourceDiscRadiusDegrees)!;
+                    double weighted = 0;
                     foreach (var sample in samples)
                     {
-                        if ((settings.SeparateLeftRight && OppositeSides(sample.Direction.X, contribution.Direction.X)) ||
-                            (settings.SeparateFrontRear && OppositeSides(sample.Direction.Y, contribution.Direction.Y))) continue;
                         var sampleDot = Math.Clamp(sample.Direction.Dot(contribution.Direction), -1, 1);
                         var weight = SourceDiscWeight(sampleDot, settings);
-                        covered += weight * sample.Weight;
                         weighted += weight * sample.Weight * Math.Exp(settings.Spread * (sampleDot - 1));
                     }
-                    // Preserve overlap fraction: strongest-channel compensation must not
-                    // turn a tiny intersection with a broad wall into full illumination.
-                    coverage[i] = covered;
-                    angular[i] = covered == 0 ? 0 : weighted / covered;
-                    strongest = Math.Max(strongest, angular[i]);
+                    // The cap integral is a subset of the full region. Independent
+                    // quadrature grids can slightly violate that numerical bound.
+                    weights[i] = Math.Clamp(weighted, 0, fullAffinity);
+                    strongest = Math.Max(strongest, fullAffinity);
                     continue;
                 }
-                // Hue axes: x right, y towards screen, z up. Normalized room
-                // coordinates, not metres. Reject the opposite side before
-                // normalization: no available channel may redirect a source
-                // across an enabled boundary. A position exactly on an axis
-                // belongs to both adjoining halves; height is still weighted.
-                if ((settings.SeparateLeftRight && OppositeSides(directions[i].X, contribution.Direction.X)) ||
-                    (settings.SeparateFrontRear && OppositeSides(directions[i].Y, contribution.Direction.Y))) continue;
+                // A single spherical distance treats every axis and diagonal
+                // identically. Persisted legacy Separate* switches cannot cut it.
                 var dot = Math.Clamp(directions[i].Dot(contribution.Direction), -1, 1);
                 var centered = directions[i].Length < 0.01;
-                coverage[i] = centered ? 1 : SourceDiscWeight(dot, settings);
-                if (coverage[i] == 0) continue;
-                angular[i] = centered ? 1 : Math.Exp(settings.Spread * (dot - 1));
-                strongest = Math.Max(strongest, angular[i]);
+                var affinity = centered ? 1 : Math.Exp(settings.Spread * (dot - 1));
+                weights[i] = affinity * (centered ? 1 : SourceDiscWeight(dot, settings));
+                strongest = Math.Max(strongest, affinity);
             }
             if (strongest == 0) continue;
             for (var i = 0; i < sums.Length; i++)
-                sums[i] += contribution.Rgb * coverage[i] * (angular[i] * (1 - settings.DirectionNormalization) +
-                    angular[i] / strongest * settings.DirectionNormalization);
+                sums[i] += contribution.Rgb * weights[i] * ((1 - settings.DirectionNormalization) +
+                    settings.DirectionNormalization / strongest);
         }
         var alpha = settings.SmoothingMs <= 0 ? 1 :
             1 - Math.Exp(-Math.Clamp(deltaSeconds, 0, 1) * 1000 / settings.SmoothingMs);
@@ -103,7 +98,7 @@ public sealed class LightMapper
             // attenuated sum. Mixing and ratio preservation stay in linear RGB.
             var local = sum / Math.Max(1, peak);
             // Smooth the mapped local layer in perceived-brightness space, including
-            // confirmed-visible input and strict spatial mapping. Instant changes in
+            // confirmed-visible input and spherical spatial mapping. Instant changes in
             // visibility/position otherwise become flashes on fast Entertainment lamps.
             // A brief fade may retain the previous local color after a boundary change;
             // zero transition restores immediate output. Ambient is mixed afterwards
@@ -140,16 +135,11 @@ public sealed class LightMapper
         return new(local.X * Math.Cos(yaw) - local.Y * Math.Sin(yaw),
             local.X * Math.Sin(yaw) + local.Y * Math.Cos(yaw), local.Z);
     }
-    private static bool OppositeSides(double a, double b) => (a < 0 && b > 0) || (a > 0 && b < 0);
     private static double SourceDiscWeight(double dot, MappingSettings settings)
     {
-        // Intersect a channel ray with the 2D plane normal to the source's
-        // camera-relative bearing at unit depth. Its radial coordinate is
-        // tan(angle). This bounded circle is an angular footprint, not a
-        // sphere in the game world, and also works for off-screen sources.
-        if (dot <= 0) return 0;
-        var radius = Math.Tan(settings.SourceDiscRadiusDegrees * Math.PI / 180);
-        var radial = Math.Sqrt(Math.Max(0, 1 - dot * dot)) / dot / radius;
+        // Great-circle distance on the unit sphere, including behind/above/below.
+        // No sign tests or tangent-plane hemisphere boundary are involved.
+        var radial = Math.Acos(Math.Clamp(dot, -1, 1)) / (settings.SourceDiscRadiusDegrees * Math.PI / 180);
         if (radial >= 1) return 0;
         if (settings.SourceDiscSoftness == 0 || radial <= 1 - settings.SourceDiscSoftness) return 1;
         var t = (radial - (1 - settings.SourceDiscSoftness)) / settings.SourceDiscSoftness;
@@ -180,7 +170,7 @@ public sealed class LightMapper
             !InRange(s.OutputGamma, 0.1, 4) || !InRange(s.DirectionNormalization, 0, 1) ||
             !InRange(s.CameraYawOffset, -180, 180) || !InRange(s.FadeExponent, 0.1, 8) ||
             !InRange(s.AmbientTintHue, 0, 360) || !InRange(s.AmbientTintSaturation, 0, 1) ||
-            !InRange(s.SourceDiscRadiusDegrees, 1, 89) || !InRange(s.SourceDiscSoftness, 0, 1) ||
+            !InRange(s.SourceDiscRadiusDegrees, 1, 180) || !InRange(s.SourceDiscSoftness, 0, 1) ||
             !InRange(s.DirectionOriginBlend, 0, 1))
             throw new CrimsonHueException("Invalid lighting settings.");
     }

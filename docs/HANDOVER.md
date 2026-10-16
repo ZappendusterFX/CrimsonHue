@@ -1,4 +1,55 @@
-# Current checkpoint — Point/Wall setup ready, 2026-10-16, Codex
+# Current checkpoint — spherical flow replaces hard axis cuts, 2026-10-16, Codex
+
+Owner reports strong motion flicker, one washer dark except occasional reciprocal
+left/right switching, and explicitly requests smooth flow across ALL directions.
+They clarified that "interpolation on a sphere" expresses the intended behavior,
+not a mandated algorithm. Implemented angular-distance weighting on the unit
+sphere, replacing X/Y sign cuts and the tangent-plane hemisphere rejection.
+Point lights and calibrated wall regions use the same spherical kernel. Full-room
+geometric affinity determines compensation independently of cap membership, so
+entering/leaving a footprint cannot switch its denominator. Wall contributions
+are integrated over the calibrated region; full-region rather than covered-patch
+normalization can change intensity. No invented physical calibration.
+
+HUD has 28 numeric controls, no axis-cut switches; Source influence radius now
+supports 1..180 degrees. Existing numeric settings are retained. The old Separate*
+keys remain readable in settings/presets but are ignored by mapping. Default
+edge softness remains 25%; explicitly choosing 0 still gives a sharp cap edge.
+Temporal smoothing remains independent and was disabled for continuity checks.
+
+**102/102 nonphysical tests passed.** Exact packaged headless-controller smoke
+and seven-file ZIP/staging validation passed. Offline old/new actual-DLL replay
+of the imported six-point geometry: at 0.01-degree steps through center the worst
+channel jump fell from 0.536791 to 0.000074. A 90-degree rotation of source AND
+room preserved new output exactly; old mapping differed by up to 0.529427.
+These are synthetic channel commands, not physical-lamp measurements.
+Evidence and hashes: [SPHERICAL-FLOW-VALIDATION.md](SPHERICAL-FLOW-VALIDATION.md).
+
+New immutable Hue **0.4.0-asi.16** is built, NOT installed or game/lamp-tested:
+dist/CrimsonHue-0.4.0-asi.16-asi-win-x64.zip
+SHA256 6CC951F2CC0BFFD315A2FC0525089DF8783CA2CD52A2FC1A94D69190A6DD3EDC
+Keep installed CDT **2.2.5-huepanel.6**; only Hue needs replacing with game closed.
+No game files, real settings, credentials or physical stream were changed.
+
+Ambient is still unresolved. Read-only stationary capture: 708/708 fresh local
+and Ambient envelopes, no camera orientation changes, no side swap reproduced.
+Working Ambient level was only 0.003675..0.005619. Independent mapper using saved
+settings produced roughly 0.3..0.45% encoded Ambient on ALL channels, while local
+orange sources lit one side. This explains weak fill, not a side-specific Ambient
+failure. The raw feed is explicitly not exposure-normalized; do not invent a
+schema, boost brightness silently, or claim that the sphere fix fixes Ambient.
+
+Also corrected OUR earlier audit regression: physics-ray-fan visibility age is
+age at envelope PUBLICATION, despite its legacy field name. Adding GPU capture
+age counted it twice. Now add only transport/display age, preserving observed
+delay across clock changes. The earlier checkpoint's contrary interpretation is
+wrong and superseded. This bug dropped zero extra sources in the stationary
+recording, so it is not evidence explaining that observation.
+
+Next: install Hue .asi.16 after game exit; physical flow acceptance and proper
+Ambient response remain pending. Do not resume old strict-axis requirements.
+
+# Previous checkpoint — Point/Wall setup ready, 2026-10-16, Codex
 
 Owner clarified the Hue term was ColorCast and asked whether implementation
 needed more input. Implemented the software setup autonomously. Physical wall

@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0 ASI preview — setup and tuning guide
+# CrimsonHue 0.4.0-asi.16 preview — setup and tuning guide
 
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
 existing Hue Entertainment area. Its headless ASI uses CDT's in-game mixer panel. Its
@@ -21,6 +21,8 @@ or a measurement of the physical lamps.
    installed separately. Start the game; the in-game mixer opens automatically.
    **CDT, an ASI loader, the game, bridge firmware and
    saved credentials are not in this ZIP.** See [ASI guide](ASI.md).
+   If Hue .asi.15 and CDT huepanel.6 are already installed, close the game and
+   upgrade only the Hue controller; this update uses the same CDT renderer.
 3. Use Windows 10/11 x64 and a Hue-compatible bridge with HTTPS API v2,
    Entertainment DTLS 1.2/PSK, color lamps and an existing Entertainment area.
    Set the area and channel positions in the Hue app first. diyHue is the
@@ -73,7 +75,7 @@ missing, stale, blocked or unknown visibility. With no confirmed-clear local
 lights and zero Ambient, the default calculated output becomes black after the
 Ambient transition ends.
 
-Every numeric control has a slider and an exact numeric input. Changes apply to
+All 28 numeric controls have a slider and an exact numeric input. Changes apply to
 the live preview and active sync immediately. **Save settings** persists them;
 **Reset this tab** restores the defaults for one tab. Start and normal window
 close also save. The raw CDT values never change when you move a control.
@@ -82,8 +84,10 @@ close also save. The raw CDT values never change when you move a control.
 
 Open **Presets**, enter an absolute `.json` file path, click **Export preset**,
 and share the resulting readable
-JSON file. It contains the 28 numeric mixer settings and two boundary switches,
-plus a format version and name derived from the filename. It does **not** contain
+JSON file. It contains the 28 numeric mixer settings, plus a format version and
+name derived from the filename. The legacy `SeparateLeftRight` and
+`SeparateFrontRear` fields remain for compatibility; they no longer affect
+mapping and have no HUD switches. It does **not** contain
 the bridge address, Entertainment area ID, telemetry endpoint or bridge keys.
 Never share `%LOCALAPPDATA%\CrimsonHue\bridge.secrets` or your complete local
 `settings.json`.
@@ -159,19 +163,22 @@ identify one segment independently. A failed/unreachable bridge can prevent
 restoration; the status reports cleanup failures.
 
 Mapping averages the source's contribution over the calibrated wall area; a small
-intersection remains small even with strongest-channel compensation. Existing
-source-disc size, distance fade and strict side boundaries still apply. Source
-disc size describes how far a game light spreads; wall width describes where your
+intersection remains small even with strongest-channel compensation. Source
+influence radius, spherical edge softness and distance fade still apply. Source
+radius describes how far a game light spreads; wall width describes where your
 room can display it. A wide source can influence both front-side regions despite
 an unlit physical gap behind the monitor. Ambient remains a separate shared fill.
+Compensation uses the full room geometry, independently of which parts intersect
+the source radius. Wall intensity can differ from older versions that normalized
+against only the covered part; the full calibrated region now defines the average.
 
 ## A useful tuning order
 
 1. Confirm that a moving, **fresh** CDT feed and the expected clear sources
    appear. If the raw feed is empty, no brightness slider can create a local
    source.
-2. Set **Space** first. Check imported lamp positions, room direction, strict
-   boundaries and the source footprint. In a third-person scene, try **Direction
+2. Set **Space** first. Check imported lamp positions, room direction, source
+   influence radius and spherical edge softness. In a third-person scene, try **Direction
    origin** from player to camera while watching which side receives a source.
    Then set **Off beyond**, **Fade starts** and **Distance falloff**; the curve
    shows the distance response in game units.
@@ -192,7 +199,7 @@ an unlit physical gap behind the monitor. Ambient remains a separate shared fill
 | **Light sensitivity** (1.5×, 0–10×) | Exposure applied to each local source before distance fade. Zero removes local sources; it does not remove Ambient. Raising it can cause bright sources to compress, making changes less obvious. |
 | **Local light mix** (100%, 0–400%) | Amount of mapped local-light RGB added to the Ambient layer. Zero removes local sources from output even when raw sources are present. |
 | **Output gamma** (1, 0.1–4) | Higher values lift dim **nonzero** output. Black remains black. Use carefully with lamps that have a high minimum visible brightness. |
-| **Local light transition** (100 ms, 0–1000 ms) | Smooths local brightness and color in every input mode, including strict boundaries. Old local color fades briefly after a visibility or side change. Zero is immediate; 250–400 ms gives a slower response for fast wall washers. Ambient has its own transition. Missing local telemetry clears output immediately. |
+| **Local light transition** (100 ms, 0–1000 ms) | Smooths local brightness and color over time in every input mode. Old local color fades briefly after a visibility or direction change. Zero is immediate; 250–400 ms gives a slower response for fast wall washers. Ambient has its own transition. Missing local telemetry clears output immediately. |
 
 ## Ambient controls
 
@@ -231,25 +238,26 @@ CDT supplies source positions. CrimsonHue imports the Hue area's channel
 positions. The paired **camera axes** define front, right and up. A source may
 affect a matching room lamp even when it is outside the game image. Source
 visibility comes from CDT; CrimsonHue does not cast its own geometry rays.
+Local contribution follows angular distance on the sphere. Left/right,
+front/rear, above/below and diagonals use the same continuous rule, with no hard
+axis gates. The old axis-separation switches are no longer shown or applied.
 
 | Control (default) | Effect and interaction |
 | --- | --- |
-| **Strict left / right** (On) | A left-side local source contributes exactly zero to right-side channels, and vice versa. |
-| **Strict front / rear** (On) | A front local source contributes exactly zero to rear channels, and vice versa. Boundaries apply before angular weighting; a source with no matching channel is dropped. Center-line sources/channels may belong to either adjacent side. Ambient remains independent of both switches. |
 | **Direction origin** (50%, 0–100% camera) | Position used to classify source direction: 0% player, 100% camera lens, intermediate values along the player-to-camera line. Camera orientation is used throughout. This can move a nearby source from rear to front in third-person view. It does **not** change player-relative distance fade. |
-| **Source disc radius** (60°, 1–89°) | Angular radius of a bounded **2D circle** around each local source direction, including off-screen sources. Outside the disc, contribution is zero. Strict boundaries clip it; increasing radius never crosses an enabled boundary. This is not a world-space sphere or reflection model. |
-| **Source disc soft edge** (25%, 0–100%) | Fraction of the disc's outer rim that fades to zero; 0% is a hard edge. The region outside the disc always remains zero. |
+| **Source influence radius** (60°, 1–180°) | Angular radius around each local source direction on the sphere, including off-screen sources. Outside this radius, contribution is zero. A wider radius can smoothly reach across any room axis; 180° reaches every direction. This describes angular influence, not reflections or a physical volume. |
+| **Spherical edge softness** (25%, 0–100%) | Outer fraction of the angular radius that fades to zero. Choosing 0% explicitly gives the radius a sharp edge. The region outside the radius remains zero. |
 | **Fade starts** (0 game units, 0 to below Off beyond) | Full source distance strength up to this player-relative distance. Must stay below **Off beyond**. |
 | **Off beyond** (35 game units, 1–1000) | Source contributes nothing at or beyond this player-relative distance. Use a smaller value for a compact room effect. The units are game units, not calibrated metres. |
 | **Distance falloff** (2, 0.1–8) | Shape of the fade between **Fade starts** and **Off beyond**. Higher values suppress the middle and far part more strongly. The curve preview shows the result. |
-| **Directional focus** (2, 0–16) | Distributes weight among already allowed channels inside the disc. Zero is even; higher values favor closer directions. It cannot cross a strict boundary or revive a channel outside the disc. |
-| **Strongest-channel compensation** (100%, 0–100%) | Normalizes a source against its best allowed channel. At 100%, the strongest allowed direction can receive full angular strength; 0% leaves angular attenuation. The disc edge and strict boundaries still win. |
+| **Directional focus** (2, 0–16) | Weights channels within the source's spherical influence. Zero is even before edge softness; higher values favor closer directions. Channels outside the radius receive no contribution. |
+| **Strongest-channel compensation** (100%, 0–100%) | Compensates directional attenuation against the strongest affinity in the full room geometry. That geometry is independent of which channels intersect the source radius, preventing compensation jumps when channels enter or leave it. 0% leaves angular attenuation. Spherical edge softness and the wall-area average still apply. |
 | **Room direction offset** (0°, −180–180°) | Rotates game camera direction relative to the imported room layout. Use if left/right/front/rear are consistently misaligned; it does not move Hue channel positions. |
 
 Channel height matters to angular matching. A high rear channel is not
 automatically a “sky lamp.” For a source close to the player and camera, changing
 **Direction origin** can change its side, while the imported lamp height can
-still place it outside the finite source disc. The preview shows the area layout.
+still place it outside the source influence radius. The preview shows the area layout.
 
 These spatial rules describe the target colors. **Local light transition** briefly
 fades previous colors toward those targets; set it to zero for immediate spatial
@@ -259,12 +267,12 @@ changes when checking calibration.
 
 | Observation | Check first |
 | --- | --- |
-| Rapid flicker while moving | **Output → Local light transition** now works for confirmed-visible input and strict boundaries. Try 250–400 ms for a slower response. The raw stream can still change quickly; the transition controls how output follows it. |
+| Rapid flicker while moving | .asi.16 replaces hard axis switching with spherical angular blending. Keep **Spherical edge softness** above 0% for a soft source-radius edge. **Output → Local light transition** controls changes over time; 250–400 ms gives a slower response. Visibility and raw input can still change quickly; physical flicker acceptance of this update remains pending. |
 | Ambient seems absent | While syncing, the Ambient status now says whether the stream includes Ambient or is paused. **CDT raw input** also shows the last streamed Ambient level/fill and counts of frames cleared for local data or missing Ambient. These are calculated values, not measured lamp brightness. Ambient tint saturation 0% produces neutral white fill. |
 | All lamps stay on in darkness | Inspect the **raw Ambient working level** and confirmed-clear source count. Set **Extra background light** to 0%; check the Ambient black threshold and transition. Ambient tint and output gamma cannot turn zero into light. If calculated output is tiny but a lamp remains visibly bright, the lamp/bridge may have a minimum visible output; compare the numeric channel RGB. |
-| Fire on one side lights the other | Confirm both strict boundary switches are On, imported channel positions are correct, and **Room direction offset** matches the room. Ambient is shared fill and can still light both sides. |
-| Rear lamp does not react to a source behind the character | Watch the raw source position and visibility, then try **Direction origin** from 0% toward 100%. Check disc radius, the channel's imported height and **Off beyond**. A source can be behind the player but ahead of a third-person camera. |
-| Turning the camera barely changes output | Check that the raw feed and paired camera update; reduce Ambient mix while testing local sources; inspect whether a source is clear, within distance and within a lamp's disc. A large radius or low directional focus can spread the local response. |
+| Fire on one side lights the other | A source near a room axis can influence both sides through spherical blending. Check imported positions, wall calibration and **Room direction offset**; reduce **Source influence radius** or raise **Directional focus** for a narrower effect. Ambient remains shared fill. |
+| Rear lamp does not react to a source behind the character | Watch the raw source position and visibility, then try **Direction origin** from 0% toward 100%. Check source influence radius, the channel's imported height and **Off beyond**. A source can be behind the player but ahead of a third-person camera. |
+| Turning the camera barely changes output | Check that the raw feed and paired camera update; reduce Ambient mix while testing local sources; inspect whether a source is clear, within distance and within the channel's angular reach. A large radius or low directional focus can spread the local response. |
 | Fire is too red or too dim | Compare raw RGB with calculated RGB. Adjust local RGB balance/hue/saturation for color and sensitivity/mix/gamma for level. Changes affect **all** local sources, not only fire. A physical lamp can have its own color or minimum-brightness behavior. |
 | No physical output | Confirm live CDT input, paired bridge, selected Entertainment area and **Start lighting sync**. Demo preview intentionally has no physical output. Another Entertainment app may own the stream. |
 

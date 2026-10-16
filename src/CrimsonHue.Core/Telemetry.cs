@@ -112,6 +112,7 @@ public sealed class TelemetryState
     private TelemetryFrame? frame;
     private long lastSequence = -1;
     private long received;
+    private double envelopeAgeAtReceive;
     private string status = "Waiting for CrimsonDesertTelemetry";
     public void Reset(string reason)
     {
@@ -127,6 +128,7 @@ public sealed class TelemetryState
             if (parsed == null) { frame = null; status = message; return; }
             frame = parsed;
             received = Stopwatch.GetTimestamp();
+            envelopeAgeAtReceive = Math.Max(0, (DateTimeOffset.UtcNow - parsed.CapturedAt).TotalMilliseconds);
             status = message;
         }
     }
@@ -146,12 +148,12 @@ public sealed class TelemetryState
                 return null;
             }
             // A clear ray result can expire before its paired light capture does.
-            // Repeated host publications must not renew the ray's measured age.
             if (!frame.ConfirmedVisibleOnly) return frame;
-            // The verdict age is measured at the light capture, not at the newer
-            // envelope publication. Include capture age even when CDT republishes
-            // the same capture; retain the producer/monotonic bound across clock skew.
-            var visibilityElapsed = Math.Max(lightAge, frame.ProducerAgeMs + elapsed);
+            // CDT docs/SOURCE_VISIBILITY.md: for physics-ray-fan the legacy
+            // volumeAgeMillisecondsAtCapture field is age AT PUBLICATION. Physics
+            // metadata refreshes independently of the GPU capture, so add only
+            // transport/display age. Preserve received delay across clock changes.
+            var visibilityElapsed = Math.Max(envelopeAge, envelopeAgeAtReceive + elapsed);
             var freshLights = frame.Lights.Where(light => light.VisibilityAgeMs is null ||
                 light.VisibilityAgeMs.Value + visibilityElapsed <= 500).ToArray();
             message = $"Live · {freshLights.Length}/{frame.SourceCount} confirmed visible";
