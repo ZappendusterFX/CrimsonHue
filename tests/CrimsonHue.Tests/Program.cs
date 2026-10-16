@@ -142,15 +142,16 @@ Add("Schema 1.6 treats missing or non-physics visibility as unconfirmed", () =>
     };
     Assert(TelemetryParser.Parse(Encoding.UTF8.GetBytes(node.ToJsonString()), out _)!.Lights.Count == 0);
 });
-Add("Confirmed-visible mapping drops hidden color without an EMA tail", () =>
+Add("Zero local transition drops hidden color immediately", () =>
 {
     var frame = TelemetryParser.Parse(Fixtures.CurrentSnapshot(), out _)!;
     var mapper = new LightMapper();
-    var clear = mapper.Map(frame, rearArea, new(), 0.01);
+    var settings = new MappingSettings(SmoothingMs: 0);
+    var clear = mapper.Map(frame, rearArea, settings, 0.01);
     Assert(clear.Any(c => c.Rgb.X > 0));
-    var hidden = mapper.Map(frame with { Lights = [] }, rearArea, new(), 0.01);
+    var hidden = mapper.Map(frame with { Lights = [] }, rearArea, settings, 0.01);
     Assert(hidden.All(c => c.Rgb.Length == 0));
-    var blue = mapper.Map(frame with { Lights = [new(frame.Lights[0].Position, new(0, 0, 2), 100)] }, rearArea, new(), 0.01);
+    var blue = mapper.Map(frame with { Lights = [new(frame.Lights[0].Position, new(0, 0, 2), 100)] }, rearArea, settings, 0.01);
     Assert(blue.All(c => c.Rgb.X == 0) && blue.Any(c => c.Rgb.Z > 0));
 });
 Add("Ambient contract requires a fresh camera-local estimate", () =>

@@ -97,23 +97,28 @@ public sealed class LightMapper
             // Normalize only overflow from overlapping sources; never boost the
             // attenuated sum. Mixing and ratio preservation stay in linear RGB.
             var local = sum / Math.Max(1, peak);
+            // Smooth the mapped local layer in perceived-brightness space, including
+            // confirmed-visible input and strict spatial mapping. Instant changes in
+            // visibility/position otherwise become flashes on fast Entertainment lamps.
+            // A brief fade may retain the previous local color after a boundary change;
+            // zero transition restores immediate output. Ambient is mixed afterwards
+            // so unavailable Ambient can still disappear without a smoothing tail.
+            var encodedLocal = new Vec3(Encode(local.X), Encode(local.Y), Encode(local.Z));
+            var alpha = settings.SmoothingMs <= 0 ? 1 :
+                1 - Math.Exp(-Math.Clamp(deltaSeconds, 0, 1) * 1000 / settings.SmoothingMs);
+            if (alpha < 1)
+            {
+                var old = previous.GetValueOrDefault(channel.Id);
+                encodedLocal = old + (encodedLocal - old) * alpha;
+                local = new(Decode(encodedLocal.X), Decode(encodedLocal.Y), Decode(encodedLocal.Z));
+            }
+            previous[channel.Id] = encodedLocal;
             var combined = ambientColor + local * localContrast;
             var combinedPeak = Math.Max(combined.X, Math.Max(combined.Y, combined.Z));
             var linear = combined / Math.Max(1, combinedPeak);
             var rgb = new Vec3(Math.Pow(Encode(linear.X), 1 / settings.OutputGamma),
                 Math.Pow(Encode(linear.Y), 1 / settings.OutputGamma), Math.Pow(Encode(linear.Z), 1 / settings.OutputGamma)) *
                 (settings.Brightness * channel.Brightness);
-            // A channel-level EMA can retain RGB after a source becomes hidden
-            // or crosses a strict boundary. Replace colors immediately in those
-            // modes; Ambient still has its own exposed transition control.
-            var alpha = frame.ConfirmedVisibleOnly || settings.SeparateLeftRight || settings.SeparateFrontRear || settings.SmoothingMs <= 0 ? 1 :
-                1 - Math.Exp(-Math.Clamp(deltaSeconds, 0, 1) * 1000 / settings.SmoothingMs);
-            if (alpha < 1)
-            {
-                var old = previous.GetValueOrDefault(channel.Id);
-                rgb = old + (rgb - old) * alpha;
-            }
-            previous[channel.Id] = rgb;
             result.Add(new(channel.Id, rgb));
         }
         return result;
@@ -204,4 +209,5 @@ public sealed class LightMapper
         return color + new Vec3(minimum, minimum, minimum);
     }
     private static double Encode(double linear) => linear <= 0.0031308 ? 12.92 * linear : 1.055 * Math.Pow(linear, 1 / 2.4) - 0.055;
+    private static double Decode(double encoded) => encoded <= 0.04045 ? encoded / 12.92 : Math.Pow((encoded + 0.055) / 1.055, 2.4);
 }

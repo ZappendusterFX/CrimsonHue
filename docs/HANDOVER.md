@@ -1,4 +1,61 @@
-# Current checkpoint — compact CDT-style Hue setup ready, 2026-10-16, Codex
+# Current checkpoint — motion flicker / Ambient handoff to Claude, 2026-10-16, Codex
+
+Owner requests an immediate handoff to Claude and a clean committed worktree.
+Stop implementation here; the smoothing draft below is NOT a release candidate.
+
+Owner is now running the final **Hue 0.4.0-asi.12 + CDT 2.2.5-huepanel.5** pair.
+Read-only installed SHA-256 checks match GUIDED-SETUP-VALIDATION.md; game PID
+26424 started 21:06:19 and responds. Owner reports real wall-washer output, with
+severe strobing ONLY while moving; stationary output is stable. Owner also says
+Ambient is missing. Input clarification: hiding Hue restores mouse/keyboard;
+capture while the interactive HUD is open is expected. Do not pursue a stuck-input
+bug from that report. Earlier cursor drift remains a separate observation.
+
+**Found cause:** LightMapper bypasses SmoothingMs whenever ConfirmedVisibleOnly
+or either strict spatial boundary is active. All three apply to the owner's setup;
+saved SmoothingMs=100 therefore has NO effect in the installed version. Visibility
+or mapped-direction changes are transmitted immediately at about 30 updates/sec.
+Whether producer gaps or boundary crossings dominate the actual motion flicker
+has not been measured. Do not change CDT physics visibility on that assumption.
+
+**Ambient evidence:** the actual CDT /v1/ambient GET is available/fresh. Existing
+read-only --live-ambient --live-mapping checks pass: 40/40 fresh reads, 10 sky
+captures in four seconds, relative level about 2.33, and calculated Ambient-only
+RGB about (0.2743,0.2743,0.2743) on every channel with saved 60% master brightness.
+This proves standalone reception/mapping, NOT the in-game Hue controller's state
+or physical Ambient output. In-game missing Ambient is still unresolved. Review
+StreamingSession's current full-black behavior when local telemetry is unavailable;
+do not invent Ambient data or assume this is the proven cause.
+
+**Committed draft:** LightMapper now smooths the local layer in encoded brightness
+space for every feed/boundary mode, decodes it before mixing independent Ambient,
+and applies the current master limit afterwards. Zero transition remains immediate;
+full missing telemetry still resets/clears in StreamingSession. A brief old-color
+tail across a strict boundary is intentional for the proposed anti-flash behavior.
+UI renames Legacy smoothing to Local light transition and explains the tail.
+The old immediate-hidden test now explicitly uses SmoothingMs=0.
+
+Draft compiles; **83/86 tests pass**. Three existing tests still require immediate
+boundary/origin switching with nonzero smoothing: "Strict boundaries keep every
+opposite quadrant exactly black while the camera turns", "Recorded nearby fires
+switch front or rear with the chosen player-camera origin at 15 GU", and "Boundary
+switches and room offset act immediately without altering Ambient or raw input".
+These are an unfinished contract/test update, not accepted regressions. Add real
+motion/dropout smoothing tests, retain spatial target checks with zero transition,
+verify stale/reset/master-limit behavior, and update the old README/Ambient docs
+that still describe bypassed smoothing. No new default or owner setting was written.
+
+Evidence (untracked artifacts): motion-before-readonly.log (88/88 before draft,
+including the two live read-only checks), motion-smoothing-draft-tests.log (83/86).
+No new package, installation, game mutation, physical output or upstream edit.
+Existing .12/.5 ZIPs remain immutable. CDT worktree artifacts/cdt-shared-overlay
+remains clean on codex/hue-shared-overlay; original CDT research is untouched.
+
+**Next for Claude:** finish the local smoothing behavior/tests and diagnose actual
+in-game Ambient state. Package a fresh Hue version only after verification; replace
+ASIs only with the game closed. Owner explicitly wants this handoff now.
+
+# Previous checkpoint — compact CDT-style Hue setup ready, 2026-10-16, Codex
 
 Owner is in-game with `.asi.10` + `huepanel.3`; startup works. PID 30092 was
 responsive, deployed hashes matched, screenshots show live CDT and Hue UI.
