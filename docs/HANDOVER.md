@@ -18,9 +18,28 @@ profile's `backups/20261016-before-hue-bridge-139/`. The temporary encrypted
 workspace pairing file was removed. No keys or API responses were logged.
 
 No physical stream, live telemetry, game launch, ASI replacement or package change.
-No game/desktop consumer was running at verification. Next: owner starts the
-game and checks the mixer with Ctrl+Shift+H; real output acceptance remains
-pending, as does the earlier overlay/game issue below. AGENTS/CLAUDE still match.
+No game/desktop consumer was running at verification. AGENTS/CLAUDE still match.
+
+Owner's test constraint: test CrimsonHue without ReShade. ReShade is reserved
+for the separate in-game lightshow and its FPS cost is unwanted here. No ReShade
+installation was modified in this session; verify it is not loaded at game test.
+
+Owner reports the wall washers project outward to the left/right, so their
+physical Hue points do not describe the visible illuminated wall areas. Existing
+mapping uses `channel.Position.Unit`; the actual area's returned channel/location
+fields contain positions and membership but no explicit orientation field.
+Proposed, not implemented: local per-lamp/per-segment wall-area calibration,
+describing visible target direction and angular extent from the seated viewer,
+while preserving imported Hue positions, channel IDs and segment membership.
+Keep this local room setup separate from shared mixer presets. Confirm whether
+the projections land on the wall behind the monitor or on the room's side walls
+before choosing a calibration. No geometry or mapping defaults were changed.
+
+During the owner's ASI recap, a newer local diagnostic log dated 2026-10-14
+reported D3D12/SDR overlay ready and a first submitted frame. Its host/version
+were not verified; it does not establish visible UI or input acceptance.
+Next: clarify the illuminated wall geometry, then verify the installed ASI and
+test the mixer without ReShade. Real lamp output and game acceptance remain open.
 
 # Previous checkpoint — 0.4.0-asi.6 letter shortcut, 2026-10-03, Codex
 
