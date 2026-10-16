@@ -31,15 +31,25 @@ fields contain positions and membership but no explicit orientation field.
 Proposed, not implemented: local per-lamp/per-segment wall-area calibration,
 describing visible target direction and angular extent from the seated viewer,
 while preserving imported Hue positions, channel IDs and segment membership.
-Keep this local room setup separate from shared mixer presets. Confirm whether
-the projections land on the wall behind the monitor or on the room's side walls
-before choosing a calibration. No geometry or mapping defaults were changed.
+Keep this local room setup separate from shared mixer presets.
+
+Owner clarified the geometry: both washers are fully aimed outward, left/right,
+near the walls. Their broad projections mainly illuminate the corresponding
+side walls and also the left/right portions of the wall behind the monitor;
+the central area behind the monitor is unlit. Model the visible output as broad
+left and right regions extending towards front-left/front-right. The owner's
+rough 45-degree beam estimate is not a calibrated viewer-relative angular span.
+Keep emitter aim distinct from the visible wall directions at the seated viewer.
+Segment-to-wall-area correspondence still needs an observed segment test; do
+not assume it from the imported height coordinates alone. No geometry or mapping
+defaults were changed, and no physical test was performed.
 
 During the owner's ASI recap, a newer local diagnostic log dated 2026-10-14
 reported D3D12/SDR overlay ready and a first submitted frame. Its host/version
 were not verified; it does not establish visible UI or input acceptance.
-Next: clarify the illuminated wall geometry, then verify the installed ASI and
-test the mixer without ReShade. Real lamp output and game acceptance remain open.
+Next: use the clarified wall geometry to design local output-area calibration;
+verify the installed ASI and test the mixer without ReShade. Real lamp output
+and game acceptance remain open.
 
 # Previous checkpoint — 0.4.0-asi.6 letter shortcut, 2026-10-03, Codex
 
