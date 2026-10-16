@@ -341,7 +341,7 @@ Add("Strict boundaries keep every opposite quadrant exactly black while the came
     foreach (var normalization in new[] { 0.0, 1 })
     {
         var mapper = new LightMapper();
-        var settings = new MappingSettings(Spread: focus, DirectionNormalization: normalization, SmoothingMs: 1000, OutputGamma: 4);
+        var settings = new MappingSettings(Spread: focus, DirectionNormalization: normalization, SmoothingMs: 0, OutputGamma: 4);
         for (var corner = 0; corner < 4; corner++)
         {
             var yaw = -corner * Math.PI / 2;
@@ -417,7 +417,7 @@ Add("Recorded nearby fires switch front or rear with the chosen player-camera or
             new(new(-10611.344, 607.69556, -4425.8354), new(.36165032, .11177812, .027556013)),
             new(new(-10611.355, 607.7641, -4425.8354), new(1.1991158, .36700568, .090834536))]
     };
-    var settings = new MappingSettings(Brightness: .6, Radius: 15, FadeStart: 6, FadeExponent: 1.2);
+    var settings = new MappingSettings(Brightness: .6, Radius: 15, FadeStart: 6, FadeExponent: 1.2, SmoothingMs: 0);
     var mapper = new LightMapper();
     var lens = mapper.Map(frame, layout, settings with { DirectionOriginBlend = 1 }, .001);
     Assert(lens[0].Rgb == default && lens[1].Rgb.X > .5 && lens[2].Rgb.X > .5, "Lens endpoint did not reproduce the reported front output");
@@ -472,7 +472,7 @@ Add("Boundary switches and room offset act immediately without altering Ambient 
         Camera = new(default, new(1, 0, 0), new(0, 1, 0), new(0, 0, 1)),
         Lights = [new(new(-2, 0, 5), new(1, 0, 0))]
     };
-    var settings = new MappingSettings(Spread: 0, AmbientSmoothingMs: 0, SourceDiscRadiusDegrees: 89, SourceDiscSoftness: 0);
+    var settings = new MappingSettings(Spread: 0, SmoothingMs: 0, AmbientSmoothingMs: 0, SourceDiscRadiusDegrees: 89, SourceDiscSoftness: 0);
     var mapper = new LightMapper();
     var broad = mapper.Map(frame, layout, settings with { SeparateLeftRight = false, SeparateFrontRear = false }, 1);
     Assert(broad.Take(2).All(c => c.Rgb.X > 0));
@@ -711,6 +711,146 @@ Add("Smoothing releases the previous color after leaving the fade range", () =>
     for (var i = 0; i < 10; i++) released = mapper.Map(DistanceFrame(15, new(1e8, 0, 0)), fadeArea, smooth, 0.1)[0].Rgb.X;
     Assert(released < 0.0001);
 });
+Add("Local transition damps alternating visibility with confirmed feeds and every boundary mode", () =>
+{
+    var source = TelemetryParser.Parse(Fixtures.CurrentSnapshot(), out _)!;
+    foreach (var mode in new[] { (true, false, false), (false, true, false), (false, false, true), (true, true, true) })
+    {
+        var frame = source with { ConfirmedVisibleOnly = mode.Item1 };
+        var settings = new MappingSettings(Brightness: 1, SmoothingMs: 100,
+            SeparateLeftRight: mode.Item2, SeparateFrontRear: mode.Item3);
+        var target = new LightMapper().Map(frame, rearArea, settings with { SmoothingMs = 0 }, 1)[0].Rgb.X;
+        Assert(target > .1, "Visibility fixture has no useful local signal");
+        var mapper = new LightMapper();
+        var previous = mapper.Map(frame, rearArea, settings, 1)[0].Rgb.X;
+        for (var i = 0; i < 60; i++)
+        {
+            var current = mapper.Map(i % 2 == 0 ? frame with { Lights = [] } : frame,
+                rearArea, settings, 1.0 / 30)[0].Rgb.X;
+            Assert(Math.Abs(current - previous) < target * .3, "A visibility change bypassed the local transition");
+            if (i >= 20)
+                Assert(current > target * .35 && current < target * .65, "Alternating visibility still flashes between full output and black");
+            previous = current;
+        }
+    }
+});
+Add("Camera motion between calibrated washers fades old output and converges to strict spatial targets", () =>
+{
+    var layout = new EntertainmentArea(Fixtures.Id, "Motion washers", false,
+        Enumerable.Range(0, 6).Select(i => new EntertainmentChannel((byte)i, new(i < 3 ? -.4 : .4, .8, (i % 3 - 1) * .4),
+            [new(i < 3 ? "motion-left" : "motion-right", i % 3)], "Segment " + i)).ToArray());
+    var walls = new WallWashLayout([
+        new(Fixtures.Id, "motion-left", true, -60, 60, [new(0, Elevation: -30), new(1), new(2, Elevation: 30)]),
+        new(Fixtures.Id, "motion-right", true, 60, 60, [new(0, Elevation: -30), new(1), new(2, Elevation: 30)])]);
+    var direction = WallWashLayout.Direction(-60, 0);
+    var frame = TelemetryParser.Parse(Fixtures.CurrentSnapshot(), out _)! with
+    {
+        Player = default,
+        Camera = new(default, new(1, 0, 0), new(0, 1, 0), new(0, 0, 1)),
+        Lights = [new(new(direction.X, direction.Z, direction.Y), new(2, 0, 0), 0)]
+    };
+    var yaw = -120 * Math.PI / 180;
+    var turned = frame with { Camera = frame.Camera with
+        { Right = new(Math.Cos(yaw), 0, -Math.Sin(yaw)), Forward = new(Math.Sin(yaw), 0, Math.Cos(yaw)) } };
+    var settings = new MappingSettings(Brightness: 1, FadeStart: 5, SmoothingMs: 100,
+        SourceDiscRadiusDegrees: 10, SourceDiscSoftness: 0);
+    var immediate = new LightMapper().Map(turned, layout, settings with { SmoothingMs = 0 }, 1, wallWash: walls);
+    Assert(immediate.Take(3).All(c => c.Rgb == default) && immediate[4].Rgb.X > .1,
+        "Rotated fixture does not select the right wall exclusively");
+    var mapper = new LightMapper();
+    var start = mapper.Map(frame, layout, settings, 1, wallWash: walls);
+    Assert(start[1].Rgb.X > .1 && start.Skip(3).All(c => c.Rgb == default));
+    var output = mapper.Map(turned, layout, settings, 1.0 / 30, wallWash: walls);
+    Assert(output[1].Rgb.X > 0 && output[1].Rgb.X < start[1].Rgb.X, "The old wall did not fade across the boundary");
+    Assert(output[4].Rgb.X > 0 && output[4].Rgb.X < immediate[4].Rgb.X, "The new wall jumped to full output");
+    for (var i = 0; i < 90; i++) output = mapper.Map(turned, layout, settings, 1.0 / 30, wallWash: walls);
+    Assert(output.Zip(immediate).All(p => p.First.Id == p.Second.Id && (p.First.Rgb - p.Second.Rgb).Length < 1e-8),
+        "Transition retained a permanent tail or altered the calibrated target");
+});
+Add("Local transition follows elapsed time equally at 15, 30, 60 and 120 updates per second", () =>
+{
+    var frame = TelemetryParser.Parse(Fixtures.CurrentSnapshot(), out _)!;
+    var blue = frame with { Lights = [frame.Lights[0] with { Rgb = new(0, 0, 2) }] };
+    foreach (var gamma in new[] { 1.0, 4 })
+    {
+        var settings = new MappingSettings(Brightness: 1, SmoothingMs: 200, OutputGamma: gamma);
+        List<Vec3> Run(int rate)
+        {
+            var mapper = new LightMapper(); var samples = new List<Vec3>();
+            foreach (var (input, seconds) in new[] { (frame, .4), (frame with { Lights = [] }, .2), (blue, .4) })
+            {
+                IReadOnlyList<ChannelColor> output = [];
+                for (var i = 0; i < (int)Math.Round(rate * seconds); i++) output = mapper.Map(input, rearArea, settings, 1.0 / rate);
+                samples.Add(output[0].Rgb);
+            }
+            return samples;
+        }
+        var reference = Run(15);
+        Assert(reference[1].X > 0 && reference[1].X < reference[0].X && reference[2].Z > reference[1].Z);
+        foreach (var rate in new[] { 30, 60, 120 })
+            Assert(reference.Zip(Run(rate)).All(p => (p.First - p.Second).Length < 1e-10),
+                "Transition speed changed with the update rate");
+    }
+});
+Add("Local transitions converge at rest and reset starts both layers without old history", () =>
+{
+    var frame = TelemetryParser.Parse(Fixtures.CurrentSnapshot(), out _)!;
+    var empty = frame with { Lights = [] };
+    var settings = new MappingSettings(Brightness: 1, SmoothingMs: 100, AmbientSmoothingMs: 1000);
+    var target = new LightMapper().Map(frame, rearArea, settings with { SmoothingMs = 0 }, 1);
+    var mapper = new LightMapper(); IReadOnlyList<ChannelColor> output = [];
+    for (var i = 0; i < 60; i++) output = mapper.Map(frame, rearArea, settings, 1.0 / 60);
+    Assert(output.Zip(target).All(p => (p.First.Rgb - p.Second.Rgb).Length < .0001), "Stationary output did not converge");
+    for (var i = 0; i < 60; i++) output = mapper.Map(empty, rearArea, settings, 1.0 / 60);
+    Assert(output.All(c => c.Rgb.Length < .0001), "Local tail did not release when the source disappeared");
+    var ambient = new AmbientFrame(42, DateTimeOffset.UtcNow, 0, 0, 8);
+    mapper.Map(frame, rearArea, settings, 1, ambient);
+    mapper.Reset();
+    Assert(mapper.Map(empty, rearArea, settings, .01).All(c => c.Rgb == default), "Reset retained local or Ambient light");
+    var fresh = new LightMapper().Map(frame, rearArea, settings, .01, ambient);
+    Assert(mapper.Map(frame, rearArea, settings, .01, ambient).SequenceEqual(fresh), "Reset did not restore cold-start behavior");
+});
+Add("Master and channel brightness reductions apply immediately during a local transition", () =>
+{
+    var frame = TelemetryParser.Parse(Fixtures.CurrentSnapshot(), out _)!;
+    var settings = new MappingSettings(Brightness: 1, SmoothingMs: 1000, AmbientSmoothingMs: 0);
+    var ambient = new AmbientFrame(42, DateTimeOffset.UtcNow, 0, 0, 8);
+    var mapper = new LightMapper();
+    var before = mapper.Map(frame, rearArea, settings, .2, ambient);
+    // No elapsed time: only the output limits change, while the transition is frozen.
+    var limited = mapper.Map(frame, rearArea, settings with { Brightness = .2 }, 0, ambient);
+    Assert(limited.Zip(before).All(p => (p.First.Rgb - p.Second.Rgb * .2).Length < 1e-12), "Master limit was delayed by smoothing");
+    Assert(mapper.Map(frame, rearArea, settings with { Brightness = 0 }, 0, ambient).All(c => c.Rgb == default),
+        "Master zero retained a light tail");
+    var dimmed = rearArea with { Channels = rearArea.Channels.Select(c => c with { Brightness = .25 }).ToArray() };
+    var channelLimited = mapper.Map(frame, dimmed, settings, 0, ambient);
+    Assert(channelLimited.Zip(before).All(p => (p.First.Rgb - p.Second.Rgb * .25).Length < 1e-12), "Channel limit was delayed by smoothing");
+});
+Add("Ambient remains independent of the local transition and stale Ambient clears despite a local tail", () =>
+{
+    var frame = TelemetryParser.Parse(Fixtures.CurrentSnapshot(), out _)!;
+    frame = frame with { Lights = [frame.Lights[0] with { Rgb = new(2, 0, 0) }] };
+    var empty = frame with { Lights = [] };
+    var settings = new MappingSettings(Brightness: 1, SmoothingMs: 1000, AmbientSmoothingMs: 5000,
+        AmbientTintHue: 240, AmbientTintSaturation: 1);
+    var ambient = new AmbientFrame(42, DateTimeOffset.UtcNow, 0, 0, 8);
+    var ambientOnly = new LightMapper().Map(empty, rearArea, settings, .1, ambient);
+    Assert(ambientOnly.SequenceEqual(new LightMapper().Map(empty, rearArea, settings with { SmoothingMs = 0 }, .1, ambient)),
+        "Local transition changed Ambient-only output");
+    foreach (var disable in new[] { false, true })
+    {
+        var mixed = new LightMapper(); var local = new LightMapper();
+        var lit = mixed.Map(frame, rearArea, settings, 1, ambient);
+        local.Map(frame, rearArea, settings, 1);
+        Assert(lit.Any(c => c.Rgb.X > 0 && c.Rgb.Z > 0), "Fixture lacks independent local and Ambient colors");
+        var cleared = mixed.Map(empty, rearArea, disable ? settings with { AmbientSensitivity = 0 } : settings,
+            1.0 / 30, disable ? ambient : null);
+        var localTail = local.Map(empty, rearArea, settings, 1.0 / 30);
+        Assert(cleared.Any(c => c.Rgb.X > 0) && cleared.All(c => c.Rgb.Y == 0 && c.Rgb.Z == 0),
+            "Stale or disabled Ambient remained in the local transition");
+        Assert(cleared.SequenceEqual(localTail), "Clearing Ambient reset or contaminated the independent local tail");
+    }
+});
 Add("Legacy radius migrates to fade end and new fade settings round-trip", () =>
 {
     const string legacy = "{\"BridgeAddress\":\"192.168.2.1\",\"AreaId\":\"saved-area\",\"Mapping\":{\"Gain\":2,\"Brightness\":0.4,\"Radius\":47.5,\"Spread\":3,\"SmoothingMs\":250}}";
@@ -844,8 +984,75 @@ Async("Failed DTLS handshake releases REST lease and restores lights", async () 
     await using var mock = await MockBridge.StartAsync(); using var bridge = new BridgeClient(mock.Credentials);
     var state = new TelemetryState(); state.Accept(Fixtures.Snapshot());
     using var cancel = new CancellationTokenSource(10000);
-    await RejectAsync(() => new StreamingSession(bridge, () => new SpyTransport { FailConnect = true }).RunAsync(area, state, () => new(), cancel.Token));
+    var transport = new SpyTransport { FailConnect = true };
+    var session = new StreamingSession(bridge, () => transport);
+    await RejectAsync(() => session.RunAsync(area, state, () => new(), cancel.Token));
     Assert(mock.Starts == 1 && mock.Stops == 1 && mock.Restored == 1);
+    Assert(session.Diagnostics == new StreamOutputDiagnostics() && transport.Packets.IsEmpty,
+        "Failed handshake reported output which was never sent");
+});
+Async("Stream diagnostics distinguish Ambient removal from local telemetry clearing in sent packets", async () =>
+{
+    await using var mock = await MockBridge.StartAsync(); using var bridge = new BridgeClient(mock.Credentials);
+    var state = new TelemetryState(); var ambient = new AmbientState(); var transport = new SpyTransport();
+    var session = new StreamingSession(bridge, () => transport);
+    using var cancel = new CancellationTokenSource(10000);
+    using var localCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel.Token);
+    using var ambientCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel.Token);
+    var localProducer = Fixtures.Produce(state, localCancel.Token);
+    async Task ProduceAmbient()
+    {
+        while (!ambientCancel.IsCancellationRequested)
+        {
+            ambient.Accept(Fixtures.Ambient());
+            try { await Task.Delay(50, ambientCancel.Token); } catch (OperationCanceledException) { }
+        }
+    }
+    var ambientProducer = ProduceAmbient();
+    var settings = new MappingSettings(SmoothingMs: 1000, AmbientSmoothingMs: 1000);
+    var run = session.RunAsync(area, state, () => settings, cancel.Token, ambient);
+    byte[] SentPacket(StreamOutputDiagnostics sample)
+    {
+        var packets = transport.Packets.ToArray();
+        Assert(sample.SentFrames > 0 && sample.SentFrames <= packets.Length, "Diagnostics were published before the datagram");
+        return packets[checked((int)sample.SentFrames - 1)];
+    }
+    bool IsBlack(byte[] packet) => packet.Skip(52).Where((_, i) => i % 7 != 0).All(v => v == 0);
+    try
+    {
+        await Fixtures.WaitUntil(() => session.Diagnostics is { SentFrames: > 0, LocalFresh: true, AmbientFresh: true, AmbientFill: > 0 });
+        var lit = session.Diagnostics;
+        Assert(lit.AmbientLevel == 8 && lit.LocalClearedFrames == 0 && lit.AmbientMissingFrames == 0);
+        var mixedPacket = SentPacket(lit);
+        Assert(Enumerable.Range(0, area.Channels.Count).All(i => mixedPacket[52 + i * 7 + 3] != 0 || mixedPacket[52 + i * 7 + 4] != 0),
+            "Diagnostics claimed Ambient fill, but the independent green component was absent from the packets");
+
+        ambientCancel.Cancel(); await ambientProducer;
+        ambient.Reset("Synthetic Ambient disconnect");
+        await Fixtures.WaitUntil(() => session.Diagnostics is { LocalFresh: true, AmbientFresh: false, AmbientMissingFrames: > 0, AmbientFill: 0 });
+        var local = session.Diagnostics;
+        var localPacket = SentPacket(local);
+        Assert(local.SentFrames > lit.SentFrames && local.LocalClearedFrames == 0 && local.AmbientLevel == 0 && !IsBlack(localPacket),
+            "Losing Ambient incorrectly cleared the available local light");
+        Assert(Enumerable.Range(0, area.Channels.Count).All(i => localPacket[52 + i * 7 + 3] == 0 && localPacket[52 + i * 7 + 4] == 0),
+            "Ambient survived in the packet after diagnostics reported its removal");
+
+        localCancel.Cancel(); await localProducer;
+        state.Reset("Synthetic telemetry disconnect");
+        await Fixtures.WaitUntil(() => session.Diagnostics is { LocalFresh: false, LocalClearedFrames: > 0, AmbientFill: 0 });
+        var cleared = session.Diagnostics;
+        Assert(cleared.SentFrames > local.SentFrames && cleared.AmbientMissingFrames > local.AmbientMissingFrames && IsBlack(SentPacket(cleared)),
+            "Local telemetry loss did not immediately send black and increment the clearing counters");
+    }
+    finally
+    {
+        cancel.Cancel();
+        await Task.WhenAll(localProducer, ambientProducer);
+        await run;
+    }
+    Assert(mock.Stops == 1 && mock.Restored == 1 && transport.Disposed, "Diagnostic test did not release the mock stream");
+    Assert(transport.Packets.Count == session.Diagnostics.SentFrames + 1 && IsBlack(transport.Packets.Last()),
+        "Published frame counters do not match regular sends plus the final cleanup-black packet");
 });
 Async("Busy Entertainment area is never taken over", async () =>
 {

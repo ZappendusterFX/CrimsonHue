@@ -12,7 +12,8 @@ or a measurement of the physical lamps.
    from this branch's validation checkpoint. Enable its server, rendered and upstream ManyLights
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
    For all-around light sources, CrimsonHue needs CDT's fresh confirmed-clear
-   visibility results. A missing or blocked source does not light a channel.
+   visibility results. A missing or blocked source contributes no new light;
+   the previous local output fades according to **Local light transition**.
 2. Install [.NET 8 Desktop Runtime x64](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
    Close the game. Import the ZIP through DMM, or copy its
    `CrimsonHue/CrimsonHue.asi` into the same ASI loading directory as CDT.
@@ -24,8 +25,9 @@ or a measurement of the physical lamps.
    Entertainment DTLS 1.2/PSK, color lamps and an existing Entertainment area.
    Set the area and channel positions in the Hue app first. diyHue is the
    development target. A physical Hue Bridge BSB002 with two Hue Play wall washers
-   has passed pairing and read-only area/light-state import; physical
-   Entertainment output on that bridge remains untested.
+   has passed pairing and read-only area/light-state import. The owner reports
+   physical Entertainment output with .asi.12, but motion flicker and Ambient
+   appearance still need acceptance with this update.
 4. In **Setup**, enter the bridge's own private IPv4 address and click
    **Find bridge**; it applies the address directly. For a new pairing, press the round link button **on the
    physical Hue Bridge**, then click **Trust bridge & pair** within 30 seconds.
@@ -166,7 +168,7 @@ an unlit physical gap behind the monitor. Ambient remains a separate shared fill
 | **Light sensitivity** (1.5×, 0–10×) | Exposure applied to each local source before distance fade. Zero removes local sources; it does not remove Ambient. Raising it can cause bright sources to compress, making changes less obvious. |
 | **Local light mix** (100%, 0–400%) | Amount of mapped local-light RGB added to the Ambient layer. Zero removes local sources from output even when raw sources are present. |
 | **Output gamma** (1, 0.1–4) | Higher values lift dim **nonzero** output. Black remains black. Use carefully with lamps that have a high minimum visible brightness. |
-| **Legacy smoothing** (100 ms, 0–1000 ms) | Reduces jitter only on the older rendered-only feed when **both** strict boundaries are off. Confirmed-visible mode or either strict boundary updates local channel colors immediately, so this slider then has no local effect. |
+| **Local light transition** (100 ms, 0–1000 ms) | Smooths local brightness and color in every input mode, including strict boundaries. Old local color fades briefly after a visibility or side change. Zero is immediate; 250–400 ms gives a slower response for fast wall washers. Ambient has its own transition. Missing local telemetry clears output immediately. |
 
 ## Ambient controls
 
@@ -225,10 +227,16 @@ automatically a “sky lamp.” For a source close to the player and camera, cha
 **Direction origin** can change its side, while the imported lamp height can
 still place it outside the finite source disc. The preview shows the area layout.
 
+These spatial rules describe the target colors. **Local light transition** briefly
+fades previous colors toward those targets; set it to zero for immediate spatial
+changes when checking calibration.
+
 ## If the result looks wrong
 
 | Observation | Check first |
 | --- | --- |
+| Rapid flicker while moving | **Output → Local light transition** now works for confirmed-visible input and strict boundaries. Try 250–400 ms for a slower response. The raw stream can still change quickly; the transition controls how output follows it. |
+| Ambient seems absent | While syncing, the Ambient status now says whether the stream includes Ambient or is paused. **CDT raw input** also shows the last streamed Ambient level/fill and counts of frames cleared for local data or missing Ambient. These are calculated values, not measured lamp brightness. Ambient tint saturation 0% produces neutral white fill. |
 | All lamps stay on in darkness | Inspect the **raw Ambient working level** and confirmed-clear source count. Set **Extra background light** to 0%; check the Ambient black threshold and transition. Ambient tint and output gamma cannot turn zero into light. If calculated output is tiny but a lamp remains visibly bright, the lamp/bridge may have a minimum visible output; compare the numeric channel RGB. |
 | Fire on one side lights the other | Confirm both strict boundary switches are On, imported channel positions are correct, and **Room direction offset** matches the room. Ambient is shared fill and can still light both sides. |
 | Rear lamp does not react to a source behind the character | Watch the raw source position and visibility, then try **Direction origin** from 0% toward 100%. Check disc radius, the channel's imported height and **Off beyond**. A source can be behind the player but ahead of a third-person camera. |

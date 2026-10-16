@@ -248,7 +248,14 @@ public partial class MainWindow : Window
             $"{frame.Feed} · {frame.Lights.Count}/{frame.SourceCount} usable lights · {frame.Lights.Count(l => (l.Position - frame.Player).Length < mapping.FadeEnd)} in range · capture {frame.CaptureSequence} · age {Math.Max(0, (DateTimeOffset.UtcNow - frame.LightCapturedAt).TotalMilliseconds):F0} ms";
         var demo = DemoCheck.IsChecked == true;
         AmbientStatus.Text = demo ? "Demo preview · ambient not sampled" : ambientMessage;
+        var outputDiagnostics = !demo && !identifying && session is { Sending: true } ? session.Diagnostics : null;
+        if (outputDiagnostics is { SentFrames: > 0 })
+            AmbientStatus.Text += !outputDiagnostics.LocalFresh ? " · sync paused: local data unavailable" :
+                outputDiagnostics.AmbientFill > 0 ? " · Ambient included in mix" : " · no Ambient contribution in mix";
         if (FreezeRawCheck.IsChecked != true) UpdateRawInput(frame, ambientFrame);
+        if (FreezeRawCheck.IsChecked != true && outputDiagnostics is { SentFrames: > 0 })
+            RawAmbientValues.Text += FormattableString.Invariant(
+                $"\nLast streamed sample: local fresh={outputDiagnostics.LocalFresh}, Ambient fresh={outputDiagnostics.AmbientFresh}\nAmbient used: level {outputDiagnostics.AmbientLevel:G6}, fill {outputDiagnostics.AmbientFill:G6} (linear, before local mix/gamma/master)\nStream frames {outputDiagnostics.SentFrames}; cleared for local data {outputDiagnostics.LocalClearedFrames}; missing Ambient {outputDiagnostics.AmbientMissingFrames}");
         var area = SelectedArea ?? (demo ? DemoData.Area : null);
         if (demo) frame = wallPreview ? DemoData.DirectionFrame(wallPreviewYaw, wallPreviewElevation) : DemoData.Frame(uptime.Elapsed.TotalSeconds);
         IReadOnlyList<ChannelColor> colors = [];

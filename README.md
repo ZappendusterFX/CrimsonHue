@@ -3,7 +3,7 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**Branch preview: 0.4.0-asi.12.** CDT hosts the interactive Hue mixer in its own
+**Branch preview: 0.4.0-asi.13.** CDT hosts the interactive Hue mixer in its own
 D3D12 renderer. `CrimsonHue.asi` is the headless lamp controller and installs no
 graphics hooks. There is no separate settings window or process. The ZIP contains
 one ASI and documentation; application dependencies
@@ -49,15 +49,15 @@ physical lamp brightness.
 
 ## Start
 
-1. Install [**CrimsonDesertTelemetry 2.2.1**](https://github.com/ZappendusterFX/CrimsonDesertTelemetry/releases/tag/v2.2.1) with its server, rendered and upstream
+1. Install the matching **CrimsonDesertTelemetry 2.2.5-huepanel.5 preview** with its server, rendered and upstream
    ManyLights capture, and source visibility enabled.
 2. Install [**.NET 8 Desktop Runtime x64**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
    With the game closed, import this ZIP through DMM, or put its
    `CrimsonHue/CrimsonHue.asi` in the same ASI loading directory as CDT.
    Only the ASI needs deploying. Start the game; the in-game mixer opens.
    The ZIP contains no runtime installer or ASI loader.
-3. In **Setup**, enter your bridge's local IPv4 address, click **Apply addresses**
-   and **Find bridge**. The preset
+3. In **Setup**, enter your bridge's local IPv4 address and click **Find bridge**.
+   The button applies the address directly. The preset
    `192.168.2.109` is the development setup; change it to your own address.
 4. Check the displayed bridge identity. Press the bridge's link button (for diyHue,
    in its web UI), then click **Trust bridge & pair** within 30 seconds. Repeat the
@@ -172,10 +172,12 @@ colors; no fire color is detected or specially recolored. Weighted contributions
 are combined in linear RGB and overflow is scaled down. Output is sRGB-encoded,
 corrected by the displayed gamma control and brightness-limited. Imported Hue
 brightness balance is applied where provided.
-Short configurable smoothing reduces jitter on the legacy rendered feed when
-both strict boundaries are off. Confirmed-visible mode and either strict boundary
-update channel colors immediately so a previous source cannot linger after
-becoming hidden or moving to another side. This is an artistic estimate, not
+**Local light transition** smooths brightness/color changes in every feed mode,
+including confirmed-visible input and strict boundaries. The mapped local layer
+is smoothed in sRGB space, then decoded before mixing the independent Ambient layer.
+A previous local color briefly fades after a visibility or side change; the spatial
+rules apply to the new target. Zero transition gives immediate changes. Missing
+local telemetry clears all output/history immediately. This is an artistic estimate, not
 game pixels, physical lux, measured room distances or full scene lighting.
 Spotlight cones are not simulated. CDT supplies the separate source visibility
 decision; CrimsonHue does not perform its own occlusion test.
@@ -199,7 +201,7 @@ incomplete or out-of-range files are rejected without changing settings.
 
 | Tab | Controls (default; range) |
 | --- | --- |
-| Output | Maximum brightness (85%; 0–100%), Light sensitivity (1.5×; 0–10×), Local light mix (100%; 0–400%), Output gamma (1; 0.1–4), Legacy smoothing (100 ms; 0–1000 ms) |
+| Output | Maximum brightness (85%; 0–100%), Light sensitivity (1.5×; 0–10×), Local light mix (100%; 0–400%), Output gamma (1; 0.1–4), Local light transition (100 ms; 0–1000 ms) |
 | Ambient | Ambient exposure (1×; 0–10×), Ambient reference level (4; 0.01–100 raw units), Ambient mix (40%; 0–100%), Extra background light (0%; 0–100%), Ambient black threshold (0; 0–100 raw units), Local mix in bright Ambient (100%; 0–200%), Ambient transition (400 ms; 0–5000 ms) |
 | Color | Local hue shift (0°; −180–180°), Local saturation (100%; 0–200%), Red balance / Green balance / Blue balance (each 1×; 0–4×), Ambient tint hue (0°; 0–360°), Ambient tint saturation (0%; 0–100%) |
 | Space | Strict left / right (On), Strict front / rear (On), Direction origin (50%; 0% player–100% camera), Fade starts (0; below Off beyond, up to just under 1000 game units), Off beyond (35; 1–1000 game units), Distance falloff (2; 0.1–8), Source disc radius (60°; 1–89°), Source disc soft edge (25%; 0–100%), Directional focus (2; 0–16), Strongest-channel compensation (100%; 0–100%), Room direction offset (0°; −180–180°) |
@@ -219,7 +221,7 @@ the raw display for inspection and copying; live mapping and streaming continue.
 - **Off beyond:** no new contribution at or beyond this distance.
 - Between both values, strength falls smoothly to zero. **Distance falloff** changes
   the curve; larger values attenuate the middle of the interval more strongly.
-  Approaching a source uses the same curve in reverse. Legacy smoothing can
+  Approaching a source uses the same curve in reverse. Local light transition can
   briefly retain the previous output after crossing the cutoff.
 
 The curve preview plots remaining contribution in percent against distance in

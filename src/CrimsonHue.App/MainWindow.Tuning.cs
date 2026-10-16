@@ -18,8 +18,8 @@ public partial class MainWindow
     private static readonly MappingSettings defaults = new();
     private static readonly SwitchParameter[] switches =
     [
-        new("SeparateLeftRight", "Space", "Strict left / right", "On: a local source on the left sends zero to right lamps, and vice versa.", m => m.SeparateLeftRight, (m,v) => m with { SeparateLeftRight=v }),
-        new("SeparateFrontRear", "Space", "Strict front / rear", "On: a local source in front sends zero to rear lamps, and vice versa.", m => m.SeparateFrontRear, (m,v) => m with { SeparateFrontRear=v })
+        new("SeparateLeftRight", "Space", "Strict left / right", "On: a local source on the left adds no new light to right lamps, and vice versa. Previous output fades with Local light transition.", m => m.SeparateLeftRight, (m,v) => m with { SeparateLeftRight=v }),
+        new("SeparateFrontRear", "Space", "Strict front / rear", "On: a local source in front adds no new light to rear lamps, and vice versa. Previous output fades with Local light transition.", m => m.SeparateFrontRear, (m,v) => m with { SeparateFrontRear=v })
     ];
     private static readonly Parameter[] parameters =
     [

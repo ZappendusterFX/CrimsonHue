@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.12 — mixer hosted by CDT
+# CrimsonHue 0.4.0-asi.13 — mixer hosted by CDT
 
 CDT draws the interactive CrimsonHue mixer in its existing D3D12/ImGui frame.
 `CrimsonHue.asi` hosts the existing C# lamp controller on a hidden WPF STA. It
@@ -13,7 +13,8 @@ No separate EXE, process or visible WPF settings window is used.
    these .NET 8 requirements.
 2. Close Crimson Desert and stop any old desktop CrimsonHue sync. Use the matching
    **CDT 2.2.5-huepanel.5** preview with this version. Public CDT 2.2.4 does not host
-   the Hue panel. Replace both packages together with the game closed.
+   the Hue panel. If huepanel.5 is already installed, this update replaces only
+   CrimsonHue.asi, with the game closed.
 3. Import both ZIPs through DMM using the existing x64 ASI loader. CrimsonHue's
    package contains one `CrimsonHue/CrimsonHue.asi` plus documentation/notices;
    it embeds its five application/dependency files. No loose DLL, JSON, CFG, EXE,

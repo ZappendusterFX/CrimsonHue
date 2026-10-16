@@ -3,12 +3,20 @@ using System.Text.Json;
 
 namespace CrimsonHue.Core;
 
+// Credential-free evidence from the samples actually passed to the stream mapper.
+// Fill is linear strength before local mixing/gamma/brightness, not measured lamp output.
+public sealed record StreamOutputDiagnostics(long SentFrames = 0, long LocalClearedFrames = 0,
+    long AmbientMissingFrames = 0, bool LocalFresh = false, bool AmbientFresh = false,
+    double AmbientLevel = 0, double AmbientFill = 0);
+
 public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTransport>? transportFactory = null)
 {
     private string status = "Stopped";
     private ChannelColor[] colors = [];
+    private StreamOutputDiagnostics diagnostics = new();
     public string Status => Volatile.Read(ref status);
     public IReadOnlyList<ChannelColor> Colors => Volatile.Read(ref colors);
+    public StreamOutputDiagnostics Diagnostics => Volatile.Read(ref diagnostics);
     public bool Sending { get; private set; }
     public async Task RunAsync(EntertainmentArea area, TelemetryState telemetry, Func<MappingSettings> settings, CancellationToken token,
         AmbientState? ambient = null, Func<WallWashLayout>? wallWash = null)
@@ -22,6 +30,7 @@ public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTra
         byte sequence = 0;
         var invalidSince = 0L;
         var lastCheck = 0L;
+        var lastMap = 0L;
         Task<JsonElement>? stateCheck = null;
         CancellationTokenSource? checkCancel = null;
         try
@@ -33,9 +42,10 @@ public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTra
                 {
                     colors = area.Channels.Select(c => new ChannelColor(c.Id, default)).ToArray();
                     mapper.Reset();
+                    lastMap = 0;
                     if (transport != null)
                     {
-                        transport.Send(EntertainmentPacket.Build(area.Id, sequence++, colors));
+                        SendColors(false, ambient?.Read(out _));
                         if (invalidSince == 0) invalidSince = Stopwatch.GetTimestamp();
                         if (Stopwatch.GetElapsedTime(invalidSince).TotalSeconds >= 1)
                         {
@@ -70,6 +80,7 @@ public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTra
                         checkCancel = CancellationTokenSource.CreateLinkedTokenSource(token);
                         lastCheck = Stopwatch.GetTimestamp();
                         mapper.Reset();
+                        lastMap = 0;
                     }
                     if (stateCheck?.IsCompleted == true)
                     {
@@ -88,10 +99,24 @@ public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTra
                         stateCheck = bridge.GetAreaStateAsync(area.Id, checkCancel!.Token);
                     // Handshakes/HTTP checks can take seconds. Re-read freshness before every datagram.
                     frame = telemetry.Read(out _);
-                    colors = frame == null ? area.Channels.Select(c => new ChannelColor(c.Id, default)).ToArray() :
-                        mapper.Map(frame, area, settings(), 1.0 / 30, ambient?.Read(out _), wallWash?.Invoke()).ToArray();
-                    transport.Send(EntertainmentPacket.Build(area.Id, sequence++, colors));
-                    status = "Streaming · 30 updates/s";
+                    var ambientFrame = ambient?.Read(out _);
+                    if (frame == null)
+                    {
+                        colors = area.Channels.Select(c => new ChannelColor(c.Id, default)).ToArray();
+                        mapper.Reset();
+                        lastMap = 0;
+                    }
+                    else
+                    {
+                        // Mapping/network work adds to the nominal 33 ms cadence. Use
+                        // elapsed time so a configured transition keeps its duration.
+                        var now = Stopwatch.GetTimestamp();
+                        var delta = lastMap == 0 ? 1.0 / 30 : Stopwatch.GetElapsedTime(lastMap, now).TotalSeconds;
+                        colors = mapper.Map(frame, area, settings(), delta, ambientFrame, wallWash?.Invoke()).ToArray();
+                        lastMap = now;
+                    }
+                    SendColors(frame != null, ambientFrame);
+                    status = frame == null ? "Stale telemetry · output cleared" : "Streaming · up to 30 updates/s";
                 }
                 await Task.Delay(33, token);
             }
@@ -101,6 +126,16 @@ public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTra
         {
             await ReleaseAsync();
             colors = [];
+        }
+
+        void SendColors(bool localFresh, AmbientFrame? ambientFrame)
+        {
+            transport!.Send(EntertainmentPacket.Build(area.Id, sequence++, colors));
+            var previous = diagnostics;
+            Volatile.Write(ref diagnostics, new(previous.SentFrames + 1,
+                previous.LocalClearedFrames + (localFresh ? 0 : 1),
+                previous.AmbientMissingFrames + (ambientFrame == null ? 1 : 0),
+                localFresh, ambientFrame != null, ambientFrame?.WorkingLevel ?? 0, mapper.AmbientFill));
         }
 
         async Task ReleaseAsync()

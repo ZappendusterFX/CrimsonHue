@@ -1,4 +1,48 @@
-# Current checkpoint — motion flicker / Ambient handoff to Claude, 2026-10-16, Codex
+# Current checkpoint — motion smoothing and stream diagnostics ready, 2026-10-16, Codex
+
+Owner cancelled the Claude handoff and resumed here. Owner deliberately ran and
+turned the camera during our read-only sample. With installed Hue .asi.12 + CDT
+huepanel.5, the eight-second sample has 169/169 fresh local AND Ambient reads after
+two connection-startup reads, 117 light captures and 16 sky captures. No full-frame
+dropout occurred while moving. Confirmed-clear count changed 132 times (52..83);
+Ambient stayed positive (1.06..18.91). This measures a separate consumer, not the
+actual in-game Hue controller or physical lamps. Do not claim Ambient fixed.
+
+Completed the committed smoothing draft: SmoothingMs now applies to all feeds and
+strict boundary modes. Local RGB is smoothed in sRGB space before decoding and
+mixing independent Ambient. New spatial targets still respect boundaries; old
+color fades briefly across a side/visibility change. Zero transition is immediate.
+Stream timing uses real elapsed time. Missing local telemetry clears/reset both
+layers, including a post-handshake freshness failure; master/channel limits apply
+immediately after smoothing. Existing saved settings/default 100 ms are preserved;
+250..400 ms is an optional slower washer response, not a measured room calibration.
+
+Added actual-stream Ambient inclusion to the existing HUD text and last mapped
+Ambient level/fill + sent/cleared/missing counters in CDT raw input. This uses
+samples passed to the mapper, published after Send, not the separate UI reader.
+Fill is before local mixing/gamma/master and never claims measured lamp output.
+
+**93/93 nonphysical tests passed**, including six motion/transition checks and a
+mock-stream test matching diagnostics to actual packet colors. Three spatial
+fixtures now explicitly request zero transition. Managed/native build, exact
+packaged controller smoke and seven-file ZIP/staging validator passed. No new GPU
+or live-lamp acceptance claimed; CDT renderer/panel code was unchanged.
+
+New **CrimsonHue 0.4.0-asi.13** ZIP built, NOT installed. Keep CDT huepanel.5.
+ZIP: dist/CrimsonHue-0.4.0-asi.13-asi-win-x64.zip
+SHA-256: 4736E01A06D20E083767C2E13119BAE9F1C6C4BE7BAB22548479BA7C98EFACCF
+Details, ASI hash and evidence: [MOTION-SMOOTHING-VALIDATION.md](MOTION-SMOOTHING-VALIDATION.md).
+All previous ZIPs, real credentials/settings and game files preserved. CDT's
+isolated worktree remains clean. AGENTS/CLAUDE byte-identical.
+
+**Next:** game shutdown, install only Hue .asi.13, then check movement with
+Output -> Local light transition (100 ms saved; try 250 ms if desired). If Ambient
+still seems absent, inspect its inclusion status and raw stream diagnostics;
+neutral Ambient tint saturation 0% means white fill, not inferred sky color.
+Do not repeat broad A/B tests or restart telemetry research. Input is released
+when the HUD hides (owner confirmed); earlier cursor drift is a separate observation.
+
+# Previous checkpoint — motion flicker / Ambient handoff to Claude, 2026-10-16, Codex
 
 Owner requests an immediate handoff to Claude and a clean committed worktree.
 Stop implementation here; the smoothing draft below is NOT a release candidate.

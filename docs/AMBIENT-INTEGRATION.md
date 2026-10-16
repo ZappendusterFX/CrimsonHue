@@ -26,6 +26,11 @@ The UI shows global sky RGB, camera sky visibility, local Ambient RGB and its
 exact working level. It also lists the confirmed-clear local sources with raw
 positions and linear RGB. These values remain unmodified by the controls.
 Mapped channel RGB is shown separately and is not a physical lamp measurement.
+During sync, the Ambient status also reports whether the actual stream mapper
+included Ambient. The raw tab shows its last input level, linear fill before local
+mix/gamma/master, and sent-frame counters for local clearing and missing Ambient.
+These diagnostics are published after a transport send; they do not prove physical
+lamp output. They distinguish fresh input reception from use by the stream mapper.
 **Freeze readout** holds the raw display for inspection and copying. It does not
 pause incoming telemetry, the mapper or the lamp stream.
 
@@ -137,12 +142,20 @@ larger values brighten intermediate output and smaller values darken it. The
 **Maximum brightness** and imported channel balance cap the final output.
 Color controls, gain and gamma all preserve zero input as zero output.
 
-Legacy smoothing remains an exposed control for older renderer-only input with
-both strict boundaries off. It is bypassed for confirmed-clear input or either
-enabled boundary so sources cannot leave residual color after becoming hidden
-or crossing a side. This restriction is labelled in the UI. Ambient retains its
-separate transition control and remains non-directional; disabling local spill
-does not suppress genuine Ambient input or an explicitly configured background.
+**Local light transition** applies in all input modes, including confirmed-clear
+input and either enabled boundary. After local summation/overflow normalization,
+encode the local RGB to sRGB and use the exponential response
+`alpha = 1 - exp(-elapsedSeconds * 1000 / transitionMs)`. Decode the smoothed local
+RGB back to linear before combining Ambient and applying output gamma/brightness.
+Zero transition is immediate. Streaming uses elapsed monotonic time between mapped
+frames; the first frame uses the nominal 1/30 second step.
+
+Spatial rules apply to each new target. The previous output fades briefly after
+a source becomes hidden or crosses a side; this avoids abrupt flashes from fast
+Entertainment lamps. Ambient retains its separate transition and clears immediately
+when unavailable. Master brightness applies after smoothing, so lowering its limit
+takes effect immediately. Full unavailable local telemetry resets both layers and
+clears output; smoothing never keeps an old frame alive through a data disconnect.
 
 These steps are an adjustable visual response, not photometry or a calibrated
 conversion between CDT's two RGB domains. Raw values and output values have

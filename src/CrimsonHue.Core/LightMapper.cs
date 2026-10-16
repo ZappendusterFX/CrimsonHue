@@ -4,7 +4,9 @@ public sealed class LightMapper
 {
     private readonly Dictionary<byte, Vec3> previous = [];
     private double ambientLevel;
-    public void Reset() { previous.Clear(); ambientLevel = 0; }
+    /// <summary>Last mapped Ambient strength before local mixing, gamma and master brightness.</summary>
+    public double AmbientFill { get; private set; }
+    public void Reset() { previous.Clear(); ambientLevel = 0; AmbientFill = 0; }
 
     public IReadOnlyList<ChannelColor> Map(TelemetryFrame frame, EntertainmentArea area, MappingSettings settings, double deltaSeconds,
         AmbientFrame? ambient = null, WallWashLayout? wallWash = null)
@@ -24,6 +26,7 @@ public sealed class LightMapper
             ambientLevel + (targetAmbient - ambientLevel) * ambientAlpha;
         var ambientFill = ambient is null || settings.AmbientSensitivity == 0 ? 0 :
             settings.AmbientFloor + settings.AmbientOutput * ambientLevel;
+        AmbientFill = ambientFill;
         var ambientColor = FromHue(settings.AmbientTintHue, settings.AmbientTintSaturation, 1) * ambientFill;
         var localContrast = 1 - (1 - settings.DaylightLocalStrength) * ambientLevel;
         // Bound each source's HDR intensity before spatial attenuation. Applying
@@ -88,6 +91,8 @@ public sealed class LightMapper
                 sums[i] += contribution.Rgb * coverage[i] * (angular[i] * (1 - settings.DirectionNormalization) +
                     angular[i] / strongest * settings.DirectionNormalization);
         }
+        var alpha = settings.SmoothingMs <= 0 ? 1 :
+            1 - Math.Exp(-Math.Clamp(deltaSeconds, 0, 1) * 1000 / settings.SmoothingMs);
         var result = new List<ChannelColor>(area.Channels.Count);
         for (var i = 0; i < area.Channels.Count; i++)
         {
@@ -104,8 +109,6 @@ public sealed class LightMapper
             // zero transition restores immediate output. Ambient is mixed afterwards
             // so unavailable Ambient can still disappear without a smoothing tail.
             var encodedLocal = new Vec3(Encode(local.X), Encode(local.Y), Encode(local.Z));
-            var alpha = settings.SmoothingMs <= 0 ? 1 :
-                1 - Math.Exp(-Math.Clamp(deltaSeconds, 0, 1) * 1000 / settings.SmoothingMs);
             if (alpha < 1)
             {
                 var old = previous.GetValueOrDefault(channel.Id);
