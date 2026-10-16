@@ -1,3 +1,42 @@
+# Current checkpoint — live controller darkness diagnosis and cursor fix, 2026-10-16, Codex
+
+Owner reports repeated stream stops and dark washers in a visibly lit dawn scene;
+then moves game time to noon. No Computer Use: owner explicitly declined it.
+Only @oai/sky import happened before refusal; no window listing/capture/input.
+
+Read-only five-second replay with saved settings (artifacts/lighting-dawn-asi16.json)
+found fresh Ambient around0.6167, producing0.15885 encoded white on all6channels.
+This is NOT actual output: live settings differ materially from saved settings.
+A narrowly scoped passive CLRMD reader, artifacts/hue-live-state/, reads ONLY
+AsiEntry.state immutable credential-free byte[] (double-read/parse validation),
+without suspension, heap scan, injected calls or writes. Live snapshot live-1.json
+23:05:39/PID9400: Streaming,12743sent,0local-cleared,0Ambient-missing; brightness100%,
+AmbientSensitivity0.96675, AmbientCutoff28.488 (!), AmbientReference4, mix40%.
+Thus any reported Ambient level <=28.488 is deliberately removed in Hue before
+transmission. At this particular later snapshot CDT also reports skyvisibility0,
+so local RGB/working level/fill are0 despite skyRGB20.77/26.66/42.32. Do not infer
+that visibility was0 in the earlier dawn replay or that resetting cutoff alone
+fixes this distinct upstream condition. No current controls/settings changed.
+
+Read-only bridge GET: selected6channel area active; both Back washers mode
+streaming, reported dimming.min_dim_level0.05 (%). This normal-dimming capability
+is NOT a measured Entertainment cutoff. Other bulbs report2.0. No physical
+threshold test and no automatic floor/brightness boost is justified yet.
+
+Cursor source now isolates established raw mouse input from OS cursor warps,
+scales client/render coordinates, and keeps capture on repeated SetInputWindow.
+Latches only after an actual valid WM_INPUT mouse packet (registration alone can
+be buffered and is insufficient); preserves legacy fallback, reset on hide/focus.
+Maintained source is native/CrimsonHue.Panel, NOT historical Asi/overlay_input.cpp.
+CDT worktree agent validated13/13focused tests and exactHue16sharedGPU smokes;
+production huepanel.7 package/docs/commit are finishing separately there.
+Installed game remains unchanged. Physical cursor acceptance pending.
+
+Stream-stop audit: one failed periodic REST check or DTLS Send ends the stream;
+cleanup can obscure the original exception. Neither is proven to be the observed
+cause. Current live snapshot shows a running stream. Next owner action: reset
+Ambient black threshold to0, then read actual live state at noon again; separately
+investigate zero camera-sky visibility with CDT's proven source, not guessed fill.
 # Current checkpoint — owner identifies swinging personal lantern, 2026-10-16, Codex
 
 Hue .asi.16 and CDT huepanel.6 are now installed: read-only hashes match the
