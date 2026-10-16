@@ -1,5 +1,15 @@
 # Shared CDT/Hue overlay — 2026-10-16, Codex
 
+**Superseded by live failure and fix:** installed `huepanel.2` crashed during
+software-cursor rendering, a path the original hidden smoke omitted. Use CDT
+**2.2.5-huepanel.3** with the unchanged Hue **0.4.0-asi.10**. ZIP SHA-256
+`A401EA8E0AE8C12136E2816AB774ED9AAF66B9B4A86C90CCD67AB3F18447D1F1`.
+Diagnosis, exact native stack/map, failing-before/passing-after cursor test,
+input release hardening and 13/13 focused regressions are in
+`artifacts/cdt-shared-overlay/docs/HUE_CURSOR_HANG.md`.
+The `.3` fix is built and validated, not installed/game-tested. The historical
+package-pair evidence below is preserved and does not claim `.2` passed startup.
+
 The owner authorized moving the Hue HUD into mandatory CDT while continuing to
 play. No installed ASI, game process, game hook or physical lamp was changed.
 CDT integration lives in the isolated CDT Git worktree

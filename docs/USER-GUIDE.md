@@ -7,7 +7,7 @@ or a measurement of the physical lamps.
 
 ## What to install
 
-1. Install the matching **CDT 2.2.5-huepanel.2 preview** separately in the game.
+1. Install the matching **CDT 2.2.5-huepanel.3 preview** separately in the game.
    The public CDT 2.2.4 lacks this preview's Hue panel; obtain both matching ZIPs
    from this branch's validation checkpoint. Enable its server, rendered and upstream ManyLights
    capture, source visibility, and Ambient feed. Keep CDT running with the game.

@@ -1,4 +1,35 @@
-# Current checkpoint — CDT-hosted Hue panel ready, 2026-10-16, Codex
+# Current checkpoint — startup cursor crash fixed, 2026-10-16, Codex
+
+Owner installed `.asi.10` + `huepanel.2`; PID 8240 hung at startup. Exact deployed
+hashes matched. Live stacks showed a native exception in CDT's ImGui software
+cursor, followed by Streamline MiniDumpWriteDump waiting with 113 threads suspended.
+Matching `.text`/link map resolves exception RVA 0xbc306 to
+ImFontAtlasGetMouseCursorTexData. ClearInputData had deleted the cursor rectangle;
+old hidden-window smoke never drew the software cursor. This was our missed test
+case; `.2` failed actual startup acceptance. No live file/hook/process was changed.
+
+Fixed CDT retains font-source bytes and cursor metadata; only ClearTexData runs.
+Forced software-cursor test fails before fix with 0xC0000005 and passes after,
+including resize/hide/reopen. Owner also requested reliable mouse/keyboard return:
+Hide/Close clears capture/pending events, restores cursor clipping outside the
+WndProc mutex, and hidden frames disable ImGui input/focus. Mocked User32 tests
+verify keyboard/mouse/raw-input passthrough, reentrant clipping, reopen/focus loss.
+13/13 focused input/overlay/HDR regressions passed; package code matches tested objects.
+
+Replacement: **CDT 2.2.5-huepanel.3 only**; keep installed Hue **0.4.0-asi.10**.
+ZIP is under `artifacts\cdt-shared-overlay\artifacts\mod-manager`, SHA-256
+`A401EA8E0AE8C12136E2816AB774ED9AAF66B9B4A86C90CCD67AB3F18447D1F1`.
+ASI SHA-256 `51EDA7502E5E2384112084C8C25A2A2A9A9564FF8E7027D15ADBD8C3DDD860B8`.
+Maintained builder/validator passed. Not installed/game-tested yet. Full evidence:
+`artifacts\cdt-shared-overlay\docs\HUE_CURSOR_HANG.md`; captures `artifacts\hang-8240`.
+Native stack reader source is in CDT tools/HangStacks, never packaged.
+
+**Next:** owner ends the already crashed/hung game; replace CDT with `.3` while
+closed, verify hash, then one startup/Hue hide/game-input check without ReShade.
+Do not resume preexisting suspended threads, patch the live fault, repeat declined
+A/B restarts, or auto-start physical lighting. Physical washer acceptance remains pending.
+
+# Previous checkpoint — CDT-hosted Hue panel ready, 2026-10-16, Codex
 
 Owner explicitly authorized the UI-hosting change while playing. Implemented:
 CDT owns the sole renderer/ImGui context/input; CrimsonHue is a headless ASI

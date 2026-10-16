@@ -12,7 +12,7 @@ No separate EXE, process or visible WPF settings window is used.
    documented .NET 8 ASP.NET Core Runtime x64. Newer runtimes alone do not meet
    these .NET 8 requirements.
 2. Close Crimson Desert and stop any old desktop CrimsonHue sync. Use the matching
-   **CDT 2.2.5-huepanel.2** preview with this version. Public CDT 2.2.4 does not host
+   **CDT 2.2.5-huepanel.3** preview with this version. Public CDT 2.2.4 does not host
    the Hue panel. Replace both packages together with the game closed.
 3. Import both ZIPs through DMM using the existing x64 ASI loader. CrimsonHue's
    package contains one `CrimsonHue/CrimsonHue.asi` plus documentation/notices;
