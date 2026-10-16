@@ -3,16 +3,16 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**Branch preview: 0.4.0-asi.16.** CDT hosts the interactive Hue mixer in its own
+**Branch preview: 0.4.0-asi.18.** CDT hosts the interactive Hue mixer in its own
 D3D12 renderer. `CrimsonHue.asi` is the headless lamp controller and installs no
 graphics hooks. There is no separate settings window or process. The ZIP contains
 one ASI and documentation; application dependencies
 are embedded, and users install **.NET 8 Desktop Runtime x64** separately.
 See [ASI guide](docs/ASI.md) and [verification checkpoint](docs/HANDOVER.md).
-Use the matching **CDT 2.2.5-huepanel.6** preview; public CDT 2.2.4 lacks the panel.
-Upgrading from Hue .asi.15 with that CDT version requires only the new Hue
-controller, with the game closed. This update replaces hard axis splits with
-spherical blending; physical-lamp verification of the change remains pending.
+Use the matching **CDT 2.2.5-huepanel.8** preview; public CDT 2.2.4 lacks the panel.
+Install both matching packages with the game closed. This update adds a simple
+Lighting page, a recommended profile, explanations of blocked output, and the
+CDT cursor fix. Physical acceptance of the new profile remains pending.
 The Hue panel uses CDT's compact body-text size and blue/cyan palette. Setup
 guides the link-button pairing and confirms CONNECTED only after authenticated
 area loading; a matching saved pairing is reused. Physical output remains explicit.
@@ -54,7 +54,7 @@ physical lamp brightness.
 
 ## Start
 
-1. Install the matching **CrimsonDesertTelemetry 2.2.5-huepanel.6 preview** with its server, rendered and upstream
+1. Install the matching **CrimsonDesertTelemetry 2.2.5-huepanel.8 preview** with its server, rendered and upstream
    ManyLights capture, and source visibility enabled.
 2. Install [**.NET 8 Desktop Runtime x64**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
    With the game closed, import this ZIP through DMM, or put its
@@ -70,8 +70,11 @@ physical lamp brightness.
    Entertainment client key are requested automatically.
 5. Select an existing **Entertainment area**. Create and position lights in the
    Hue app first, then refresh. CrimsonHue preserves the existing layout/channels.
-6. Use the **Output**, **Ambient**, **Color** and **Space** tabs to adjust the
-   preview. Compare the raw CDT values with the channel output while tuning.
+6. New installations start with **Recommended** lighting. On **Lighting**, adjust
+   overall brightness, background light and local light effects; choose Quick,
+   Balanced or Calm response. Existing settings remain **Custom** until you choose
+   **Use Recommended**. This keeps a separate copy of your custom tuning.
+   **Advanced** contains the detailed Output/Ambient/Color/Space controls and raw data.
    The [tuning guide](docs/USER-GUIDE.md) explains each control, interactions
    between controls, shareable presets and a practical setup sequence.
    Stop other sync apps, then click **Start lighting sync**.
@@ -194,7 +197,7 @@ decision; CrimsonHue does not perform its own occlusion test.
 
 ### Controls and raw values
 
-All 28 numeric tuning controls have a slider and numeric input. Adjustments affect preview
+All 28 numeric tuning controls remain in **Advanced → Custom**. Adjustments affect preview
 and active sync immediately. **Reset this tab** restores that tab's defaults;
 **Save settings** stores the current configuration. Settings are also saved on
 Start and normal window close. Existing saved brightness is retained as entered; the 85% default

@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.16 preview — setup and tuning guide
+# CrimsonHue 0.4.0-asi.18 preview — setup and tuning guide
 
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
 existing Hue Entertainment area. Its headless ASI uses CDT's in-game mixer panel. Its
@@ -7,7 +7,7 @@ or a measurement of the physical lamps.
 
 ## What to install
 
-1. Install the matching **CDT 2.2.5-huepanel.6 preview** separately in the game.
+1. Install the matching **CDT 2.2.5-huepanel.8 preview** separately in the game.
    The public CDT 2.2.4 lacks this preview's Hue panel; obtain both matching ZIPs
    from this branch's validation checkpoint. Enable its server, rendered and upstream ManyLights
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
@@ -21,8 +21,8 @@ or a measurement of the physical lamps.
    installed separately. Start the game; the in-game mixer opens automatically.
    **CDT, an ASI loader, the game, bridge firmware and
    saved credentials are not in this ZIP.** See [ASI guide](ASI.md).
-   If Hue .asi.15 and CDT huepanel.6 are already installed, close the game and
-   upgrade only the Hue controller; this update uses the same CDT renderer.
+   Close the game and upgrade both matching packages for this version: the
+   simplified page and cursor fix require the updated CDT renderer.
 3. Use Windows 10/11 x64 and a Hue-compatible bridge with HTTPS API v2,
    Entertainment DTLS 1.2/PSK, color lamps and an existing Entertainment area.
    Set the area and channel positions in the Hue app first. diyHue is the
@@ -40,7 +40,7 @@ or a measurement of the physical lamps.
    error codes for diagnosis without credentials. The address prefilled
    in the application is a development example: replace it. CDT's local stream
    defaults to `ws://127.0.0.1:27311/v1/stream` on the same PC.
-5. Check the live preview and raw readout, tune, then stop other sync apps and
+5. Use **Recommended** on the Lighting page, then stop other sync apps and
    press **Start lighting sync**. **Demo preview** uses synthetic input and never
    drives lamps. Normal preview uses CDT and imported channel positions but
    does not claim the Entertainment stream.
@@ -63,9 +63,35 @@ Process termination can prevent restoration; the ASI cannot keep running after
 the game exits. This branch has synthetic verification, with real game and lamp
 acceptance still pending.
 
-## Read the screen before tuning
+## Everyday lighting
 
-The **raw CDT readout** displays source and Ambient values before CrimsonHue's
+New installations use **Recommended**. The normal page has three controls:
+**Overall brightness** limits every lamp; **Background light** sets the shared
+environment layer; **Local light effects** sets the amount from nearby sources.
+**Response** chooses Quick, Balanced or Calm and coordinates both transitions.
+Balanced uses 250 ms for local sources and 600 ms for the background.
+
+The recommended profile supplies a coherent mapping with neutral colors/gamma,
+no black threshold, no artificial background floor and continuous spherical
+blending. It uses the game data; it does not normalize every dark scene into a
+bright room. Room alignment and Point/Wall calibration remain personal.
+
+Existing installations start in **Custom** to preserve their current behavior.
+Choose **Use Recommended** to adopt the profile while keeping your current overall
+brightness limit. Your complete custom tuning remains stored separately; **Advanced
+→ Use Custom settings** restores it. Save, Start and normal close persist the mode
+and both configurations. The old Mapping block stores custom tuning, so external
+diagnostic scripts must resolve the Lighting preferences to reproduce live output.
+
+The status explains missing data, zero master brightness, a background disabled
+by settings, a black threshold removing the input, and zero camera sky visibility.
+Calculated lamp percentages describe commands, not measured light or proof of
+delivery. A sky-only feed cannot describe every indoor reflection or exposure;
+the profile does not invent those missing measurements.
+
+## Advanced readout and tuning
+
+**Advanced → CDT raw input** displays source and Ambient values before CrimsonHue's
 sliders. It can contain RGB values above 1 because the game data is HDR. The
 **calculated channel colors** show the result after the mapping controls; a
 physical lamp may still reproduce a dim command more brightly than expected.
@@ -75,14 +101,15 @@ missing, stale, blocked or unknown visibility. With no confirmed-clear local
 lights and zero Ambient, the default calculated output becomes black after the
 Ambient transition ends.
 
-All 28 numeric controls have a slider and an exact numeric input. Changes apply to
+All 28 numeric controls remain under **Advanced**, editable in **Custom** mode.
+Each has a slider and an exact numeric input. Changes apply to
 the live preview and active sync immediately. **Save settings** persists them;
 **Reset this tab** restores the defaults for one tab. Start and normal window
 close also save. The raw CDT values never change when you move a control.
 
 ## Sharing presets
 
-Open **Presets**, enter an absolute `.json` file path, click **Export preset**,
+Open **Advanced → Presets**, enter an absolute `.json` file path, click **Export preset**,
 and share the resulting readable
 JSON file. It contains the 28 numeric mixer settings, plus a format version and
 name derived from the filename. The legacy `SeparateLeftRight` and
@@ -96,7 +123,7 @@ To use a shared file, enter its absolute path and click **Preview import**. Revi
 values that would change, then select the sections to apply. **Output**,
 **Ambient** and **Color** start selected. **Space** starts unselected because
 room direction, lamp positions and distance preferences vary between users.
-Click **Apply selected** to save the chosen values; if lighting sync is already
+Click **Apply selected** to switch to Custom and save the chosen values; if lighting sync is already
 running, the new values also affect it immediately. Cancel leaves everything as
 it was. The import checks the preset version, every required value and valid
 ranges; local bridge pairing and Entertainment area remain yours.

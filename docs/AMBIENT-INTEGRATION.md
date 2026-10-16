@@ -1,4 +1,4 @@
-# Ambient and mapping controls — CrimsonHue 0.4.0-asi.16
+# Ambient and mapping controls — CrimsonHue 0.4.0-asi.18
 
 CrimsonHue consumes CDT's independent `/v1/ambient/stream` and local-light feed.
 CDT owns capture and the neutral contracts. CrimsonHue shows the received values
@@ -41,10 +41,27 @@ No clock-time or daylight flag is inferred. Bright sky with low camera openness
 can produce a dark local product. Ambient has no invented direction; sun disk,
 material response and indoor global illumination are not modeled.
 
-## Exposed Ambient response
+## Recommended and custom response
 
-All constants in the visual response below are visible settings with sliders and
-numeric inputs. Their defaults and ranges are listed in the README controls table.
+New installations use a versioned recommended profile with three independent
+amounts and one response choice. It resolves to the mapping below: threshold/floor
+zero, exposure/reference 1/4, neutral color/gamma, preserved room alignment.
+Quick uses 100/400 ms local/background transitions, Balanced 250/600 ms, and Calm
+500/1000 ms. Custom tuning remains a separate saved record; old installations
+stay Custom until the owner explicitly selects Recommended. Profile resolution
+does not inspect scene brightness or overwrite room calibration.
+
+Exposure and reference are mathematically redundant as a pair: only their ratio
+affects the response (except exposure zero, which disables the layer). Recommended
+therefore fixes that ratio. Amount, source compression, angular shape and distance
+fade do different jobs; the profile supplies a consistent baseline rather than
+claiming that Hue positions determine all of them. No lamp cutoff is inferred
+from the normal-dimming min_dim_level metadata.
+
+## Advanced Ambient response
+
+The constants below remain visible in Advanced and editable in Custom mode.
+Their custom defaults and ranges are listed in the README controls table.
 Percentage controls are divided by 100 for the formulas below: `mix` is Ambient
 mix, `background` is Extra background light, and `localMix` is Local mix in bright
 Ambient. `exposure`, `reference` and `threshold` denote Ambient exposure, Ambient

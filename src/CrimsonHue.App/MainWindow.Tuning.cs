@@ -89,7 +89,7 @@ public partial class MainWindow
     private void ApplySwitch(SwitchParameter parameter, bool value)
     {
         if (!initialized || updatingSettings) return;
-        Volatile.Write(ref mapping, parameter.Set(mapping, value));
+        CommitCustomMapping(parameter.Set(manualMapping, value));
         SyncTuningValues();
         TuningStatus.Text = "Live changes · saved on Save, Start or close";
     }
@@ -97,12 +97,12 @@ public partial class MainWindow
     private void ApplyParameter(Parameter parameter, double value)
     {
         if (!initialized || updatingSettings) return;
-        var next = parameter.Set(mapping, value);
+        var next = parameter.Set(manualMapping, value);
         if (next.FadeStart >= next.FadeEnd)
             next = parameter.Key == "FadeStart" ? next with { Radius = Math.Min(1000, next.FadeStart + .5) } :
                 next with { FadeStart = Math.Max(0, next.FadeEnd - .5) };
         LightMapper.Validate(next);
-        Volatile.Write(ref mapping, next);
+        CommitCustomMapping(next);
         SyncTuningValues();
         TuningStatus.Text = "Live changes · saved on Save, Start or close";
     }
@@ -125,11 +125,11 @@ public partial class MainWindow
     private void ResetTabClick(object sender, RoutedEventArgs e)
     {
         var group = (MixerTabs.SelectedItem as TabItem)?.Tag as string;
-        var next = mapping;
+        var next = manualMapping;
         foreach (var p in parameters.Where(p => p.Group == group)) next = p.Set(next, p.Get(defaults));
         foreach (var p in switches.Where(p => p.Group == group)) next = p.Set(next, p.Get(defaults));
         LightMapper.Validate(next);
-        Volatile.Write(ref mapping, next);
+        CommitCustomMapping(next);
         SyncTuningValues();
         TuningStatus.Text = $"{group ?? "Setup"} defaults · click Save to keep";
     }
@@ -144,6 +144,8 @@ public partial class MainWindow
     {
         if (!smoke) throw new InvalidOperationException("Control self-test requires isolated smoke mode.");
         var original = mapping;
+        var originalManual = manualMapping;
+        var originalLighting = lighting;
         try
         {
             var fields = typeof(MappingSettings).GetProperties().Where(p => p.PropertyType == typeof(double) && p.Name != "FadeEnd").Select(p => p.Name).Order().ToArray();
@@ -185,6 +187,6 @@ public partial class MainWindow
                 throw new InvalidOperationException("Invalid numeric entry changed mapping.");
             LightMapper.Validate(mapping);
         }
-        finally { Volatile.Write(ref mapping, original); SyncTuningValues(); }
+        finally { manualMapping = originalManual; lighting = originalLighting; Volatile.Write(ref mapping, original); SyncTuningValues(); }
     }
 }

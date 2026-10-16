@@ -35,6 +35,8 @@ public partial class MainWindow : Window
     private BridgeClient? bridge;
     private BridgeProbe? probe;
     private MappingSettings mapping = new();
+    private MappingSettings manualMapping = new();
+    private LightingPreferences lighting = new();
     private OverlayShortcut shortcut = new();
     private WallWashLayout wallWash = WallWashLayout.Empty;
     private bool identifying;
@@ -67,7 +69,11 @@ public partial class MainWindow : Window
                 // A malformed shortcut must not discard the owner's existing bridge/layout.
                 if (saved.Shortcut is { } savedShortcut && OverlayShortcut.IsAllowedKey(savedShortcut.Key)) shortcut = savedShortcut;
                 var m = saved.Mapping ?? new(); LightMapper.Validate(m);
-                mapping = m;
+                manualMapping = m;
+                lighting = saved.Lighting ?? (saved.Mapping is null ? new() : LightingProfile.FromLegacy(m));
+                try { LightingProfile.Validate(lighting); }
+                catch (CrimsonHueException) { lighting = LightingProfile.FromLegacy(m); }
+                mapping = LightingProfile.Resolve(lighting, manualMapping);
                 if (saved.WallWash is { } savedWallWash)
                 {
                     try { savedWallWash.Validate(); wallWash = savedWallWash; }
@@ -84,6 +90,7 @@ public partial class MainWindow : Window
             catch (Exception ex) when (ex is IOException or JsonException or CryptographicException or CrimsonHueException or ArgumentException)
             { BridgeStatus.Text = "Saved setup could not be loaded. Find and pair your bridge again."; }
         }
+        mapping = LightingProfile.Resolve(lighting, manualMapping);
         initialized = true;
         SyncTuningValues();
         timer.Tick += (_, _) => RefreshPreview();
@@ -300,8 +307,7 @@ public partial class MainWindow : Window
     }
     private void SaveSettings()
     {
-        if (!smoke) store.SaveSettings(new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(), SelectedArea?.Id ?? selectedAreaId,
-            mapping, Shortcut: shortcut, WallWash: wallWash));
+        if (!smoke) store.SaveSettings(CurrentSettings());
     }
     private async void OnClosing(object? sender, CancelEventArgs e)
     {

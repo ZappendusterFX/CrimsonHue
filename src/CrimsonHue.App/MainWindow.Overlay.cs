@@ -24,7 +24,7 @@ public partial class MainWindow
             AreaBox.SelectedItem = DemoData.WallWasherArea;
             bridgeConnected = true; bridgePhase = "connected";
             BridgeStatus.Text = "Connected - synthetic bridge (no network or lamp output)";
-            EnableSmokePreview(); VerifyDistanceControls();
+            EnableSmokePreview(); VerifyDistanceControls(); VerifyPresetProfilePreservation();
         }
         else _ = GuardAsync(async () => { await ConnectTelemetryAsync(); if (bridge != null) await LoadAreasAsync(); }, bridgeSetup: true);
         PublishOverlay();
@@ -39,6 +39,10 @@ public partial class MainWindow
             ready = true, demo = DemoCheck.IsChecked == true, frozen = FreezeRawCheck.IsChecked == true,
             smoke, windowVisible = IsVisible,
             shortcut,
+            lighting = new { lighting.Recommended, lighting.Brightness, lighting.LocalAmount, lighting.BackgroundAmount,
+                response = lighting.Response.ToString(), hasCustom = true, lighting.Revision },
+            assessment = LightingDiagnostics.Assess(Room.Frame, ambient.Read(out _), mapping, Room.Colors,
+                session?.Sending == true, DemoCheck.IsChecked == true),
             telemetry = TelemetryStatus.Text, capture = CaptureInfo.Text, ambient = AmbientStatus.Text,
             stream = StreamStatus.Text, tuning = TuningStatus.Text, bridgeStatus = BridgeStatus.Text,
             bridgeConnected, bridgePhase, bridgeError, bridgeDiagnostic,
@@ -66,7 +70,7 @@ public partial class MainWindow
             rawAmbient = RawAmbientValues.Text, rawSummary = RawSourceSummary.Text,
             rawLights = (RawLightsGrid.ItemsSource as System.Collections.IEnumerable)?.Cast<object>().Take(512),
             presetName = overlayPreset?.Name ?? "", presetChanges = overlayPreset == null ? [] :
-                DescribePresetChanges(mapping, overlayPreset.Mapping, PresetGroups.All)
+                DescribePresetChanges(manualMapping, overlayPreset.Mapping, PresetGroups.All)
         };
         AsiEntry.PublishState(JsonSerializer.SerializeToUtf8Bytes(snapshot, OverlayJson));
     }
@@ -82,6 +86,8 @@ public partial class MainWindow
             string Text(string key) => command.GetProperty(key).GetString() ?? "";
             switch (action)
             {
+                case "profile": SelectLightingProfile(command.GetProperty("recommended").GetBoolean()); break;
+                case "lighting": SetLightingPreference(Text("key"), command.GetProperty("value").GetDouble()); break;
                 case "set":
                     var parameter = parameters.First(p => p.Key == Text("key"));
                     tuningControls[parameter.Key].SetUserValue(command.GetProperty("value").GetDouble()); break;
@@ -97,8 +103,7 @@ public partial class MainWindow
                         command.GetProperty("control").GetBoolean(), command.GetProperty("shift").GetBoolean(),
                         command.GetProperty("alt").GetBoolean());
                     nextShortcut.Validate();
-                    if (!smoke) store.SaveSettings(new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(),
-                        SelectedArea?.Id ?? selectedAreaId, mapping, Shortcut: nextShortcut, WallWash: wallWash));
+                    if (!smoke) store.SaveSettings(CurrentSettings(binding: nextShortcut));
                     shortcut = nextShortcut; TuningStatus.Text = "Overlay shortcut saved"; break;
                 case "demo":
                     if (streamTask == null) DemoCheck.IsChecked = smoke || command.GetProperty("value").GetBoolean(); break;
@@ -147,10 +152,9 @@ public partial class MainWindow
                 case "applyImport":
                     if (overlayPreset == null) break;
                     var groups = (PresetGroups)command.GetProperty("groups").GetInt32();
-                    var next = overlayPreset.ApplyTo(mapping, groups);
-                    if (!smoke) store.SaveSettings(new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(), SelectedArea?.Id ?? selectedAreaId,
-                        next, Shortcut: shortcut, WallWash: wallWash));
-                    Volatile.Write(ref mapping, next); SyncTuningValues();
+                    var next = overlayPreset.ApplyTo(manualMapping, groups);
+                    if (!smoke) store.SaveSettings(CurrentSettings(next, lighting with { Recommended = false }));
+                    CommitCustomMapping(next); SyncTuningValues();
                     TuningStatus.Text = $"Imported {overlayPreset.Name} ({SectionNames(groups)}) · saved";
                     overlayPreset = null; break;
                 default: throw new CrimsonHueException("Unknown overlay action.");

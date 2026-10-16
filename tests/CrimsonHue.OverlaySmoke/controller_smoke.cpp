@@ -5,6 +5,7 @@
 #include <wrl/client.h>
 #include <nlohmann/json.hpp>
 #include <array>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -42,6 +43,16 @@ int wmain(int argc, wchar_t** argv) {
         auto State = [&] { std::vector<char> bytes(256 * 1024); const int size = read(bytes.data(), static_cast<int>(bytes.size()));
             Require(size > 0, "No UI snapshot"); return Json::parse(bytes.data(), bytes.data() + size); };
         auto Command = [&](Json command) { const auto text = command.dump(); Require(send(text.data(), static_cast<int>(text.size())) == 1, "Command not accepted"); };
+        auto Control = [](const Json& view, const char* key) {
+            for (const auto& field : view.at("controls")) if (field.at("key") == key) return field.at("value").get<double>();
+            throw std::runtime_error(std::string("Controller snapshot omitted control: ") + key);
+        };
+        auto Await = [&](const auto& predicate, const char* failure) {
+            const auto begin = GetTickCount64();
+            auto view = State();
+            while (!predicate(view) && GetTickCount64() - begin < 3000) { Sleep(10); view = State(); }
+            Require(predicate(view), failure); return view;
+        };
         auto state = State();
         Require(state.value("bridgeConnected", false) && state.value("bridgePhase", std::string{}) == "connected" &&
             !state.at("areas").empty() && !state.at("areas")[0].at("name").get<std::string>().empty(),
@@ -59,13 +70,90 @@ int wmain(int argc, wchar_t** argv) {
         for (const auto& value : state.at("controls")) if (value.at("key") == "SourceDiscRadiusDegrees")
             sphereDefault = value.at("value") == 60.0 && value.at("min") == 1.0 && value.at("max") == 180.0 && value.at("group") == "Space";
         Require(sphereDefault, "Spherical radius default or range missing from controller snapshot");
+
+        // Exercise the real native-to-managed command ABI. Profile selection
+        // must alter effective mapping while retaining the entire custom setup.
+        Require(state.at("lighting").at("recommended") == true && state.at("lighting").at("revision") == 1 &&
+            state.at("lighting").at("response") == "Balanced" && state.at("lighting").at("hasCustom") == true &&
+            Control(state, "Brightness") == 85 && Control(state, "SmoothingMs") == 250 &&
+            Control(state, "AmbientSmoothingMs") == 600, "New isolated controller did not start with the recommended Balanced profile");
+        Require(state.at("assessment").at("code") == "demo" && state.at("assessment").at("warning") == false &&
+            !state.at("assessment").at("summary").get<std::string>().empty() &&
+            state.at("assessment").at("detail").get<std::string>().find("no physical output") != std::string::npos,
+            "Assessment snapshot failed to distinguish synthetic preview from physical lighting");
+        Command({{"action", "lighting"}, {"key", "Brightness"}, {"value", .32}});
+        Command({{"action", "lighting"}, {"key", "LocalAmount"}, {"value", 1.35}});
+        Command({{"action", "lighting"}, {"key", "BackgroundAmount"}, {"value", .22}});
+        Command({{"action", "lighting"}, {"key", "Response"}, {"value", 2}});
+        state = Await([&](const Json& view) { return view.at("lighting").at("response") == "Calm" &&
+            Control(view, "Brightness") == 32 && Control(view, "LocalStrength") == 135 && Control(view, "AmbientOutput") == 22 &&
+            Control(view, "SmoothingMs") == 500 && Control(view, "AmbientSmoothingMs") == 1000; },
+            "Basic lighting commands did not change effective mapping or Calm response");
+        const auto validLighting = state.at("lighting");
+        const auto validControls = state.at("controls");
+        Command({{"action", "lighting"}, {"key", "Brightness"}, {"value", 1.01}});
+        Command({{"action", "lighting"}, {"key", "LocalAmount"}, {"value", -.1}});
+        Command({{"action", "lighting"}, {"key", "Response"}, {"value", 99}});
+        // This valid command is a FIFO barrier: its distinctive response proves
+        // all earlier invalid commands have been processed before assertions.
+        Command({{"action", "shortcut"}, {"key", 'H'}, {"control", false}, {"shift", true}, {"alt", true}});
+        state = Await([](const Json& view) { return view.at("shortcut").at("control") == false &&
+            view.at("shortcut").at("alt") == true && view.at("shortcut").at("shift") == true; },
+            "Invalid-lighting command barrier did not complete");
+        Require(state.at("lighting") == validLighting && state.at("controls") == validControls,
+            "Invalid basic lighting value or response changed effective profile");
+        Command({{"action", "profile"}, {"recommended", false}});
+        state = Await([&](const Json& view) { return view.at("lighting").at("recommended") == false &&
+            Control(view, "Brightness") == 85 && Control(view, "SmoothingMs") == 100; },
+            "Returning to Custom lost its untouched defaults");
+        Command({{"action", "set"}, {"key", "Brightness"}, {"value", 23}});
+        Command({{"action", "set"}, {"key", "AmbientCutoff"}, {"value", 28.488}});
+        Command({{"action", "set"}, {"key", "OutputGamma"}, {"value", .35}});
+        Command({{"action", "set"}, {"key", "RedGain"}, {"value", 2}});
+        Command({{"action", "set"}, {"key", "GreenGain"}, {"value", 1.6}});
+        Command({{"action", "set"}, {"key", "BlueGain"}, {"value", .4}});
+        Command({{"action", "set"}, {"key", "Saturation"}, {"value", 150}});
+        Command({{"action", "set"}, {"key", "HueShiftDegrees"}, {"value", 47}});
+        Command({{"action", "set"}, {"key", "AmbientTintHue"}, {"value", 210}});
+        Command({{"action", "set"}, {"key", "AmbientTintSaturation"}, {"value", 65}});
+        state = Await([&](const Json& view) { return Control(view, "AmbientTintSaturation") == 65 &&
+            Control(view, "HueShiftDegrees") == 47 && std::abs(Control(view, "AmbientCutoff") - 28.488) < 1e-9; },
+            "Custom cutoff and color controls did not reach mapping");
+        const auto customControls = state.at("controls");
+        Command({{"action", "profile"}, {"recommended", true}});
+        state = Await([&](const Json& view) { return view.at("lighting").at("recommended") == true &&
+            Control(view, "AmbientCutoff") == 0; }, "Recommended profile retained the custom Ambient black threshold");
+        Require(Control(state, "Brightness") == 23 && state.at("lighting").at("brightness") == .23 &&
+            Control(state, "LocalStrength") == 135 && Control(state, "AmbientOutput") == 22 &&
+            Control(state, "OutputGamma") == 1 && Control(state, "RedGain") == 1 &&
+            Control(state, "GreenGain") == 1 && Control(state, "BlueGain") == 1 &&
+            Control(state, "Saturation") == 100 && Control(state, "HueShiftDegrees") == 0 &&
+            Control(state, "AmbientTintSaturation") == 0,
+            "Recommended profile changed master cap or retained custom gamma/RGB/color correction");
+        Command({{"action", "profile"}, {"recommended", false}});
+        state = Await([&](const Json& view) { return view.at("lighting").at("recommended") == false &&
+            view.at("controls") == customControls; }, "Custom mapping was not restored exactly after Recommended");
+        Command({{"action", "lighting"}, {"key", "Brightness"}, {"value", .8}});
+        Command({{"action", "shortcut"}, {"key", 'H'}, {"control", true}, {"shift", true}, {"alt", false}});
+        state = Await([](const Json& view) { return view.at("shortcut").at("control") == true &&
+            view.at("shortcut").at("alt") == false; }, "Custom-mode rejection barrier did not complete");
+        Require(state.at("lighting").at("recommended") == false && state.at("controls") == customControls,
+            "Basic command silently replaced Custom tuning");
+        for (const auto* group : {"Output", "Ambient", "Color", "Space"}) Command({{"action", "reset"}, {"group", group}});
+        Command({{"action", "profile"}, {"recommended", true}});
+        state = Await([&](const Json& view) { return view.at("lighting").at("recommended") == true &&
+            Control(view, "Brightness") == 85 && Control(view, "AmbientCutoff") == 0 &&
+            Control(view, "SourceDiscRadiusDegrees") == 60; }, "Profile smoke cleanup failed");
+        std::cout << "PASS Recommended/Custom ABI, simple controls, invalid-command rejection, neutral color, master-cap preservation, full custom restore and preview assessment.\n";
+
         Command({{"action", "set"}, {"key", "Brightness"}, {"value", 23.0}});
         Command({{"action", "set"}, {"key", "SourceDiscRadiusDegrees"}, {"value", 130.0}});
         Sleep(150); state = State();
         bool brightness = false, sphere = false;
         for (const auto& value : state.at("controls")) if (value.at("key") == "Brightness") brightness = value.at("value") == 23.0;
         for (const auto& value : state.at("controls")) if (value.at("key") == "SourceDiscRadiusDegrees") sphere = value.at("value") == 130.0;
-        Require(brightness && sphere, "Overlay command did not reach live mapping");
+        Require(brightness && sphere && state.at("lighting").at("recommended") == false,
+            "Advanced overlay command did not reach live mapping and switch to Custom");
         Command({{"action", "set"}, {"key", "Brightness"}, {"value", 200.0}}); Sleep(100);
         state = State(); for (const auto& value : state.at("controls")) if (value.at("key") == "Brightness") Require(value.at("value") == 23.0, "Out-of-range command changed mapping");
         Command({{"action", "set"}, {"key", "SourceDiscRadiusDegrees"}, {"value", 181.0}}); Sleep(100);
@@ -133,7 +221,7 @@ int wmain(int argc, wchar_t** argv) {
         stop(); const auto stopStart = GetTickCount64();
         while (status() == 1 && GetTickCount64() - stopStart < 5000) Sleep(20);
         Require(status() == 2, "Engine shutdown failed");
-        std::cout << "PASS headless controller ABI, hidden WPF, 28 controls, spherical radius commands, washer commands, isolated preview, validation and host-preserving shutdown.\n";
+        std::cout << "PASS headless controller ABI, hidden WPF, 28 advanced controls, lighting profiles/assessment, spherical radius and washer commands, isolated preview, validation and host-preserving shutdown.\n";
         return 0;
     } catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 2; }
 }

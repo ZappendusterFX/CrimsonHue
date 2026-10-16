@@ -1,4 +1,41 @@
-# Current checkpoint — live controller darkness diagnosis and cursor fix, 2026-10-16, Codex
+# Current checkpoint — recommended lighting and simpler HUD, 2026-10-16, Codex
+
+Owner prioritizes out-of-box behavior and rationalizing the many interdependent
+sliders. Implemented Lighting / Room / Setup / Advanced in CDT's hosted panel.
+Normal controls: Overall brightness, Local light effects, Background light, and
+Quick/Balanced/Calm response. Existing 28 detailed fields remain in Advanced.
+Recommended uses a coherent neutral profile with no cutoff/artificial floor;
+preserved Custom settings are independent. New installs use Recommended; existing
+settings stay Custom until explicit Use Recommended. Save/Start/normal close save
+both modes. Partial preset imports and legacy advanced commands preserve unrelated
+Custom fields. Diagnostic replays must resolve Lighting preferences as well as
+Mapping; the maintained read-only live mapping test now does this.
+
+The HUD explains known missing/zero input and settings that remove background.
+Lamp bars show calculated channel commands, grouping segmented lights; positive
+sub-1% output remains visibly nonzero. Custom mode hides inactive recommended
+values. Segment identification has a separate status. Raw data remains Advanced.
+
+Noon read after owner reported12:05: working Ambient18.38286, fill0.395092 of0.4
+(98.77%), all6channel peaks~66.15% encoded; 20941sent,0cleared,0missing. Owner says
+clear weather. This is the running Hue16 controller's calculated state, not measured
+lamp brightness. Clock time is optional plausibility context, not necessary for
+mapping. Feed remains sky times camera visibility, not all scene illumination.
+No Computer Use, screenshots of the game, process writes, or real settings changes.
+
+Core110/110 and exact packaged controller tests pass, including preservation
+regressions. Both final packages are built and validated: Hue0.4.0-asi.18 and
+CDT2.2.5-huepanel.8 (production, researchOFF, build25477059). CDT13/13focused tests
+and six hidden GPU views against packagedHue18 pass; source copies match. See
+[RECOMMENDED-LIGHTING-VALIDATION.md](RECOMMENDED-LIGHTING-VALIDATION.md) for exact
+package evidence/hashes and remaining physical acceptance. Intermediate Hue17
+and older packages remain immutable. No game deployment was performed.
+
+Remaining: physical brightness/profile/cursor acceptance, independent stream-stop
+cause, and reliable own-lantern source identity. This change is not a claimed fix
+for missing camera sky visibility or complete environment-light measurement.
+
+# Previous checkpoint — live controller darkness diagnosis and cursor fix, 2026-10-16, Codex
 
 Owner reports repeated stream stops and dark washers in a visibly lit dawn scene;
 then moves game time to noon. No Computer Use: owner explicitly declined it.

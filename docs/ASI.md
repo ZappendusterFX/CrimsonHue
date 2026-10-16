@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.16 — mixer hosted by CDT
+# CrimsonHue 0.4.0-asi.18 — mixer hosted by CDT
 
 CDT draws the interactive CrimsonHue mixer in its existing D3D12/ImGui frame.
 `CrimsonHue.asi` hosts the existing C# lamp controller on a hidden WPF STA. It
@@ -12,11 +12,11 @@ No separate EXE, process or visible WPF settings window is used.
    documented .NET 8 ASP.NET Core Runtime x64. Newer runtimes alone do not meet
    these .NET 8 requirements.
 2. Close Crimson Desert and stop any old desktop CrimsonHue sync. Use the matching
-   **CDT 2.2.5-huepanel.6** preview with this version. Public CDT 2.2.4 does not host
-   the Hue panel. Upgrading from Hue .asi.15 with CDT huepanel.6 requires only
-   the new Hue controller, with the game closed; the CDT renderer is unchanged.
+   **CDT 2.2.5-huepanel.8** preview with this version. Public CDT 2.2.4 does not host
+   the Hue panel. Install both updated packages with the game closed: CDT hosts
+   the simplified page and cursor fix; Hue supplies profiles and explanations.
 3. For a new installation, import both ZIPs through DMM using the existing x64
-   ASI loader. For the upgrade above, import only the Hue ZIP. CrimsonHue's
+   ASI loader. For this upgrade, import both matching ZIPs. CrimsonHue's
    package contains one `CrimsonHue/CrimsonHue.asi` plus documentation/notices;
    it embeds its five application/dependency files. No loose DLL, JSON, CFG, EXE,
    runtime installer or loader is shipped in the Hue ZIP. Keep all CDT companions
@@ -31,8 +31,10 @@ No separate EXE, process or visible WPF settings window is used.
    this confirms authenticated area loading. Failed connections show a distinct
    error and optional bounded diagnostic codes. Shortcut/telemetry settings are
    collapsed below the bridge flow. Setup imports your existing area and protected pairing.
-   All 28 numeric mixer controls, presets, raw readout
-   and **Room** wall/segment calibration remain available. **Demo preview**
+   **Lighting** has three amount controls and a response choice. New setups use
+   **Recommended**; existing custom values are preserved until you explicitly
+   switch. **Advanced** retains the 28 numeric controls, presets and raw readout.
+   **Room** retains wall/segment calibration. **Demo preview**
    never sends physical output. **Test CH** is an explicit two-second 10% white
    segment identification with ownership-aware cleanup; demo must be off.
 6. **Start lighting sync** is explicit. Loading either ASI never starts it.

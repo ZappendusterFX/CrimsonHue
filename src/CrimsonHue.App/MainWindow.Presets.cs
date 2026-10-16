@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -61,11 +62,10 @@ public partial class MainWindow
             var preset = MappingPreset.Import(File.ReadAllBytes(dialog.FileName));
             var sections = PreviewPresetImport(preset);
             if (sections is null) return;
-            var next = preset.ApplyTo(mapping, sections.Value);
+            var next = preset.ApplyTo(manualMapping, sections.Value);
             // Persist before changing live output, so a failed save leaves the current mix intact.
-            store.SaveSettings(new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(),
-                SelectedArea?.Id ?? selectedAreaId, next, Shortcut: shortcut, WallWash: wallWash));
-            Volatile.Write(ref mapping, next);
+            store.SaveSettings(CurrentSettings(next, lighting with { Recommended = false }));
+            CommitCustomMapping(next);
             SyncTuningValues();
             TuningStatus.Text = $"Imported “{preset.Name}” ({SectionNames(sections.Value)}) · saved";
         }
@@ -160,7 +160,7 @@ public partial class MainWindow
         void Refresh()
         {
             var groups = Selected();
-            var changed = DescribePresetChanges(mapping, preset.Mapping, groups);
+            var changed = DescribePresetChanges(manualMapping, preset.Mapping, groups);
             preview.Text = changed.Count == 0 ? "No mixer values differ in the selected sections." :
                 string.Join(Environment.NewLine, changed);
             summary.Text = $"{changed.Count} control(s) will change";
@@ -176,6 +176,51 @@ public partial class MainWindow
         apply.Click += (_, _) => { selected = Selected(); window.DialogResult = true; };
         Refresh();
         return window.ShowDialog() == true ? selected : null;
+    }
+
+    internal void VerifyPresetProfilePreservation()
+    {
+        if (!smoke) throw new InvalidOperationException("Preset self-test requires isolated smoke mode.");
+        var originalMapping = mapping;
+        var originalManual = manualMapping;
+        var originalLighting = lighting;
+        var originalPreset = overlayPreset;
+        var originalStatus = TuningStatus.Text;
+        try
+        {
+            var custom = manualMapping with { Radius = 77, FadeStart = 0, AmbientCutoff = 5, HueShiftDegrees = 13 };
+            CommitCustomMapping(custom);
+            SelectLightingProfile(true);
+            if (mapping.Radius == custom.Radius || mapping.AmbientCutoff == custom.AmbientCutoff)
+                throw new InvalidOperationException("Preset regression did not distinguish recommended and custom settings.");
+            overlayPreset = new(MappingPreset.FileFormat, MappingPreset.CurrentVersion, "Synthetic color only",
+                new MappingSettings(HueShiftDegrees: 42));
+            OverlayCommand(JsonSerializer.SerializeToUtf8Bytes(new { action = "applyImport", groups = (int)PresetGroups.Color }));
+            var expected = custom with { HueShiftDegrees = 42, Saturation = 1, RedGain = 1, GreenGain = 1, BlueGain = 1,
+                AmbientTintHue = 0, AmbientTintSaturation = 0 };
+            if (manualMapping != expected || mapping != expected || lighting.Recommended)
+                throw new InvalidOperationException("Partial preset import replaced unselected custom sections with recommended values.");
+            SelectLightingProfile(true);
+            OverlayCommand(JsonSerializer.SerializeToUtf8Bytes(new { action = "set", key = "HueShiftDegrees", value = 27 }));
+            expected = expected with { HueShiftDegrees = 27 };
+            if (manualMapping != expected || mapping != expected || lighting.Recommended)
+                throw new InvalidOperationException("Legacy advanced command replaced unrelated custom settings.");
+            SelectLightingProfile(true);
+            OverlayCommand(JsonSerializer.SerializeToUtf8Bytes(new { action = "reset", group = "Color" }));
+            expected = expected with { HueShiftDegrees = 0 };
+            if (manualMapping != expected || mapping != expected || lighting.Recommended)
+                throw new InvalidOperationException("Legacy tab reset replaced unrelated custom settings.");
+        }
+        finally
+        {
+            manualMapping = originalManual;
+            lighting = originalLighting;
+            overlayPreset = originalPreset;
+            Volatile.Write(ref mapping, originalMapping);
+            SyncTuningValues();
+            TuningStatus.Text = originalStatus;
+            RefreshPreview();
+        }
     }
 
     private static List<string> DescribePresetChanges(MappingSettings current, MappingSettings incoming, PresetGroups groups)

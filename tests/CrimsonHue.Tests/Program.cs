@@ -52,6 +52,7 @@ var tests = new List<(string Name, Func<Task> Run)>();
 void Add(string name, Action run) => tests.Add((name, () => { run(); return Task.CompletedTask; }));
 void Async(string name, Func<Task> run) => tests.Add((name, run));
 WallWashTests.Register(Add, Async);
+LightingProfileTests.Register(Add);
 void Assert(bool condition, string message = "Assertion failed") { if (!condition) throw new Exception(message); }
 void Reject(Action action) { try { action(); } catch { return; } throw new Exception("Expected rejection"); }
 Add("Saved bridge pairing is reused only for the same address and certificate", () =>
@@ -1382,7 +1383,9 @@ if (args.Contains("--live-mapping")) Async("LIVE read-only saved-layout mapping 
         await Fixtures.WaitUntil(() => telemetry.Read(out _) is { Feed: "all-around" } && ambient.Read(out _) != null, 5000);
         var frame = telemetry.Read(out _)!;
         var ambientFrame = ambient.Read(out _)!;
-        var mapping = saved.Mapping ?? new();
+        var custom = saved.Mapping ?? new();
+        var preferences = saved.Lighting ?? (saved.Mapping is null ? new() : LightingProfile.FromLegacy(custom));
+        var mapping = LightingProfile.Resolve(preferences, custom);
         IReadOnlyList<ChannelColor> Map(TelemetryFrame f, bool includeAmbient = true, double? originBlend = null)
         {
             var mapper = new LightMapper();
@@ -1398,12 +1401,12 @@ if (args.Contains("--live-mapping")) Async("LIVE read-only saved-layout mapping 
         var playerOrigin = Map(frame, includeAmbient: false, originBlend: 0);
         var cameraOrigin = Map(frame, includeAmbient: false, originBlend: 1);
         Console.WriteLine($"  {frame.Lights.Count} clear sources; raw Ambient W={ambientFrame.WorkingLevel:G9}; max brightness={mapping.Brightness:P0}");
-        Console.WriteLine($"  Strict left/right={mapping.SeparateLeftRight}; front/rear={mapping.SeparateFrontRear}; disc radius={mapping.SourceDiscRadiusDegrees:G} deg; soft edge={mapping.SourceDiscSoftness:P0}");
+        Console.WriteLine($"  Profile={(preferences.Recommended ? "Recommended" : "Custom")}; spherical radius={mapping.SourceDiscRadiusDegrees:G} deg; soft edge={mapping.SourceDiscSoftness:P0}");
         Console.WriteLine($"  Direction origin={mapping.DirectionOriginBlend:P0} camera; world origin={LightMapper.DirectionOrigin(frame, mapping)}; distance cutoff={mapping.FadeEnd:G} GU (saved settings)");
         Console.WriteLine($"  Raw Ambient working RGB={ambientFrame.WorkingRgb}; sky RGB={ambientFrame.SkyRgb}; visibility={ambientFrame.SkyVisibility:G9}");
         for (var i = 0; i < layout.Channels.Count; i++)
         {
-            Console.WriteLine($"  CH {layout.Channels[i].Id}: actual {ahead[i].Rgb}, yaw +180° {turned[i].Rgb}, no local lights {baseline[i].Rgb}, local only {localOnly[i].Rgb}");
+            Console.WriteLine($"  CH {layout.Channels[i].Id}: saved-settings calculation {ahead[i].Rgb}, yaw +180° {turned[i].Rgb}, no local lights {baseline[i].Rgb}, local only {localOnly[i].Rgb}");
             Console.WriteLine($"  CH {layout.Channels[i].Id}: local origin 0% {playerOrigin[i].Rgb}; local origin 100% {cameraOrigin[i].Rgb}");
         }
         Assert(ahead.All(c => c.Rgb.IsFinite) && turned.All(c => c.Rgb.IsFinite));
