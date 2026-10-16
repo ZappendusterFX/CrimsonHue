@@ -89,3 +89,13 @@ add_executable(CrimsonHue.BridgeTests ../../tests/CrimsonHue.OverlaySmoke/bridge
 target_compile_features(CrimsonHue.BridgeTests PRIVATE cxx_std_20)
 target_compile_options(CrimsonHue.BridgeTests PRIVATE /W4 /WX /permissive-)
 target_link_libraries(CrimsonHue.BridgeTests PRIVATE hue_overlay)
+
+foreach(peer A B)
+    add_library(CrimsonHue.HookPeer${peer} SHARED ../../tests/CrimsonHue.OverlaySmoke/hook_peer.cpp)
+    target_compile_features(CrimsonHue.HookPeer${peer} PRIVATE cxx_std_20)
+    target_compile_options(CrimsonHue.HookPeer${peer} PRIVATE /W4 /WX /permissive-)
+    target_link_libraries(CrimsonHue.HookPeer${peer} PRIVATE minhook)
+endforeach()
+add_executable(CrimsonHue.HookRaceTests ../../tests/CrimsonHue.OverlaySmoke/hook_race.cpp)
+target_compile_features(CrimsonHue.HookRaceTests PRIVATE cxx_std_20)
+target_compile_options(CrimsonHue.HookRaceTests PRIVATE /W4 /WX /permissive-)

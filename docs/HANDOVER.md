@@ -1,4 +1,39 @@
-# Current checkpoint — wall-washer mapping candidate, 2026-10-16, Codex
+# Current checkpoint — overlay hook race reproduced, 2026-10-16, Codex
+
+Owner installed `.asi.8` and entered the game, PID 11096, build 25477059. Both
+CDT HUD/markers and CrimsonHue UI are reported invisible. Read-only module checks
+confirmed the exact `.asi.8` hash and CDT 2.2.4 ASI hash; Windows System32 DXGI is
+loaded, not the removed game-directory ReShade proxy. CDT health reports playing,
+supported/tested build and no error. Snapshot sequence 6141 -> 6144 progressed;
+rendered/upstream captures were available (111/137 sources in that sample).
+CDT's graphics log remains waiting for a swapchain; CrimsonHue's log reports
+D3D12/SDR ready and one submitted frame. Submission does not prove visibility.
+
+Owner refuses repeated manual A/B starts and explicitly authorizes live testing.
+Do not ask for the declined disable-CrimsonHue comparison again. No installed
+file, live hook, game process or physical light was changed during this diagnosis.
+
+Both ASIs install independent static MinHook detours from worker threads on the
+same DXGI functions. Their module-local locks do not coordinate CreateHook with
+EnableHook across DLLs. New developer-only HookRaceTests deterministically
+reproduces Create A / Create B / Enable A / Enable B: first hook receives 0 calls,
+second 1. Serialized Create/Enable pairs receive 1 call each. The original return
+value is preserved in both cases. This proves a lost-hook mechanism that the old
+foreign-before/after tests cannot catch; it does not establish the exact live
+interleaving or fully explain CrimsonHue's unseen submitted frame. Test uses two
+separate MinHook DLLs and an isolated local function; no GPU/network/game/lamps.
+
+Owner asks whether the Hue HUD should live in mandatory CDT. Recommendation,
+not yet implemented/accepted: CDT owns the only graphics renderer and exposes
+an optional CrimsonHue panel; the independent Hue controller retains bridge,
+mapping, protected settings and lifecycle, supplies UI state and receives commands.
+Its ASI installs no graphics/input hooks. This removes the competing hook sets
+without merging telemetry or moving Hue credentials into CDT. Actual integration
+belongs in the telemetry product repository per AGENTS. Keep unrelated untracked
+CDT research files intact. Next: settle this UI-hosting change with the owner;
+do not make speculative live hook changes or overwrite existing packages.
+
+# Previous checkpoint — wall-washer mapping candidate, 2026-10-16, Codex
 
 Owner corrected the sequence: implement washer functionality together before
 testing the old point-mapping ASI. Added optional local per-area/light/segment
