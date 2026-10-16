@@ -64,7 +64,7 @@ public partial class MainWindow
             var next = preset.ApplyTo(mapping, sections.Value);
             // Persist before changing live output, so a failed save leaves the current mix intact.
             store.SaveSettings(new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(),
-                SelectedArea?.Id ?? selectedAreaId, next, Shortcut: shortcut));
+                SelectedArea?.Id ?? selectedAreaId, next, Shortcut: shortcut, WallWash: wallWash));
             Volatile.Write(ref mapping, next);
             SyncTuningValues();
             TuningStatus.Text = $"Imported “{preset.Name}” ({SectionNames(sections.Value)}) · saved";

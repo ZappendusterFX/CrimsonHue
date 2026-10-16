@@ -18,7 +18,12 @@ public partial class MainWindow
     internal void StartOverlayController()
     {
         overlayController = true;
-        if (smoke) { EnableSmokePreview(); VerifyDistanceControls(); }
+        if (smoke)
+        {
+            AreaBox.ItemsSource = new[] { DemoData.WallWasherArea };
+            AreaBox.SelectedItem = DemoData.WallWasherArea;
+            EnableSmokePreview(); VerifyDistanceControls();
+        }
         else _ = GuardAsync(async () => { await ConnectTelemetryAsync(); if (bridge != null) await LoadAreasAsync(); });
         PublishOverlay();
     }
@@ -42,6 +47,9 @@ public partial class MainWindow
             bridgeAddress = BridgeAddress.Text, telemetryAddress = TelemetryAddress.Text,
             canStart = StartButton.IsEnabled, canStop = StopButton.IsEnabled,
             canSetup = !busy && streamTask == null, canRefresh = RefreshButton.IsEnabled,
+            canIdentify = !smoke && !busy && streamTask == null && bridge != null && SelectedArea != null && DemoCheck.IsChecked != true,
+            identifying, wallWashers = WallWasherSnapshot(area),
+            wallPreview, previewYaw = wallPreviewYaw, previewElevation = wallPreviewElevation,
             selectedArea = SelectedArea?.Id ?? "",
             areas = (AreaBox.ItemsSource as IReadOnlyList<EntertainmentArea> ?? []).Select(a => new { a.Id, a.Name, a.Active }),
             controls = parameters.Select(p => new { p.Key, p.Group, p.Title, p.Unit, p.Description,
@@ -86,7 +94,7 @@ public partial class MainWindow
                         command.GetProperty("alt").GetBoolean());
                     nextShortcut.Validate();
                     if (!smoke) store.SaveSettings(new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(),
-                        SelectedArea?.Id ?? selectedAreaId, mapping, Shortcut: nextShortcut));
+                        SelectedArea?.Id ?? selectedAreaId, mapping, Shortcut: nextShortcut, WallWash: wallWash));
                     shortcut = nextShortcut; TuningStatus.Text = "Overlay shortcut saved"; break;
                 case "demo":
                     if (streamTask == null) DemoCheck.IsChecked = smoke || command.GetProperty("value").GetBoolean(); break;
@@ -104,6 +112,9 @@ public partial class MainWindow
                     if (!busy && streamTask == null && AreaBox.ItemsSource is IReadOnlyList<EntertainmentArea> areas)
                         AreaBox.SelectedItem = areas.First(a => a.Id == Text("id")); break;
                 case "start": if (!smoke && StartButton.IsEnabled) StartClick(this, new()); break;
+                case "wallWash": SetWallWasher(command); break;
+                case "wallPreview": SetWallPreview(command); break;
+                case "identify": IdentifySegment(command.GetProperty("channel").GetByte()); break;
                 case "stop": StopClick(this, new()); break;
                 case "close":
                     StopClick(this, new()); SaveSettings(); break;
@@ -124,7 +135,8 @@ public partial class MainWindow
                     if (overlayPreset == null) break;
                     var groups = (PresetGroups)command.GetProperty("groups").GetInt32();
                     var next = overlayPreset.ApplyTo(mapping, groups);
-                    if (!smoke) store.SaveSettings(new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(), SelectedArea?.Id ?? selectedAreaId, next, Shortcut: shortcut));
+                    if (!smoke) store.SaveSettings(new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(), SelectedArea?.Id ?? selectedAreaId,
+                        next, Shortcut: shortcut, WallWash: wallWash));
                     Volatile.Write(ref mapping, next); SyncTuningValues();
                     TuningStatus.Text = $"Imported {overlayPreset.Name} ({SectionNames(groups)}) · saved";
                     overlayPreset = null; break;

@@ -4,7 +4,8 @@ using System.Text.Json;
 namespace CrimsonHue.Core;
 
 public sealed record AppSettings(string BridgeAddress = "192.168.2.109", string TelemetryAddress = "ws://127.0.0.1:27311/v1/stream",
-    string? AreaId = null, MappingSettings? Mapping = null, int MappingRevision = 0, OverlayShortcut? Shortcut = null);
+    string? AreaId = null, MappingSettings? Mapping = null, int MappingRevision = 0, OverlayShortcut? Shortcut = null,
+    WallWashLayout? WallWash = null);
 
 public sealed class SettingsStore
 {

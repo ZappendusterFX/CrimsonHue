@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.6 — independent in-game mixer
+# CrimsonHue 0.4.0-asi.8 — independent in-game mixer
 
 `CrimsonHue.asi` draws an interactive ImGui mixer directly into the game's D3D12
 backbuffer. It consumes CDT's neutral HTTP/WebSocket API and keeps the existing
@@ -28,6 +28,11 @@ There is no separate EXE/process or visible WPF settings window.
    are available, with the room output, distance curve and frozen raw readout.
    The Presets tab accepts absolute `.json` file paths and previews selected
    section changes before applying. Space remains off by default for imports.
+   **Room** calibrates the visible wall area of each washer and its segments;
+   the single-source demo uses your selected area without physical output.
+   Explicit **Test CH** buttons identify a segment at 10% white for two seconds
+   without requiring telemetry; demo must be off. Test Stop/cleanup completes
+   before another sync or test can start. Room setup is local and presets preserve it.
 6. **Start lighting sync** is explicit; loading or demo preview never starts it.
    **Hide settings** and the shortcut keep active sync running. The panel's X
    stops sync, saves and hides it. Reopen it with the shortcut.
@@ -122,6 +127,7 @@ powershell -ExecutionPolicy Bypass -File scripts/Publish-Asi.ps1
 The developer harnesses are never packaged. OverlaySmoke loads the exact ASI
 into a native process with a hidden synthetic-only controller: no saved
 credentials, network connection or physical stream. It checks all 30 controls,
+wall-area/segment commands, isolated source preview and physical-test rejection,
 command validation, actual D3D12/WARP pixel readback, hide/reopen, resize and
 host-preserving shutdown. HdrTests checks offscreen composition against scRGB,
 PQ/BT.2020 and SDR pixel values. The older AsiSmoke renders synthetic WPF panels

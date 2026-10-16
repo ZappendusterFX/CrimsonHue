@@ -76,6 +76,42 @@ int wmain(int argc, wchar_t** argv) {
         state = State(); for (const auto& value : state.at("controls")) if (value.at("key") == "Brightness") Require(value.at("value") == 23.0, "Out-of-range command changed mapping");
         Command({{"action", "reset"}, {"group", "Output"}}); Command({{"action", "reset"}, {"group", "Space"}}); Sleep(100);
 
+        state = State(); Require(state.at("wallWashers").size() == 2, "Missing per-lamp wall calibration");
+        for (const auto& washer : state.at("wallWashers")) {
+            const auto id = washer.at("serviceId");
+            Command({{"action", "wallWash"}, {"serviceId", id}, {"key", "enabled"}, {"value", true}});
+            Command({{"action", "wallWash"}, {"serviceId", id}, {"key", "yaw"}, {"value", id == "synthetic-left" ? -60 : 60}});
+            Command({{"action", "wallWash"}, {"serviceId", id}, {"key", "span"}, {"value", 60}});
+        }
+        Command({{"action", "wallWash"}, {"serviceId", "synthetic-left"}, {"key", "elevation"}, {"index", 0}, {"value", -30}});
+        Command({{"action", "wallPreview"}, {"key", "enabled"}, {"value", true}});
+        Command({{"action", "wallPreview"}, {"key", "yaw"}, {"value", -75}});
+        Sleep(200); state = State();
+        Require(state.value("wallPreview", false) && !state.value("canIdentify", true), "Synthetic preview enabled physical testing");
+        Require(state.at("wallWashers")[0].at("yaw") == -60 && state.at("wallWashers")[0].at("segments")[0].at("elevation") == -30,
+            "Lamp or segment calibration command did not apply");
+        bool leftLit = false;
+        for (const auto& channel : state.at("channels")) {
+            const auto rgb = channel.at("rgb");
+            if (channel.at("id").get<int>() < 3) leftLit |= rgb.at("x").get<double>() > 0;
+            else Require(rgb.at("x") == 0 && rgb.at("y") == 0 && rgb.at("z") == 0, "Calibrated preview crossed the left/right boundary");
+        }
+        Require(leftLit, "Outward wall preview received no light");
+        Command({{"action", "wallWash"}, {"serviceId", "synthetic-left"}, {"key", "yaw"}, {"value", 400}});
+        Command({{"action", "identify"}, {"channel", 0}});
+        Sleep(100); state = State();
+        Require(state.at("wallWashers")[0].at("yaw") == -60 && !state.value("canStop", true), "Invalid calibration or identify escaped smoke isolation");
+        Command({{"action", "wallWash"}, {"serviceId", "synthetic-right"}, {"key", "reset"}});
+        Sleep(100); Require(!State().at("wallWashers")[1].at("enabled").get<bool>(), "Reset did not restore Hue point mapping");
+        Command({{"action", "wallWash"}, {"serviceId", "synthetic-right"}, {"key", "enabled"}, {"value", true}});
+        Command({{"action", "wallWash"}, {"serviceId", "synthetic-right"}, {"key", "yaw"}, {"value", 60}});
+        Command({{"action", "wallPreview"}, {"key", "yaw"}, {"value", 75}});
+        Sleep(100); state = State();
+        for (const auto& channel : state.at("channels")) if (channel.at("id").get<int>() < 3)
+            Require(channel.at("rgb").at("x") == 0, "Right preview source leaked to left washer");
+        Command({{"action", "wallPreview"}, {"key", "yaw"}, {"value", -75}});
+        std::cout << "PASS wall area/segment commands, direction preview, strict separation and physical-output isolation.\n";
+
         WNDCLASSW windowClass{}; windowClass.lpfnWndProc = DefWindowProcW; windowClass.hInstance = GetModuleHandleW(nullptr); windowClass.lpszClassName = L"CrimsonHue.OverlaySmoke";
         Require(RegisterClassW(&windowClass) != 0, "Window class failed");
         const auto window = CreateWindowW(windowClass.lpszClassName, L"Synthetic D3D12 overlay test", WS_OVERLAPPEDWINDOW,

@@ -12,6 +12,7 @@ public sealed class RoomView : FrameworkElement
     public TelemetryFrame? Frame { get; set; }
     public bool Demo { get; set; }
     public MappingSettings Settings { get; set; } = new();
+    public WallWashLayout WallWash { get; set; } = WallWashLayout.Empty;
     protected override void OnRender(DrawingContext dc)
     {
         base.OnRender(dc);
@@ -56,6 +57,12 @@ public sealed class RoomView : FrameworkElement
         {
             var rgb = Colors.FirstOrDefault(c => c.Id == channel.Id)?.Rgb ?? default;
             var color = ColorFrom(rgb);
+            if (WallWash.Samples(Area, channel) is { } samples)
+                foreach (var sample in samples)
+                {
+                    var target = new Point(center.X + sample.Direction.X * sx * .95, center.Y - sample.Direction.Y * sy * .95);
+                    dc.DrawEllipse(new SolidColorBrush(Color.FromArgb(100, color.R, color.G, color.B)), null, target, 3, 3);
+                }
             var pos = new Point(center.X + channel.Position.X * sx * 0.88, center.Y - channel.Position.Y * sy * 0.88);
             var glow = new RadialGradientBrush(Color.FromArgb(85, color.R, color.G, color.B), ColorsTransparent);
             dc.DrawEllipse(glow, null, pos, 35, 35);
@@ -76,6 +83,16 @@ public sealed class RoomView : FrameworkElement
 
 public static class DemoData
 {
+    public static TelemetryFrame DirectionFrame(double yaw, double elevation)
+    {
+        var direction = WallWashLayout.Direction(yaw, elevation);
+        var now = DateTimeOffset.UtcNow;
+        return new(1, 1, now, now, 0, default, new(default, new(1, 0, 0), new(0, 1, 0), new(0, 0, 1)),
+            [new(new Vec3(direction.X, direction.Z, direction.Y) * 2, new(3, .3, .1))]);
+    }
+    public static EntertainmentArea WallWasherArea { get; } = new("12345678-1234-1234-1234-123456789abc", "Synthetic wall washers", false,
+        Enumerable.Range(0, 6).Select(i => new EntertainmentChannel((byte)i, new(i < 3 ? -.4 : .4, .8, (i % 3 - 1) * .4),
+            [new ChannelMember(i < 3 ? "synthetic-left" : "synthetic-right", i % 3)], i < 3 ? "Left washer" : "Right washer")).ToArray());
     public static EntertainmentArea Area { get; } = new("12345678-1234-1234-1234-123456789abc", "Demo room", false,
         new[] { (-0.8, 0.8, 0.2, "Desk left"), (0.8, 0.8, 0.2, "Desk right"), (-0.9, 0.1, 0.7, "Floor lamp"), (0.9, 0.1, 0.7, "Bookshelf"), (-0.7, -0.8, 0.2, "Rear left"), (0.7, -0.8, 0.2, "Rear right") }
             .Select((p, i) => new EntertainmentChannel((byte)i, new(p.Item1, p.Item2, p.Item3), [new("demo-" + i, 0)], p.Item4)).ToArray());

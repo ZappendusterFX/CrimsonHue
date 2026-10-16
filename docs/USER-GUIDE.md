@@ -93,6 +93,46 @@ Shared presets cannot include Hue channel positions. Each installation reads
 those from its own Entertainment area, so the same preset can look different in
 different rooms and on different lamps.
 
+## Wall-washer room calibration
+
+The **Room** tab describes the illuminated wall as seen from your seat. A washer
+can be beside the monitor while its light covers a side wall; its Hue point alone
+cannot describe that area. Calibration is optional and starts disabled. The room
+preview keeps the imported Hue dots and draws calibrated wall areas in blue.
+
+1. Select your actual Entertainment area. Turn on **Demo preview only** to tune
+   safely with synthetic input on those channels. **Preview one light source**
+   provides direction and height sliders instead of the animated demo sources.
+2. For each lamp, enable **Use wall area**, then set **Direction** and **Wall width**.
+   Direction 0 is the screen, -90 is left, +90 is right, and +/-180 is behind you.
+   Width is the angular extent of the wall from your seat, not the emitter's beam
+   angle. **Start left/right** supplies an editable starting point spanning
+   front-side to side (-90 to -30 or +30 to +90 degrees); it is not a calibration.
+3. Expand each segment to set **Side offset**, **Height angle** and **Height span**.
+   Height initially follows the Hue data. Do not assume the segment order matches
+   the physical wall: inspect it using the separate test below.
+4. **Save room calibration** persists it for this PC. Start and normal close also
+   save it. **Use imported Hue positions** removes that lamp's override. Room
+   setup is stored per area/light/segment and is never exported or replaced by
+   a shared mixer preset. Imported bridge positions and channel IDs are preserved.
+
+For a physical segment check, stop sync, turn off **Demo preview only**, and click
+**Test CH ... (2 s, 10%)** for one channel. This explicitly sends white at 10% to
+that channel and black to the others for two seconds. It requires the paired
+bridge, but no CDT input. **Stop** cancels it early. The test refuses another
+app's active Entertainment stream, clears output at the time limit, then releases
+and restores captured static light states when still owned. It is disabled in
+demo and in the developer harness. Channels shared by multiple segments cannot
+identify one segment independently. A failed/unreachable bridge can prevent
+restoration; the status reports cleanup failures.
+
+Mapping averages the source's contribution over the calibrated wall area; a small
+intersection remains small even with strongest-channel compensation. Existing
+source-disc size, distance fade and strict side boundaries still apply. Source
+disc size describes how far a game light spreads; wall width describes where your
+room can display it. A wide source can influence both front-side regions despite
+an unlit physical gap behind the monitor. Ambient remains a separate shared fill.
+
 ## A useful tuning order
 
 1. Confirm that a moving, **fresh** CDT feed and the expected clear sources

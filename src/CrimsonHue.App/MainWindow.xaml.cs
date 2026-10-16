@@ -36,6 +36,8 @@ public partial class MainWindow : Window
     private BridgeProbe? probe;
     private MappingSettings mapping = new();
     private OverlayShortcut shortcut = new();
+    private WallWashLayout wallWash = WallWashLayout.Empty;
+    private bool identifying;
     private string? selectedAreaId;
     private bool initialized;
     private bool updatingSettings;
@@ -62,6 +64,11 @@ public partial class MainWindow : Window
                 if (saved.Shortcut is { } savedShortcut && OverlayShortcut.IsAllowedKey(savedShortcut.Key)) shortcut = savedShortcut;
                 var m = saved.Mapping ?? new(); LightMapper.Validate(m);
                 mapping = m;
+                if (saved.WallWash is { } savedWallWash)
+                {
+                    try { savedWallWash.Validate(); wallWash = savedWallWash; }
+                    catch (CrimsonHueException) { TuningStatus.Text = "Invalid saved wall calibration ignored. Bridge setup is preserved."; }
+                }
                 var credentials = store.LoadCredentials();
                 if (credentials != null)
                 {
@@ -171,7 +178,8 @@ public partial class MainWindow : Window
         session = new StreamingSession(bridge);
         var activeSession = session;
         var area = SelectedArea;
-        streamTask = Task.Run(() => activeSession.RunAsync(area, telemetry, () => Volatile.Read(ref mapping), streamCancel.Token, ambient));
+        streamTask = Task.Run(() => activeSession.RunAsync(area, telemetry, () => Volatile.Read(ref mapping), streamCancel.Token,
+            ambient, () => Volatile.Read(ref wallWash)));
         UpdateButtons();
         try { await streamTask; StreamStatus.Text = "Stopped · previous light states restored when still owned"; }
         catch (Exception ex) { StreamStatus.Text = FriendlyError(ex); }
@@ -187,7 +195,12 @@ public partial class MainWindow : Window
         StreamStatus.Text = "Stopping and restoring light states…";
         await streamCancel.CancelAsync();
     }
-    private void DemoChanged(object sender, RoutedEventArgs e) { if (initialized) { previewMapper.Reset(); UpdateButtons(); } }
+    private void DemoChanged(object sender, RoutedEventArgs e)
+    {
+        if (!initialized) return;
+        if (DemoCheck.IsChecked != true) wallPreview = false;
+        previewMapper.Reset(); UpdateButtons();
+    }
     private void RefreshPreview()
     {
         var frame = telemetry.Read(out var message);
@@ -199,16 +212,17 @@ public partial class MainWindow : Window
         var demo = DemoCheck.IsChecked == true;
         AmbientStatus.Text = demo ? "Demo preview · ambient not sampled" : ambientMessage;
         if (FreezeRawCheck.IsChecked != true) UpdateRawInput(frame, ambientFrame);
-        var area = demo ? DemoData.Area : SelectedArea;
-        if (demo) frame = DemoData.Frame(uptime.Elapsed.TotalSeconds);
+        var area = SelectedArea ?? (demo ? DemoData.Area : null);
+        if (demo) frame = wallPreview ? DemoData.DirectionFrame(wallPreviewYaw, wallPreviewElevation) : DemoData.Frame(uptime.Elapsed.TotalSeconds);
         IReadOnlyList<ChannelColor> colors = [];
         if (area != null)
         {
             if (session != null) colors = session.Colors;
-            else if (frame != null) colors = previewMapper.Map(frame, area, mapping, 0.1, demo ? null : ambientFrame);
+            else if (frame != null) colors = previewMapper.Map(frame, area, mapping, 0.1, demo ? null : ambientFrame, wallWash);
             else previewMapper.Reset();
         }
-        Room.Area = area; Room.Colors = colors; Room.Frame = frame; Room.Demo = demo; Room.Settings = mapping; Room.InvalidateVisual();
+        Room.Area = area; Room.Colors = colors; Room.Frame = frame; Room.Demo = demo; Room.Settings = mapping;
+        Room.WallWash = wallWash; Room.InvalidateVisual();
         ChannelCards.ItemsSource = area?.Channels.Select(c => new
         {
             Name = c.Label,
@@ -242,7 +256,8 @@ public partial class MainWindow : Window
     }
     private void SaveSettings()
     {
-        if (!smoke) store.SaveSettings(new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(), SelectedArea?.Id ?? selectedAreaId, mapping, Shortcut: shortcut));
+        if (!smoke) store.SaveSettings(new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(), SelectedArea?.Id ?? selectedAreaId,
+            mapping, Shortcut: shortcut, WallWash: wallWash));
     }
     private async void OnClosing(object? sender, CancelEventArgs e)
     {

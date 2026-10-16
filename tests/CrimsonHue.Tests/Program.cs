@@ -32,6 +32,7 @@ if (args.Contains("--inspect-layout"))
 var tests = new List<(string Name, Func<Task> Run)>();
 void Add(string name, Action run) => tests.Add((name, () => { run(); return Task.CompletedTask; }));
 void Async(string name, Func<Task> run) => tests.Add((name, run));
+WallWashTests.Register(Add, Async);
 void Assert(bool condition, string message = "Assertion failed") { if (!condition) throw new Exception(message); }
 void Reject(Action action) { try { action(); } catch { return; } throw new Exception("Expected rejection"); }
 async Task RejectAsync(Func<Task> action) { try { await action(); } catch { return; } throw new Exception("Expected rejection"); }
@@ -1149,9 +1150,18 @@ sealed class SpyTransport : IEntertainmentTransport
     public System.Collections.Concurrent.ConcurrentQueue<byte[]> Packets { get; } = new();
     public bool FailConnect { get; init; }
     public bool Disposed { get; private set; }
-    public Task ConnectAsync(BridgeCredentials credentials, CancellationToken token) => FailConnect ? Task.FromException(new IOException("Synthetic handshake failure")) : Task.CompletedTask;
-    public void Send(byte[] packet) => Packets.Enqueue(packet);
-    public void Dispose() => Disposed = true;
+    private bool connected;
+    public Task ConnectAsync(BridgeCredentials credentials, CancellationToken token)
+    {
+        if (FailConnect) return Task.FromException(new IOException("Synthetic handshake failure"));
+        connected = true; return Task.CompletedTask;
+    }
+    public void Send(byte[] packet)
+    {
+        if (!connected) throw new InvalidOperationException("Synthetic transport is not connected.");
+        Packets.Enqueue(packet);
+    }
+    public void Dispose() { Disposed = true; connected = false; }
 }
 
 sealed class MockBridge : IAsyncDisposable

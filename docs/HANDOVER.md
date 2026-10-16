@@ -1,4 +1,59 @@
-# Current checkpoint — real Hue Bridge paired, 2026-10-16, Codex
+# Current checkpoint — wall-washer mapping candidate, 2026-10-16, Codex
+
+Owner corrected the sequence: implement washer functionality together before
+testing the old point-mapping ASI. Added optional local per-area/light/segment
+wall-area calibration, separate from shared mixer presets. Direction and width
+describe the illuminated wall from the seated viewer; each segment has its own
+side offset, elevation and vertical span. Imported Hue positions, IDs and
+membership remain intact, including bridge layout/ownership checks. Legacy or
+disabled calibration retains the existing point mapper. No owner settings changed.
+
+Mapping integrates over the calibrated angular area. Source-focused bounded
+quadrature preserves the overlap fraction under strongest-channel compensation,
+avoids holes for one-degree sources on wide walls, and handles the +/-180 seam.
+Distance fade, source disc, strict boundaries, freshness and Ambient remain in
+their existing roles. The native Room tab previews wall extents separately from
+Hue dots. Demo now uses the selected actual area when available; an adjustable
+single-source preview never sends lamp output. Left/right starting points are
+explicit editable suggestions, not measured room geometry.
+
+Explicit Test CH starts a separate two-second, 10% white identification session
+for one independently addressable segment, without needing telemetry. It is
+mutually exclusive with sync, blocked in demo/smoke, refuses active areas, clears
+at the time limit before HTTP cleanup, and releases/restores only when still owned.
+Tests cover cancellation during activation, failed handshake and another app's
+takeover. Physical identification has not yet been run on the owner's Hue Bridge.
+The final review tightened the synthetic transport to reject sends before DTLS
+connection, exposing a cleanup bug. Both ordinary sync and identification now
+skip a clear packet until connected, so failed handshakes still release/restore.
+Subprecision wall extents also behave as points rather than dividing by zero.
+
+Verification: 85/85 nonphysical tests passed, including calibrated streaming,
+area/segment mapping, overlap, narrow-source sweeps, seam, persistence/preset
+exclusion and identification safety. Windows-sandbox temp/DPAPI/loopback failures
+were rerun successfully outside the sandbox; NuGet audit was disabled for these
+build commands because its network feed was unavailable (no dependency change).
+Managed Release and native /W4 /WX builds passed. Native BridgeTests passed.
+The exact packaged candidate passed wall/segment and preview commands, invalid
+calibration rejection, strict side separation and identify rejection in smoke,
+plus all 30 mixer controls, D3D12/WARP pixel readback (828,534 visible pixels),
+hide/reopen, resize and host-preserving shutdown. Its Room-tab image was inspected:
+`artifacts/asi-package-0.4.0-asi.8/ingame.png` (synthetic, not the game).
+
+Independent ASI / win-x64 / 0.4.0-asi.8: seven-file staging/ZIP validation passed.
+ZIP `dist/CrimsonHue-0.4.0-asi.8-asi-win-x64.zip`, 3,368,113 bytes, SHA-256
+80A671E91BFBF391E02141925390E126F0FE96AA98B85622CA6A9E874F42EB00.
+ASI 3,909,632 bytes, SHA-256
+CCAA566EC3CAE8AF0E2DE659E1DBDE17246722D7B54A118540CF258E1EF0254B.
+The preliminary `.asi.7` package is preserved but superseded by this cleanup fix.
+No installation, game launch, real lamp output, live telemetry, ReShade changes
+or upstream changes. Existing packages are immutable; installed `.asi.6` remains.
+No game-build compatibility claim; actual game/input/DMM/lamp acceptance is open.
+AGENTS/CLAUDE still match. Next owner step: import the new candidate with the game
+closed, then inspect Room without ReShade and identify one channel at a time,
+reporting which washer and visible wall patch lights before choosing final angles.
+
+# Previous checkpoint — real Hue Bridge paired, 2026-10-16, Codex
 
 Owner now has a physical Hue Bridge BSB002 and two Hue Play wall washers in
 an existing Entertainment area. The existing CrimsonHue core successfully

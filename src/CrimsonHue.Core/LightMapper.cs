@@ -7,9 +7,10 @@ public sealed class LightMapper
     public void Reset() { previous.Clear(); ambientLevel = 0; }
 
     public IReadOnlyList<ChannelColor> Map(TelemetryFrame frame, EntertainmentArea area, MappingSettings settings, double deltaSeconds,
-        AmbientFrame? ambient = null)
+        AmbientFrame? ambient = null, WallWashLayout? wallWash = null)
     {
         Validate(settings);
+        wallWash?.Validate();
         // CDT's working RGB is not calibrated to local-light/display RGB. Use its
         // camera-local estimate only as a relative brightness control. Its tint
         // is explicitly user-selected, not a conversion of AP1-like sky RGB.
@@ -49,6 +50,25 @@ public sealed class LightMapper
             var strongest = 0.0;
             for (var i = 0; i < directions.Length; i++)
             {
+                if (wallWash?.Samples(area, area.Channels[i], contribution.Direction, settings.SourceDiscRadiusDegrees) is { } samples)
+                {
+                    double covered = 0, weighted = 0;
+                    foreach (var sample in samples)
+                    {
+                        if ((settings.SeparateLeftRight && OppositeSides(sample.Direction.X, contribution.Direction.X)) ||
+                            (settings.SeparateFrontRear && OppositeSides(sample.Direction.Y, contribution.Direction.Y))) continue;
+                        var sampleDot = Math.Clamp(sample.Direction.Dot(contribution.Direction), -1, 1);
+                        var weight = SourceDiscWeight(sampleDot, settings);
+                        covered += weight * sample.Weight;
+                        weighted += weight * sample.Weight * Math.Exp(settings.Spread * (sampleDot - 1));
+                    }
+                    // Preserve overlap fraction: strongest-channel compensation must not
+                    // turn a tiny intersection with a broad wall into full illumination.
+                    coverage[i] = covered;
+                    angular[i] = covered == 0 ? 0 : weighted / covered;
+                    strongest = Math.Max(strongest, angular[i]);
+                    continue;
+                }
                 // Hue axes: x right, y towards screen, z up. Normalized room
                 // coordinates, not metres. Reject the opposite side before
                 // normalization: no available channel may redirect a source

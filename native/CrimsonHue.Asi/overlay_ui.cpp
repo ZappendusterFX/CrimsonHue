@@ -33,6 +33,36 @@ void Room(const Json& view) {
         if (fade > 0) draw->AddCircleFilled({center.x + direction.value("x", 0.0f) * sx * .7f,
             center.y - direction.value("y", 0.0f) * sy * .7f}, 2.0f, IM_COL32(155, 110, 90, static_cast<int>(fade * 255)));
     }
+    for (const auto& washer : view.value("wallWashers", Json::array())) {
+        if (!washer.value("enabled", false)) continue;
+        for (const auto& segment : washer.at("segments")) {
+            ImVec4 output{0, 0, 0, 1}; int count = 0;
+            for (const auto& reference : segment.at("channels")) for (const auto& channel : view.value("channels", Json::array()))
+                if (channel.at("id") == reference.at("id")) {
+                    const auto& rgb = channel.at("rgb");
+                    output.x += rgb.value("x", 0.0f); output.y += rgb.value("y", 0.0f); output.z += rgb.value("z", 0.0f); ++count;
+                }
+            if (count) { output.x /= count; output.y /= count; output.z /= count; }
+            constexpr double radians = 3.14159265358979323846 / 180;
+            const double yaw = washer.value("yaw", 0.0) + segment.value("yawOffset", 0.0);
+            const double span = washer.value("horizontalSpan", 0.0);
+            for (int height = -1; height <= 1; ++height) {
+                const double elevation = std::clamp(segment.value("elevation", 0.0) + height * segment.value("verticalSpan", 0.0) / 2, -89.0, 89.0);
+                ImVec2 previous{};
+                for (int i = 0; i <= 30; ++i) {
+                    const double angle = (yaw + span * (static_cast<double>(i) / 30 - .5)) * radians;
+                    const ImVec2 point{center.x + static_cast<float>(std::sin(angle) * std::cos(elevation * radians)) * sx * .95f,
+                        center.y - static_cast<float>(std::cos(angle) * std::cos(elevation * radians)) * sy * .95f};
+                    if (i != 0) {
+                        draw->AddLine(previous, point, IM_COL32(90, 155, 180, 160), 4);
+                        if (std::max({output.x, output.y, output.z}) > .001f)
+                            draw->AddLine(previous, point, ImGui::ColorConvertFloat4ToU32(output), 2);
+                    }
+                    previous = point;
+                }
+            }
+        }
+    }
     for (const auto& channel : view.value("channels", Json::array())) {
         const auto rgb = channel.at("rgb");
         const ImVec2 point{center.x + channel.value("x", 0.0f) * sx, center.y - channel.value("y", 0.0f) * sy};
@@ -42,6 +72,74 @@ void Room(const Json& view) {
         draw->AddText({point.x - 20, point.y + 13}, IM_COL32(200, 205, 220, 255), label.c_str());
     }
     if (view.value("demo", false)) draw->AddText({at.x + 12, at.y + size.y - 25}, IM_COL32(239, 150, 170, 255), "SIMULATED DATA - NO LAMP OUTPUT");
+}
+void WallWash(const Json& view) {
+    Wrap("Map the illuminated wall as seen from your seat. Dots show Hue positions; blue traces show calibrated wall areas.");
+    Wrap("Direction: 0 = screen, -90 = left, +90 = right, +/-180 = behind. Width is the visible wall span, not the lamp's beam angle.");
+    Wrap("Demo previews your selected area without lamp output. Segment tests are separate: one channel, white at 10%, two seconds, then restore.");
+    if (view.value("demo", false)) Wrap("Turn off Demo preview only before a physical segment test.");
+    ImGui::BeginDisabled(view.value("canStop", false));
+    bool preview = view.value("wallPreview", false);
+    if (ImGui::Checkbox("Preview one light source (no lamp output)", &preview))
+        Command({{"action", "wallPreview"}, {"key", "enabled"}, {"value", preview}});
+    if (preview) {
+        double yaw = view.value("previewYaw", 0.0), elevation = view.value("previewElevation", 0.0);
+        const double yawMin = -180, yawMax = 180, elevationMin = -89, elevationMax = 89;
+        if (ImGui::SliderScalar("Source direction", ImGuiDataType_Double, &yaw, &yawMin, &yawMax, "%.1f deg"))
+            Command({{"action", "wallPreview"}, {"key", "yaw"}, {"value", yaw}});
+        if (ImGui::SliderScalar("Source height", ImGuiDataType_Double, &elevation, &elevationMin, &elevationMax, "%.1f deg"))
+            Command({{"action", "wallPreview"}, {"key", "elevation"}, {"value", elevation}});
+    }
+    ImGui::EndDisabled();
+    const auto washers = view.value("wallWashers", Json::array());
+    if (washers.empty()) Wrap("Pair the bridge and select an area first.");
+    const bool editing = !view.value("identifying", false);
+    for (const auto& washer : washers) {
+        const auto service = Text(washer, "serviceId");
+        ImGui::PushID(service.c_str());
+        std::string title = Text(washer, "label") + "  / CH";
+        for (const auto& segment : washer.at("segments")) for (const auto& channel : segment.at("channels"))
+            title += " " + std::to_string(channel.value("id", 0));
+        ImGui::SeparatorText(title.c_str());
+        const auto set = [&](const char* key, const Json& value, int index = -1) {
+            Command({{"action", "wallWash"}, {"serviceId", service}, {"key", key}, {"value", value}, {"index", index}});
+        };
+        const auto angle = [&](const char* label, const char* key, double value, double min, double max, int index = -1) {
+            ImGui::SetNextItemWidth(std::max(120.0f, ImGui::GetContentRegionAvail().x - 135));
+            if (ImGui::SliderScalar(label, ImGuiDataType_Double, &value, &min, &max, "%.1f deg")) set(key, value, index);
+        };
+        ImGui::BeginDisabled(!editing);
+        bool enabled = washer.value("enabled", false);
+        if (ImGui::Checkbox("Use wall area", &enabled)) set("enabled", enabled);
+        if (Button("Start left")) { set("yaw", -60); set("span", 60); set("enabled", true); }
+        ImGui::SameLine(); if (Button("Start right")) { set("yaw", 60); set("span", 60); set("enabled", true); }
+        Wrap("Starting points only: adjust to the light actually visible on your walls.");
+        angle("Direction", "yaw", washer.value("yaw", 0.0), -180, 180);
+        angle("Wall width", "span", washer.value("horizontalSpan", 60.0), 0, 180);
+        for (const auto& segment : washer.at("segments")) {
+            const int index = segment.value("index", 0);
+            ImGui::PushID(index);
+            if (ImGui::TreeNode("Segment", "Segment %d", index)) {
+                angle("Side offset", "offset", segment.value("yawOffset", 0.0), -180, 180, index);
+                angle("Height angle", "elevation", segment.value("elevation", 0.0), -89, 89, index);
+                angle("Height span", "verticalSpan", segment.value("verticalSpan", 0.0), 0, 90, index);
+                Wrap("Height starts from Hue's coordinates. Use a segment test to check which wall patch it illuminates.");
+                ImGui::TreePop();
+            }
+            ImGui::PopID();
+        }
+        if (Button("Use imported Hue positions")) set("reset", nullptr);
+        ImGui::EndDisabled();
+        for (const auto& segment : washer.at("segments")) for (const auto& channel : segment.at("channels")) {
+            const int id = channel.value("id", 0);
+            const auto label = "Test CH " + std::to_string(id) + " (2 s, 10%)";
+            if (Button(label.c_str(), view.value("canIdentify", false) && channel.value("canIdentify", false)))
+                Command({{"action", "identify"}, {"channel", id}});
+        }
+        ImGui::PopID();
+    }
+    if (Button("Save room calibration", editing)) Action("save");
+    Wrap("Stored only on this PC. Shared mixer presets do not change room calibration.");
 }
 void Controls(const Json& view, const char* group) {
     if (strcmp(group, "Space") == 0) {
@@ -170,9 +268,13 @@ void DrawUi(const Json& view, bool& visible) {
             const float left = std::max(350.0f, ImGui::GetContentRegionAvail().x * .47f);
             ImGui::BeginChild("Mixer", {left, -145}, ImGuiChildFlags_Borders);
             if (ImGui::BeginTabBar("MixerTabs")) {
-                for (const auto* group : {"Output", "Ambient", "Color", "Space", "Setup", "Presets"}) {
-                    if (ImGui::BeginTabItem(group)) {
+                static bool previousWallPreview = false;
+                const bool selectRoom = view.value("wallPreview", false) && !previousWallPreview;
+                previousWallPreview = view.value("wallPreview", false);
+                for (const auto* group : {"Output", "Ambient", "Color", "Space", "Room", "Setup", "Presets"}) {
+                    if (ImGui::BeginTabItem(group, nullptr, selectRoom && strcmp(group, "Room") == 0 ? ImGuiTabItemFlags_SetSelected : 0)) {
                         if (strcmp(group, "Setup") == 0) Setup(view);
+                        else if (strcmp(group, "Room") == 0) WallWash(view);
                         else if (strcmp(group, "Presets") == 0) Presets(view);
                         else Controls(view, group);
                         ImGui::EndTabItem();

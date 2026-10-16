@@ -3,7 +3,7 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**Branch preview: 0.4.0-asi.6.** `CrimsonHue.asi` draws an interactive mixer
+**Branch preview: 0.4.0-asi.8.** `CrimsonHue.asi` draws an interactive mixer
 directly into the game's D3D12 backbuffer. There is no separate settings window
 or process. The ZIP contains one ASI and documentation; application dependencies
 are embedded, and users install **.NET 8 Desktop Runtime x64** separately.
@@ -79,6 +79,15 @@ modifiers, so avoid those keys when running both overlays.
 
 **Demo preview only** animates synthetic data and disables physical output. Normal
 preview uses live game data and the imported layout without claiming a stream.
+Demo uses the selected area when available. **Room** adds optional wall-washer
+calibration: visible wall direction/width per lamp, with independent segment
+offset, elevation and height span. Imported Hue positions and wire channels stay
+intact. A movable single-source preview helps tune the output areas. Room setup
+stays local and is excluded from mixer presets; existing setups keep point mapping.
+An explicit **Test CH** action identifies one independently addressable segment
+with white at 10% for two seconds, then clears, releases and restores when still
+owned. It works without game telemetry, is disabled in demo, and never starts
+automatically. See [wall-washer setup](docs/USER-GUIDE.md#wall-washer-room-calibration).
 Streaming never starts automatically when the ASI loads.
 
 ## Requirements and scope
