@@ -131,6 +131,33 @@ Add("Confirmed visibility expires independently of a fresh light capture", () =>
     Assert(state.Read(out var message, DateTimeOffset.UtcNow.AddMilliseconds(40))!.Lights.Count == 0);
     Assert(message.Contains("0/4 confirmed visible"));
 });
+Add("Republished light captures do not renew a physics visibility verdict", () =>
+{
+    var now = DateTimeOffset.UtcNow;
+    var node = JsonNode.Parse(Fixtures.CurrentSnapshot())!;
+    node["capturedAt"] = now;
+    node["lights"]!["upstream"]!["sources"]![0]!["sourceVisibility"]!["volumeAgeMillisecondsAtCapture"] = 350;
+    var state = new TelemetryState();
+    state.Accept(Encoding.UTF8.GetBytes(node.ToJsonString()));
+    Assert(state.Read(out _, now)!.Lights.Count == 1, "Fresh ray was rejected");
+
+    node["sequence"] = 2;
+    foreach (var feed in new[] { "rendered", "upstream" })
+    {
+        node["lights"]![feed]!["capturedAt"] = now.AddMilliseconds(-200);
+        node["lights"]![feed]!["ageMilliseconds"] = 200;
+    }
+    state.Accept(Encoding.UTF8.GetBytes(node.ToJsonString()));
+    Assert(state.Read(out _, now)!.Lights.Count == 0,
+        "Fresh envelope renewed a 350 + 200 ms visibility verdict");
+
+    // If wall-clock age underreports elapsed capture age, the producer age must
+    // still expire the same verdict without discarding the valid local frame.
+    node["sequence"] = 3;
+    foreach (var feed in new[] { "rendered", "upstream" }) node["lights"]![feed]!["capturedAt"] = now;
+    state.Accept(Encoding.UTF8.GetBytes(node.ToJsonString()));
+    Assert(state.Read(out _, now)!.Lights.Count == 0, "Clock skew bypassed producer capture age");
+});
 Add("Schema 1.6 treats missing or non-physics visibility as unconfirmed", () =>
 {
     var node = JsonNode.Parse(Fixtures.CurrentSnapshot())!;

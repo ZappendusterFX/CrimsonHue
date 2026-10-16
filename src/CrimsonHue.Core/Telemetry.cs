@@ -148,7 +148,10 @@ public sealed class TelemetryState
             // A clear ray result can expire before its paired light capture does.
             // Repeated host publications must not renew the ray's measured age.
             if (!frame.ConfirmedVisibleOnly) return frame;
-            var visibilityElapsed = Math.Max(elapsed, Math.Max(envelopeAge, 0));
+            // The verdict age is measured at the light capture, not at the newer
+            // envelope publication. Include capture age even when CDT republishes
+            // the same capture; retain the producer/monotonic bound across clock skew.
+            var visibilityElapsed = Math.Max(lightAge, frame.ProducerAgeMs + elapsed);
             var freshLights = frame.Lights.Where(light => light.VisibilityAgeMs is null ||
                 light.VisibilityAgeMs.Value + visibilityElapsed <= 500).ToArray();
             message = $"Live · {freshLights.Length}/{frame.SourceCount} confirmed visible";

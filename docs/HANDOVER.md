@@ -1,4 +1,64 @@
-# Current checkpoint — motion smoothing and stream diagnostics ready, 2026-10-16, Codex
+# Current checkpoint — mixed-light review and freshness correction, 2026-10-16, Codex
+
+Owner requested a short audit of CrimsonHue and CDT while away, specifically
+ordinary lights, wall washers, and Hue's native Entertainment features. Review
+retains raw CDT input and smoothing after per-channel room mapping. No game,
+bridge settings, physical stream, installed ASI or immutable ZIP was changed.
+
+Confirmed consumer bug fixed: physics verdict age is measured at the light
+capture. TelemetryState.Read previously added only time since the newer envelope,
+so a republished 200 ms-old capture could keep a 350 ms-old-at-capture clear verdict
+alive beyond the 500 ms limit. It now adds capture age with producer/monotonic
+fallback. Regression covers fresh, expired and clock-skew cases. Added a mixed
+ordinary-bulb/three-segment-washer regression retaining channel IDs and side
+separation. **95/95 nonphysical tests passed**; log:
+artifacts/review-visibility-freshness-tests.log. No lamp acceptance claimed.
+
+CDT audit found a separate optional-smoothed-feed bug: repeated GPU captures with
+only changing physics metadata were rejected as repeated-source-changed. A narrow
+fix and regression are in its existing isolated product worktree; this never
+explained CrimsonHue's raw-input motion flicker. See that worktree's HANDOVER.
+
+Room model already supports mixed types per service: no enabled calibration means
+the imported channel point; an enabled calibration averages over a visible wall
+region with independent segment offsets/heights. USER-GUIDE now explicitly
+explains mixed areas. Hue channel IDs, member segment indices and brightness
+balance are imported; model/archetype/gradient capability is not yet imported for
+friendly device classification. Segment count alone must not imply wall-washer
+geometry. Confirmed follow-up bug: after changed Hue segmentation, GetOrCreate
+can show a new segment under an enabled wall setup while Samples still consults
+only the saved segment list and falls back to point mapping. Reconcile imported
+membership on refresh and mark new segments uncalibrated; this UI/controller
+change is not part of today's narrow freshness fix.
+The owner's prior bridge import found two lights with three channels
+each, not six independent physical lights.
+
+Next product work, not implemented in this audit: explicit Point / Wall area
+selection and detected segment count per light, hide inactive wall controls, then
+guided identify/preview/calibration. Use device capability metadata to suggest a
+mode while retaining user choice; even an ordinary lamp can illuminate a wall.
+Per-light transition/brightness overrides would help mixed hardware; currently
+transition is global and imported brightness balance is honored. Profile before
+optimizing repeated wall-sample allocations or hidden-HUD snapshot serialization.
+New-user setup still seeds a development bridge IP; Find probes that address,
+not a network search, so address entry/discovery should be made explicit.
+
+Hue reference checked: the official API-v2 announcement explicitly describes
+gradient Entertainment and independently addressable segments:
+https://developers.meethue.com/new-hue-api/
+Signify describes ColorCast, placement-dependent projection area and Hue-app 3D
+position/direction controls; do not claim Hue has no direction capability. The
+public API reference was unavailable in this review, so no automatic footprint
+or aim field is assumed beyond the actual imported channel data:
+https://www.signify.com/global/our-company/news/press-releases/2025/20250617-immersive-entertainment-and-a-new-ai-assistant-from-philips-hue
+The user's recalled feature name is not yet certain; segmentation/gradient is
+the relevant verified capability, not proof of the exact term previously used.
+
+The earlier .asi.13 ZIP remains immutable and does NOT contain this new freshness
+fix. No new package produced in this audit. Physical Ambient appearance and .13
+motion acceptance remain pending; do not present source tests as lamp acceptance.
+
+# Previous checkpoint — motion smoothing and stream diagnostics ready, 2026-10-16, Codex
 
 Owner cancelled the Claude handoff and resumed here. Owner deliberately ran and
 turned the camera during our read-only sample. With installed Hue .asi.12 + CDT

@@ -73,6 +73,20 @@ static class WallWashTests
                 new(Layout.Washers.Select(w => w with { ServiceId = "other-" + w.ServiceId }).ToArray()) })
                 Assert(expected.SequenceEqual(mapper.Map(frame, area, Settings, 1, wallWash: layout)), "Unrelated room setup changed output");
         });
+        add("A mixed room keeps ordinary point lights and calibrated washer segments independent", () =>
+        {
+            var point = new EntertainmentChannel(9, WallWashLayout.Direction(60, 0), [new("bulb", 0)], "Ordinary bulb");
+            var area = Area with { Channels = Area.Channels.Take(3).Append(point).ToArray() };
+            var layout = new WallWashLayout([Layout.Washers[0]]);
+            var mapper = new LightMapper();
+            var pointOutput = mapper.Map(Frame(60), area, Settings, 1, wallWash: layout);
+            Assert(pointOutput.Single(c => c.Id == 9).Rgb.X > .99 && pointOutput.Take(3).All(c => c.Rgb == default),
+                "Ordinary bulb was treated as a washer or leaked to the opposite wall");
+            var wallOutput = mapper.Map(Frame(-85), area, Settings, 1, wallWash: layout);
+            Assert(wallOutput.Single(c => c.Id == 1).Rgb.X > .1 && wallOutput.Single(c => c.Id == 9).Rgb == default,
+                "Washer footprint was lost in a mixed area or leaked to the ordinary bulb");
+            Assert(wallOutput.Select(c => c.Id).SequenceEqual(new byte[] { 0, 1, 2, 9 }), "Mixed mapping changed Hue channel identities");
+        });
         add("Wall calibration validates finite angles, keys, segments and exact axis directions", () =>
         {
             Layout.Validate(); var washer = Layout.Washers[0];

@@ -108,10 +108,24 @@ can be beside the monitor while its light covers a side wall; its Hue point alon
 cannot describe that area. Calibration is optional and starts disabled. The room
 preview keeps the imported Hue dots and draws calibrated wall areas in blue.
 
+An area can mix ordinary bulbs, multi-segment lights and wall washers. Leave
+**Use wall area** off for a light you want to represent by its imported Hue point.
+Enable it only for a light whose visible illumination should cover a wall region.
+This choice is per light, not per area. A normal bulb directed at a wall may also
+benefit from a wall region; the model describes the visible result, not a product
+name or a physical spotlight beam.
+
+Hue Entertainment v2 supplies channels and segment membership; CrimsonHue keeps
+these identities and imports the channel positions and brightness balance. A
+multi-segment light therefore keeps independently addressable outputs. Segment
+count alone does not determine where it shines: a strip and a wall washer can
+both have multiple segments. Room calibration adds the visible direction and
+extent of each segment without changing the Hue configuration.
+
 1. Select your actual Entertainment area. Turn on **Demo preview only** to tune
    safely with synthetic input on those channels. **Preview one light source**
    provides direction and height sliders instead of the animated demo sources.
-2. For each lamp, enable **Use wall area**, then set **Direction** and **Wall width**.
+2. For each light that illuminates a wall region, enable **Use wall area**, then set **Direction** and **Wall width**.
    Direction 0 is the screen, -90 is left, +90 is right, and +/-180 is behind you.
    Width is the angular extent of the wall from your seat, not the emitter's beam
    angle. **Start left/right** supplies an editable starting point spanning
