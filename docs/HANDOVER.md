@@ -1,4 +1,39 @@
-# Current checkpoint — spherical flow replaces hard axis cuts, 2026-10-16, Codex
+# Current checkpoint — owner identifies swinging personal lantern, 2026-10-16, Codex
+
+Hue .asi.16 and CDT huepanel.6 are now installed: read-only hashes match the
+packages; game PID9400 started22:45:23, supported build25477059. Owner confirms
+stationary camera rotation is now smooth, but walking still strobed. Owner then
+identified their swinging personal lantern as the cause and switched it off.
+They ask for ignoring it or a better treatment. This is owner-observed causal
+evidence; no new physical output or game/settings changes were made here.
+
+Before owner said STOP, bounded read-only CDT recording completed at
+artifacts/motion-streams-asi16/:1188 envelopes,303 GPU captures,20seconds. The
+separate mapped-output recorder was interrupted on STOP and has no completed
+report. Do not present that run as actual outgoing Hue packet measurement.
+
+The motion recording cannot identify the lantern: no bright source within3gu,
+and bright sources within4gu appear in only27frames, remaining almost fixed in
+world space while the player passes3.89gu. Earlier standing capture's two nearby
+spot contributions are absent. Do not infer when the lantern was toggled from
+this record or use those unrelated near fires as a lantern signature.
+
+Current CDT rendered/upstream contracts contain no owner/attachment/entity ID;
+sampleIndex is per-capture, not stable identity. Existing upstream research found
+the player's equip-lantern scene object but has no proven join to GPU light
+contributions (LIGHT_IDENTITY_RESEARCH.md, controlled moving-source section).
+No hardcoded slot/color signature or automatic proximity exclusion is justified.
+
+Recommended product behavior, NOT implemented: own-lantern contribution defaults
+to excluded from spatial mapping; optional low, steady fill preserves its presence
+without following every swing, plus original behavior if desired. Put treatment
+in Hue's HUD, with neutral verified ownership metadata supplied by CDT. A generic
+near-player attenuation control is possible immediately but would also attenuate
+nearby fires/lamps and must not be labelled reliable own-lantern recognition.
+Next work is targeted producer identification before a lantern-only exclusion.
+Ambient response remains separate and unresolved. No new package this turn.
+
+# Previous checkpoint — spherical flow replaces hard axis cuts, 2026-10-16, Codex
 
 Owner reports strong motion flicker, one washer dark except occasional reciprocal
 left/right switching, and explicitly requests smooth flow across ALL directions.
