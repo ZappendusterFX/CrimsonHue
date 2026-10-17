@@ -9,11 +9,13 @@ graphics hooks. There is no separate settings window or process. The ZIP contain
 one ASI and documentation; application dependencies
 are embedded, and users install **.NET 8 Desktop Runtime x64** separately.
 See [ASI guide](docs/ASI.md) and [verification checkpoint](docs/HANDOVER.md).
-Use the matching **CDT 2.2.5-huepanel.9** preview; public CDT 2.2.4 lacks the panel.
+Use the matching **CDT 2.2.5-huepanel.10** preview; public CDT 2.2.4 lacks the panel.
 Install both matching packages with the game closed. The title-bar X now saves
 and hides the HUD while lighting sync continues, like the shortcut. The simple
 Lighting page, recommended profile and CDT cursor fix are included.
 Layout checks now include Hue service placement as well as channel geometry.
+The input handoff correction is in CDT huepanel.10; keep the existing Hue .asi.20
+controller. Release held game buttons/keys before interacting with an opened HUD.
 Physical acceptance of the new profile remains pending.
 The Hue panel uses CDT's compact body-text size and blue/cyan palette. Setup
 guides the link-button pairing and confirms CONNECTED only after authenticated
@@ -56,7 +58,7 @@ physical lamp brightness.
 
 ## Start
 
-1. Install the matching **CrimsonDesertTelemetry 2.2.5-huepanel.9 preview** with its server, rendered and upstream
+1. Install the matching **CrimsonDesertTelemetry 2.2.5-huepanel.10 preview** with its server, rendered and upstream
    ManyLights capture, and source visibility enabled.
 2. Install [**.NET 8 Desktop Runtime x64**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
    With the game closed, import this ZIP through DMM, or put its

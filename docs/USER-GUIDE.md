@@ -7,7 +7,7 @@ or a measurement of the physical lamps.
 
 ## What to install
 
-1. Install the matching **CDT 2.2.5-huepanel.9 preview** separately in the game.
+1. Install the matching **CDT 2.2.5-huepanel.10 preview** separately in the game.
    The public CDT 2.2.4 lacks this preview's Hue panel; obtain both matching ZIPs
    from this branch's validation checkpoint. Enable its server, rendered and upstream ManyLights
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
@@ -23,7 +23,7 @@ or a measurement of the physical lamps.
    saved credentials are not in this ZIP.** See [ASI guide](ASI.md).
    Close the game and upgrade both matching packages for this version: the
    HUD close guidance is updated in CDT and the stream fix is in CrimsonHue.
-   If CDT huepanel.9 is already installed, keep it when upgrading Hue to .asi.20.
+   The held-input handoff correction requires CDT huepanel.10; keep Hue .asi.20.
 3. Use Windows 10/11 x64 and a Hue-compatible bridge with HTTPS API v2,
    Entertainment DTLS 1.2/PSK, color lamps and an existing Entertainment area.
    Set the area and channel positions in the Hue app first. diyHue is the
@@ -60,6 +60,8 @@ also reacts to those keys when modifiers are held.
 X saves settings and hides the overlay; the shortcut reopens it.
 Mouse and keyboard input are captured while
 the overlay is open in the foreground; hide it to resume normal game controls.
+If a game button or key is still held when opening the HUD, release it first;
+the panel shows a reminder until it can take over input.
 Press **Stop** and wait for the stopped status before quitting the game.
 Process termination can prevent restoration; the ASI cannot keep running after
 the game exits. This branch has synthetic verification, with real game and lamp

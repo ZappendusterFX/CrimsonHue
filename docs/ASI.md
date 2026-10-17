@@ -12,11 +12,11 @@ No separate EXE, process or visible WPF settings window is used.
    documented .NET 8 ASP.NET Core Runtime x64. Newer runtimes alone do not meet
    these .NET 8 requirements.
 2. Close Crimson Desert and stop any old desktop CrimsonHue sync. Use the matching
-   **CDT 2.2.5-huepanel.9** preview with this version. Public CDT 2.2.4 does not host
+   **CDT 2.2.5-huepanel.10** preview with this version. Public CDT 2.2.4 does not host
    the Hue panel. Install both updated packages with the game closed: Hue keeps
    sync running when X is clicked; CDT displays the matching close guidance.
-   Existing CDT huepanel.9 installations can be kept for the .asi.20 controller
-   update, which also detects changes to separate Hue service-placement fields.
+   The held-input handoff correction is in CDT huepanel.10. Keep the existing
+   Hue .asi.20 controller when installing that CDT update; no Hue rebuild is needed.
 3. For a new installation, import both ZIPs through DMM using the existing x64
    ASI loader. For this upgrade, import both matching ZIPs. CrimsonHue's
    package contains one `CrimsonHue/CrimsonHue.asi` plus documentation/notices;

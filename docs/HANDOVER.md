@@ -1,4 +1,28 @@
-# Current checkpoint — detect separate Hue placement changes, 2026-10-17, Codex
+# Current checkpoint — held input across HUD transitions, 2026-10-17, Codex
+
+Owner reports endless sword attacks after an uncertain HUD close sequence,
+cleared by reopening/closing. Exact game route/order was not traced. Confirmed
+adapter defect: capture could swallow releases for presses already given to the
+game. Maintained panel now tracks legacy/raw mouse/keyboard separately and waits
+for complete game-owned releases before capture. Hide releases active focus and
+clip immediately, finishes HUD-owned pairs, and resets ImGui before reuse. Worker
+maintains the handoff with every overlay hidden. Held-input reminder added.
+
+Mocked actual-adapter regressions pass: queued/dual-route/raw-only/mixed packets,
+keyboard/modifiers, hide while clicked, no-frame/worker completion, focus and old
+cursor checks. A targeted mutant fails at the queued-release assertion. CDT12/12
+focused tests and exact-Hue.20 hidden shared D3D12 WARP/pixel/hide/resize smoke
+pass; screenshot reviewed. No synthetic game key-ups or input API/device changes.
+
+New immutable **CDT2.2.5-huepanel.10**, production/researchOFF/build25477059; keep
+**Hue0.4.0-asi.20** unchanged. Package validators and source-manifest match pass.
+Evidence/hashes: [INPUT-HANDOFF-VALIDATION.md](INPUT-HANDOFF-VALIDATION.md) and CDT
+worktree docs/HUE_INPUT_HANDOFF.md. No real input, installation, settings, process
+write or lamp output. Next: owner exits game, installs CDT.10 only, then checks
+sword/HUD transitions. This is proven for the adapter's Win32 routes; physical
+acceptance and independently polled/buffered game paths are not established.
+
+# Previous checkpoint — detect separate Hue placement changes, 2026-10-17, Codex
 
 Owner repositioned the washers in Hue; no layout-change warning appeared. Live
 GETs show separate service placement at X=-1/+1, Y=0.18595/0.12872, while the six
