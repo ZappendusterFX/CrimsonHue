@@ -1,4 +1,28 @@
-# Current checkpoint — recommended lighting and simpler HUD, 2026-10-16, Codex
+# Current checkpoint — HUD X keeps sync running, 2026-10-17, Codex
+
+Owner reports mouse X stops lighting while Ctrl+Shift+H keeps it running. Confirmed:
+the panel hides and sends close; the controller explicitly stopped before saving.
+close now saves without cancelling/detaching the session. Shortcut and Hide retain
+their behavior; explicit Stop and host/error cleanup are unchanged. Updated the
+maintained panel footer and user guides; synchronized the existing CDT worktree.
+
+Core110/110, exact packaged-controller smoke (including close/Stop cancellation
+regression), package validators, CDT12/12focused input/overlay checks and one
+hidden paired D3D12 WARP/pixel/hide/resize run pass. Screenshot reviewed. Final
+immutable pair: Hue0.4.0-asi.19 + CDT2.2.5-huepanel.9, production/researchOFF,
+build25477059. Paths/hashes/evidence: [HUD-CLOSE-VALIDATION.md](HUD-CLOSE-VALIDATION.md).
+No installation, real settings change, physical stream or game input this turn.
+Next: install with game closed, then owner checks X, shortcut reopen and continued
+lamp output. This fixes the explicit X stop, not every possible stream failure.
+
+Room context: owner added two Play Bars; GET-only area Spieltisch now imports
+four lights/eight channels (two bars + two three-channel Wall Washers), all in
+front. The washers' bridge names are both Back; that name does not mean behind
+the owner. Layout changes still stop a running stream: Stop, edit/save in Hue,
+Refresh areas, Start; no game restart needed for an area refresh. Wall area uses
+the separate Room calibration, while Point uses imported Hue positions.
+
+# Previous checkpoint — recommended lighting and simpler HUD, 2026-10-16, Codex
 
 Owner prioritizes out-of-box behavior and rationalizing the many interdependent
 sliders. Implemented Lighting / Room / Setup / Advanced in CDT's hosted panel.

@@ -3,16 +3,17 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**Branch preview: 0.4.0-asi.18.** CDT hosts the interactive Hue mixer in its own
+**Branch preview: 0.4.0-asi.19.** CDT hosts the interactive Hue mixer in its own
 D3D12 renderer. `CrimsonHue.asi` is the headless lamp controller and installs no
 graphics hooks. There is no separate settings window or process. The ZIP contains
 one ASI and documentation; application dependencies
 are embedded, and users install **.NET 8 Desktop Runtime x64** separately.
 See [ASI guide](docs/ASI.md) and [verification checkpoint](docs/HANDOVER.md).
-Use the matching **CDT 2.2.5-huepanel.8** preview; public CDT 2.2.4 lacks the panel.
-Install both matching packages with the game closed. This update adds a simple
-Lighting page, a recommended profile, explanations of blocked output, and the
-CDT cursor fix. Physical acceptance of the new profile remains pending.
+Use the matching **CDT 2.2.5-huepanel.9** preview; public CDT 2.2.4 lacks the panel.
+Install both matching packages with the game closed. The title-bar X now saves
+and hides the HUD while lighting sync continues, like the shortcut. The simple
+Lighting page, recommended profile and CDT cursor fix are included.
+Physical acceptance of the new profile remains pending.
 The Hue panel uses CDT's compact body-text size and blue/cyan palette. Setup
 guides the link-button pairing and confirms CONNECTED only after authenticated
 area loading; a matching saved pairing is reused. Physical output remains explicit.
@@ -54,7 +55,7 @@ physical lamp brightness.
 
 ## Start
 
-1. Install the matching **CrimsonDesertTelemetry 2.2.5-huepanel.8 preview** with its server, rendered and upstream
+1. Install the matching **CrimsonDesertTelemetry 2.2.5-huepanel.9 preview** with its server, rendered and upstream
    ManyLights capture, and source visibility enabled.
 2. Install [**.NET 8 Desktop Runtime x64**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
    With the game closed, import this ZIP through DMM, or put its
@@ -78,12 +79,13 @@ physical lamp brightness.
    The [tuning guide](docs/USER-GUIDE.md) explains each control, interactions
    between controls, shareable presets and a practical setup sequence.
    Stop other sync apps, then click **Start lighting sync**.
-7. **Stop**, or close the overlay, to release the stream and restore previously read
+7. **Stop** releases the stream and restores previously read
    on/off, brightness and color states of the selected lights, if CrimsonHue still
    owns the stream. Running effects/dynamic scenes are not resumed.
-   Close then hides the overlay; **Ctrl + Shift + H** reopens it while the game
-   has focus. **Hide settings** and the shortcut hide without stopping
-   sync. Press **Stop** and wait for the stopped status before leaving the game.
+   The title-bar **X** saves settings and hides the overlay while sync continues;
+   **Hide settings** and **Ctrl + Shift + H** also hide it without stopping sync.
+   The shortcut reopens it while the game has focus. Press **Stop** and wait for
+   the stopped status before leaving the game.
 
 In **Setup → Overlay shortcut**, choose the key and Ctrl/Shift/Alt modifiers,
 then click **Save shortcut**. The binding applies immediately and persists for

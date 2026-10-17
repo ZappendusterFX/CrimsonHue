@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.18 preview — setup and tuning guide
+# CrimsonHue 0.4.0-asi.19 preview — setup and tuning guide
 
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
 existing Hue Entertainment area. Its headless ASI uses CDT's in-game mixer panel. Its
@@ -7,7 +7,7 @@ or a measurement of the physical lamps.
 
 ## What to install
 
-1. Install the matching **CDT 2.2.5-huepanel.8 preview** separately in the game.
+1. Install the matching **CDT 2.2.5-huepanel.9 preview** separately in the game.
    The public CDT 2.2.4 lacks this preview's Hue panel; obtain both matching ZIPs
    from this branch's validation checkpoint. Enable its server, rendered and upstream ManyLights
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
@@ -22,7 +22,7 @@ or a measurement of the physical lamps.
    **CDT, an ASI loader, the game, bridge firmware and
    saved credentials are not in this ZIP.** See [ASI guide](ASI.md).
    Close the game and upgrade both matching packages for this version: the
-   simplified page and cursor fix require the updated CDT renderer.
+   HUD close guidance is updated in CDT and the stream fix is in CrimsonHue.
 3. Use Windows 10/11 x64 and a Hue-compatible bridge with HTTPS API v2,
    Entertainment DTLS 1.2/PSK, color lamps and an existing Entertainment area.
    Set the area and channel positions in the Hue app first. diyHue is the
@@ -55,8 +55,9 @@ In **Setup → Overlay shortcut**, choose the key and Ctrl/Shift/Alt modifiers,
 then click **Save shortcut**. It applies immediately and is remembered across
 launches. Mixer presets do not change it. Avoid F8–F11 alongside CDT, which
 also reacts to those keys when modifiers are held.
-**Hide settings** keeps sync running. Closing the overlay stops sync, saves and
-hides it; the shortcut reopens it. Mouse and keyboard input are captured while
+**Hide settings**, the shortcut and the title-bar **X** keep sync running.
+X saves settings and hides the overlay; the shortcut reopens it.
+Mouse and keyboard input are captured while
 the overlay is open in the foreground; hide it to resume normal game controls.
 Press **Stop** and wait for the stopped status before quitting the game.
 Process termination can prevent restoration; the ASI cannot keep running after
@@ -304,7 +305,7 @@ changes when checking calibration.
 | No physical output | Confirm live CDT input, paired bridge, selected Entertainment area and **Start lighting sync**. Demo preview intentionally has no physical output. Another Entertainment app may own the stream. |
 
 Credentials are saved in the current user's DPAPI-protected store, outside the
-release ZIP. Normal Stop/close releases an owned Entertainment stream and tries
+release ZIP. **Stop** releases an owned Entertainment stream and tries
 to restore the previously read light states. See the [README](../README.md)
 for freshness and cleanup limits, and [Ambient integration](AMBIENT-INTEGRATION.md)
 for the feed's limits.

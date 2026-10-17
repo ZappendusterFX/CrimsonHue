@@ -24,7 +24,7 @@ public partial class MainWindow
             AreaBox.SelectedItem = DemoData.WallWasherArea;
             bridgeConnected = true; bridgePhase = "connected";
             BridgeStatus.Text = "Connected - synthetic bridge (no network or lamp output)";
-            EnableSmokePreview(); VerifyDistanceControls(); VerifyPresetProfilePreservation();
+            EnableSmokePreview(); VerifyDistanceControls(); VerifyPresetProfilePreservation(); VerifyOverlayCloseKeepsStream();
         }
         else _ = GuardAsync(async () => { await ConnectTelemetryAsync(); if (bridge != null) await LoadAreasAsync(); }, bridgeSetup: true);
         PublishOverlay();
@@ -135,7 +135,8 @@ public partial class MainWindow
                 case "identify": IdentifySegment(command.GetProperty("channel").GetByte()); break;
                 case "stop": StopClick(this, new()); break;
                 case "close":
-                    StopClick(this, new()); SaveSettings(); break;
+                    // CDT hides the panel. Closing its HUD must not cancel sync.
+                    SaveSettings(); break;
                 case "export":
                     if (smoke) { TuningStatus.Text = "Synthetic mode does not write presets"; break; }
                     var path = PresetPath(Text("path"));
@@ -167,6 +168,40 @@ public partial class MainWindow
             TuningStatus.Text = ex is CrimsonHueException ? ex.Message : "Action failed. Check the selected value, setup or preset path.";
         }
         RefreshPreview(); PublishOverlay();
+    }
+
+    private void VerifyOverlayCloseKeepsStream()
+    {
+        if (!smoke || streamTask != null || streamCancel != null)
+            throw new InvalidOperationException("HUD close regression requires isolated smoke mode.");
+        var originalStatus = StreamStatus.Text;
+        using var syntheticCancel = new CancellationTokenSource();
+        var pending = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var cancellation = syntheticCancel.Token.Register(() => pending.TrySetCanceled(syntheticCancel.Token));
+        try
+        {
+            // Exercise the real command handlers with a cancellable session marker.
+            // No bridge, telemetry connection or physical stream is created.
+            streamCancel = syntheticCancel;
+            streamTask = pending.Task;
+            UpdateButtons();
+            OverlayCommand(JsonSerializer.SerializeToUtf8Bytes(new { action = "close" }));
+            if (syntheticCancel.IsCancellationRequested || pending.Task.IsCompleted ||
+                streamTask != pending.Task || streamCancel != syntheticCancel || !StopButton.IsEnabled)
+                throw new InvalidOperationException("Closing the HUD cancelled or detached lighting sync.");
+            OverlayCommand(JsonSerializer.SerializeToUtf8Bytes(new { action = "stop" }));
+            if (!syntheticCancel.IsCancellationRequested)
+                throw new InvalidOperationException("Explicit Stop no longer cancels lighting sync.");
+        }
+        finally
+        {
+            syntheticCancel.Cancel();
+            streamTask = null;
+            streamCancel = null;
+            StreamStatus.Text = originalStatus;
+            UpdateButtons();
+            RefreshPreview();
+        }
     }
 
     private void ApplyOverlayAddresses(string address, string endpoint)

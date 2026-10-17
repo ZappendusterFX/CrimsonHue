@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.18 — mixer hosted by CDT
+# CrimsonHue 0.4.0-asi.19 — mixer hosted by CDT
 
 CDT draws the interactive CrimsonHue mixer in its existing D3D12/ImGui frame.
 `CrimsonHue.asi` hosts the existing C# lamp controller on a hidden WPF STA. It
@@ -12,9 +12,9 @@ No separate EXE, process or visible WPF settings window is used.
    documented .NET 8 ASP.NET Core Runtime x64. Newer runtimes alone do not meet
    these .NET 8 requirements.
 2. Close Crimson Desert and stop any old desktop CrimsonHue sync. Use the matching
-   **CDT 2.2.5-huepanel.8** preview with this version. Public CDT 2.2.4 does not host
-   the Hue panel. Install both updated packages with the game closed: CDT hosts
-   the simplified page and cursor fix; Hue supplies profiles and explanations.
+   **CDT 2.2.5-huepanel.9** preview with this version. Public CDT 2.2.4 does not host
+   the Hue panel. Install both updated packages with the game closed: Hue keeps
+   sync running when X is clicked; CDT displays the matching close guidance.
 3. For a new installation, import both ZIPs through DMM using the existing x64
    ASI loader. For this upgrade, import both matching ZIPs. CrimsonHue's
    package contains one `CrimsonHue/CrimsonHue.asi` plus documentation/notices;
@@ -38,8 +38,9 @@ No separate EXE, process or visible WPF settings window is used.
    never sends physical output. **Test CH** is an explicit two-second 10% white
    segment identification with ownership-aware cleanup; demo must be off.
 6. **Start lighting sync** is explicit. Loading either ASI never starts it.
-   **Hide settings** and the shortcut keep sync running. X stops sync, saves
-   and hides. Before quitting, **Stop** and wait for stopped status so the owned
+   **Hide settings**, the shortcut and the title-bar **X** keep sync running.
+   X saves settings and hides the panel. Before quitting, **Stop** and wait for
+   stopped status so the owned
    stream can be released and captured states restored when the bridge is reachable.
 
 The Hue panel works independently of CDT's HUD/marker visibility. Optional
