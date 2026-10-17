@@ -33,11 +33,41 @@ public sealed record AmbientFrame(long CaptureSequence, DateTimeOffset CapturedA
     double SkyVisibility = 0);
 public sealed record ChannelMember(string ServiceId, int SegmentIndex);
 public sealed record EntertainmentChannel(byte Id, Vec3 Position, IReadOnlyList<ChannelMember> Members, string Label, double Brightness = 1);
-public sealed record EntertainmentArea(string Id, string Name, bool Active, IReadOnlyList<EntertainmentChannel> Channels)
+public sealed record EntertainmentServiceLocation(string ServiceId, IReadOnlyList<Vec3> Positions, double Brightness = 1);
+public sealed record EntertainmentArea(string Id, string Name, bool Active, IReadOnlyList<EntertainmentChannel> Channels,
+    IReadOnlyList<EntertainmentServiceLocation>? ServiceLocations = null)
 {
     public int LampCount => Channels.SelectMany(c => c.Members).Select(m => m.ServiceId).Distinct().Count();
     public string Description => $"{Name}  ·  {LampCount} lights / {Channels.Count} channels";
     public override string ToString() => Description;
+
+    // Service placement can change while the bridge's channel positions stay
+    // fixed (observed with Play wall washers). Compare both, keeping their
+    // distinct meanings; never infer segment coordinates from two endpoints.
+    public bool HasSameLayout(EntertainmentArea other)
+    {
+        if (Id != other.Id || Channels.Count != other.Channels.Count) return false;
+        var leftChannels = Channels.OrderBy(c => c.Id).ToArray();
+        var rightChannels = other.Channels.OrderBy(c => c.Id).ToArray();
+        for (var i = 0; i < leftChannels.Length; i++)
+        {
+            var left = leftChannels[i]; var right = rightChannels[i];
+            if (left.Id != right.Id || left.Position != right.Position || left.Brightness != right.Brightness ||
+                !left.Members.OrderBy(m => m.ServiceId, StringComparer.Ordinal).ThenBy(m => m.SegmentIndex)
+                    .SequenceEqual(right.Members.OrderBy(m => m.ServiceId, StringComparer.Ordinal).ThenBy(m => m.SegmentIndex)))
+                return false;
+        }
+        var leftLocations = (ServiceLocations ?? []).OrderBy(l => l.ServiceId, StringComparer.Ordinal).ToArray();
+        var rightLocations = (other.ServiceLocations ?? []).OrderBy(l => l.ServiceId, StringComparer.Ordinal).ToArray();
+        if (leftLocations.Length != rightLocations.Length) return false;
+        for (var i = 0; i < leftLocations.Length; i++)
+        {
+            var left = leftLocations[i]; var right = rightLocations[i];
+            if (left.ServiceId != right.ServiceId || left.Brightness != right.Brightness ||
+                !left.Positions.SequenceEqual(right.Positions)) return false;
+        }
+        return true;
+    }
 }
 public sealed record BridgeCredentials(string Address, string ApplicationKey, string ClientKey, string? CertificateSha256);
 public sealed record MappingSettings(double Gain = 1.5, double Brightness = 0.85, double Radius = 35, double Spread = 2,

@@ -1,4 +1,29 @@
-# Current checkpoint — HUD X keeps sync running, 2026-10-17, Codex
+# Current checkpoint — detect separate Hue placement changes, 2026-10-17, Codex
+
+Owner repositioned the washers in Hue; no layout-change warning appeared. Live
+GETs show separate service placement at X=-1/+1, Y=0.18595/0.12872, while the six
+washer channel coordinates stay X=-0.4/+0.4,Y=0.8,Z=-0.4/0/0.4. Passive immutable
+HUD snapshot confirms Streaming with those unchanged channel coordinates. Earlier
+service-position values were not captured, so do not claim a measured delta.
+The confirmed consumer blind spot: ParseArea discarded service position(s) and
+the stream compared only channel geometry/membership/combined brightness.
+
+Now preserve ordered service positions and individual brightness factors; validate
+current positions/legacy position; compare both representations consistently at
+Start, periodic stream checks and identify. Ignore mere enumeration/display state
+and signed-zero formatting. --inspect-layout prints both sets. Point mapping still
+uses the bridge's channel positions; no invented endpoint-to-segment interpolation
+or automatic wall calibration. Actual wall geometry remains under Room.
+
+Core115/115 (five new groups incl. service-only loopback stream stop/owned restore),
+exact .asi.20 controller smoke, package validators and hidden paired CDT.9 D3D12
+WARP/pixel/hide/resize smoke pass. Latest immutable pair: Hue0.4.0-asi.20 + existing
+CDT2.2.5-huepanel.9. Includes the X fix below. Evidence/hashes:
+[SERVICE-LAYOUT-VALIDATION.md](SERVICE-LAYOUT-VALIDATION.md). No install, real settings
+change or physical output. Next: owner installs after game exit and checks service
+placement detection; Point-vs-service geometry remains explicit, not silently fixed.
+
+# Previous checkpoint — HUD X keeps sync running, 2026-10-17, Codex
 
 Owner reports mouse X stops lighting while Ctrl+Shift+H keeps it running. Confirmed:
 the panel hides and sends close; the controller explicitly stopped before saving.

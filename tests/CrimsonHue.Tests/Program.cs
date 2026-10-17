@@ -44,6 +44,11 @@ if (args.Contains("--inspect-layout"))
         Console.WriteLine($"Area: {layout.Name}; active: {layout.Active}");
         foreach (var channel in layout.Channels)
             Console.WriteLine($"  Channel {channel.Id}: {channel.Label}; position {channel.Position}");
+        foreach (var location in layout.ServiceLocations ?? [])
+        {
+            var label = layout.Channels.FirstOrDefault(c => c.Members.Any(m => m.ServiceId == location.ServiceId))?.Label ?? "Light";
+            Console.WriteLine($"  Service placement {label}: {string.Join("; ", location.Positions)}");
+        }
     }
     return 0;
 }
@@ -53,6 +58,7 @@ void Add(string name, Action run) => tests.Add((name, () => { run(); return Task
 void Async(string name, Func<Task> run) => tests.Add((name, run));
 WallWashTests.Register(Add, Async);
 LightingProfileTests.Register(Add);
+EntertainmentLayoutTests.Register(Add, Async);
 void Assert(bool condition, string message = "Assertion failed") { if (!condition) throw new Exception(message); }
 void Reject(Action action) { try { action(); } catch { return; } throw new Exception("Expected rejection"); }
 Add("Saved bridge pairing is reused only for the same address and certificate", () =>
@@ -1579,6 +1585,7 @@ sealed class MockBridge : IAsyncDisposable
     public string Owner = "test-app";
     public int Starts; public int Stops; public int Restored;
     public int StartDelayMs;
+    public string? AreaLocationsJson;
     public string Address = "";
     public BridgeCredentials Credentials => new(Address, "test-app", ClientKey, null);
     private WebApplication app = null!;
@@ -1624,7 +1631,16 @@ sealed class MockBridge : IAsyncDisposable
                 mock.Restored++; await ctx.Response.WriteAsync("{\"data\":[],\"errors\":[]}"); return;
             }
             string data;
-            if (path.Contains("entertainment_configuration")) data = Fixtures.AreaJson(mock.Active, mock.Owner);
+            if (path.Contains("entertainment_configuration"))
+            {
+                data = Fixtures.AreaJson(mock.Active, mock.Owner);
+                if (Volatile.Read(ref mock.AreaLocationsJson) is { } locationJson)
+                {
+                    var node = JsonNode.Parse(data)!;
+                    node["locations"] = JsonNode.Parse(locationJson);
+                    data = node.ToJsonString();
+                }
+            }
             else if (path.EndsWith("/entertainment")) data = "{\"id\":\"ent-light\",\"renderer_reference\":{\"rid\":\"light-id\"}}";
             else if (path.EndsWith("/light")) data = "{\"id\":\"light-id\",\"metadata\":{\"name\":\"Test gradient\"},\"on\":{\"on\":false},\"dimming\":{\"brightness\":42},\"color\":{\"xy\":{\"x\":0.3,\"y\":0.3}}}";
             else { ctx.Response.StatusCode = 404; return; }

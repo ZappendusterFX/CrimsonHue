@@ -108,29 +108,44 @@ public sealed class BridgeClient : IDisposable
         var id = area.GetProperty("id").GetString()!;
         if (!Guid.TryParseExact(id, "D", out _)) throw new CrimsonHueException("Invalid Entertainment area identifier.");
         var brightness = new Dictionary<string, double>();
+        var importedLocations = new List<EntertainmentServiceLocation>();
         if (area.TryGetProperty("locations", out var locations) && locations.TryGetProperty("service_locations", out var serviceLocations))
             foreach (var loc in serviceLocations.EnumerateArray())
-                if (loc.TryGetProperty("equalization_factor", out var eq))
-                {
-                    var factor = eq.GetDouble();
-                    if (!double.IsFinite(factor) || factor < 0 || factor > 1) throw new CrimsonHueException("Invalid Hue brightness balance.");
-                    brightness[loc.GetProperty("service").GetProperty("rid").GetString()!] = factor;
-                }
+            {
+                var serviceId = loc.GetProperty("service").GetProperty("rid").GetString();
+                if (string.IsNullOrWhiteSpace(serviceId) || brightness.ContainsKey(serviceId))
+                    throw new CrimsonHueException("Invalid or duplicate Hue service location.");
+                var factor = loc.TryGetProperty("equalization_factor", out var eq) ? eq.GetDouble() : 1;
+                if (!double.IsFinite(factor) || factor < 0 || factor > 1) throw new CrimsonHueException("Invalid Hue brightness balance.");
+                brightness[serviceId] = factor;
+                // positions is current v2; position is the deprecated single point.
+                var positions = loc.TryGetProperty("positions", out var points)
+                    ? points.EnumerateArray().Select(ReadPosition).ToArray()
+                    : loc.TryGetProperty("position", out var point) ? [ReadPosition(point)] : Array.Empty<Vec3>();
+                if (positions.Length is < 1 or > 160 || importedLocations.Count >= 160)
+                    throw new CrimsonHueException("Invalid Hue service positions.");
+                importedLocations.Add(new(serviceId, positions, factor));
+            }
         var channels = new List<EntertainmentChannel>();
         foreach (var c in area.GetProperty("channels").EnumerateArray())
         {
             var channelId = c.GetProperty("channel_id").GetInt32();
             if (channelId is < 0 or > 255 || channels.Any(x => x.Id == channelId)) throw new CrimsonHueException("Invalid or duplicate Entertainment channel.");
-            var position = Vec3.Read(c.GetProperty("position"));
-            if (Math.Max(Math.Abs(position.X), Math.Max(Math.Abs(position.Y), Math.Abs(position.Z))) > 2)
-                throw new CrimsonHueException("Entertainment position is outside the supported room coordinates.");
+            var position = ReadPosition(c.GetProperty("position"));
             var members = c.GetProperty("members").EnumerateArray().Select(m => new ChannelMember(m.GetProperty("service").GetProperty("rid").GetString()!, m.GetProperty("index").GetInt32())).ToArray();
             if (members.Length == 0 || members.Any(m => string.IsNullOrWhiteSpace(m.ServiceId) || m.SegmentIndex < 0)) throw new CrimsonHueException("Entertainment channel has no valid light members.");
             var label = string.Join(" + ", members.Select(m => labels != null && labels.TryGetValue(m.ServiceId, out var name) ? name : $"Channel {channelId}" ).Distinct());
             channels.Add(new((byte)channelId, position, members, label, members.Min(m => brightness.GetValueOrDefault(m.ServiceId, 1))));
         }
         if (channels.Count > 160) throw new CrimsonHueException("This area exceeds CrimsonHue's 160-channel datagram limit.");
-        return new(id, area.GetProperty("metadata").GetProperty("name").GetString() ?? "Entertainment", area.GetProperty("status").GetString() == "active", channels);
+        return new(id, area.GetProperty("metadata").GetProperty("name").GetString() ?? "Entertainment", area.GetProperty("status").GetString() == "active", channels, importedLocations);
+    }
+    private static Vec3 ReadPosition(JsonElement value)
+    {
+        var position = Vec3.Read(value);
+        if (Math.Max(Math.Abs(position.X), Math.Max(Math.Abs(position.Y), Math.Abs(position.Z))) > 2)
+            throw new CrimsonHueException("Entertainment position is outside the supported room coordinates.");
+        return position;
     }
     public async Task<JsonElement> GetAreaStateAsync(string id, CancellationToken token = default)
     {

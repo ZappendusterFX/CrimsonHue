@@ -65,7 +65,7 @@ public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTra
                         var areas = await bridge.GetAreasAsync(token);
                         if (areas.Any(a => a.Active)) throw new CrimsonHueException("An Entertainment stream is already active. Stop the other sync app before starting CrimsonHue.");
                         var current = areas.FirstOrDefault(a => a.Id == area.Id) ?? throw new CrimsonHueException("The selected area was removed. Refresh the area list.");
-                        if (Layout(current) != Layout(area)) throw new CrimsonHueException("The area's layout changed. Refresh it before starting.");
+                        if (!current.HasSameLayout(area)) throw new CrimsonHueException("The area's layout changed. Refresh it before starting.");
                         original = await bridge.CaptureLightStatesAsync(area, token);
                         // Complete bounded mutating requests even if Stop is clicked in flight.
                         started = true;
@@ -92,7 +92,7 @@ public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTra
                             original = null;
                             throw new CrimsonHueException("Streaming was stopped or taken over at the bridge.");
                         }
-                        if (Layout(BridgeClient.ParseArea(state)) != Layout(area)) throw new CrimsonHueException("Area layout changed during streaming. Refresh it before restarting.");
+                        if (!BridgeClient.ParseArea(state).HasSameLayout(area)) throw new CrimsonHueException("Area layout changed during streaming. Refresh it before restarting.");
                         lastCheck = Stopwatch.GetTimestamp();
                     }
                     if (stateCheck == null && Stopwatch.GetElapsedTime(lastCheck).TotalSeconds >= 2)
@@ -199,7 +199,7 @@ public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTra
             var areas = await bridge.GetAreasAsync(token);
             if (areas.Any(a => a.Active)) throw new CrimsonHueException("Stop the other sync app before testing a segment.");
             var current = areas.SingleOrDefault(a => a.Id == area.Id);
-            if (current == null || Layout(current) != Layout(area)) throw new CrimsonHueException("Refresh the area's layout before testing.");
+            if (current == null || !current.HasSameLayout(area)) throw new CrimsonHueException("Refresh the area's layout before testing.");
             original = await bridge.CaptureLightStatesAsync(area, token);
             started = true;
             await bridge.SetStreamingAsync(area.Id, true, CancellationToken.None);
@@ -223,7 +223,7 @@ public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTra
                         ownershipLost = true;
                         throw new CrimsonHueException("Segment test stopped because stream ownership changed.");
                     }
-                    if (Layout(BridgeClient.ParseArea(state)) != Layout(area)) throw new CrimsonHueException("Area changed during segment test.");
+                    if (!BridgeClient.ParseArea(state).HasSameLayout(area)) throw new CrimsonHueException("Area changed during segment test.");
                     lastCheck = Stopwatch.GetTimestamp();
                 }
                 if (pending == null && Stopwatch.GetElapsedTime(lastCheck).TotalMilliseconds >= 250)
@@ -267,5 +267,4 @@ public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTra
     }
 
     private static string? GetOwner(JsonElement state) => state.TryGetProperty("active_streamer", out var s) && s.TryGetProperty("rid", out var rid) ? rid.GetString() : null;
-    private static string Layout(EntertainmentArea area) => string.Join(";", area.Channels.Select(c => $"{c.Id}:{c.Position}:{c.Brightness}:{string.Join(',', c.Members)}"));
 }

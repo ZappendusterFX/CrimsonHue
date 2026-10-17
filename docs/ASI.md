@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.19 — mixer hosted by CDT
+# CrimsonHue 0.4.0-asi.20 — mixer hosted by CDT
 
 CDT draws the interactive CrimsonHue mixer in its existing D3D12/ImGui frame.
 `CrimsonHue.asi` hosts the existing C# lamp controller on a hidden WPF STA. It
@@ -15,6 +15,8 @@ No separate EXE, process or visible WPF settings window is used.
    **CDT 2.2.5-huepanel.9** preview with this version. Public CDT 2.2.4 does not host
    the Hue panel. Install both updated packages with the game closed: Hue keeps
    sync running when X is clicked; CDT displays the matching close guidance.
+   Existing CDT huepanel.9 installations can be kept for the .asi.20 controller
+   update, which also detects changes to separate Hue service-placement fields.
 3. For a new installation, import both ZIPs through DMM using the existing x64
    ASI loader. For this upgrade, import both matching ZIPs. CrimsonHue's
    package contains one `CrimsonHue/CrimsonHue.asi` plus documentation/notices;

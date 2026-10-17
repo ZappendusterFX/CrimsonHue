@@ -3,7 +3,7 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**Branch preview: 0.4.0-asi.19.** CDT hosts the interactive Hue mixer in its own
+**Branch preview: 0.4.0-asi.20.** CDT hosts the interactive Hue mixer in its own
 D3D12 renderer. `CrimsonHue.asi` is the headless lamp controller and installs no
 graphics hooks. There is no separate settings window or process. The ZIP contains
 one ASI and documentation; application dependencies
@@ -13,6 +13,7 @@ Use the matching **CDT 2.2.5-huepanel.9** preview; public CDT 2.2.4 lacks the pa
 Install both matching packages with the game closed. The title-bar X now saves
 and hides the HUD while lighting sync continues, like the shortcut. The simple
 Lighting page, recommended profile and CDT cursor fix are included.
+Layout checks now include Hue service placement as well as channel geometry.
 Physical acceptance of the new profile remains pending.
 The Hue panel uses CDT's compact body-text size and blue/cyan palette. Setup
 guides the link-button pairing and confirms CONNECTED only after authenticated
@@ -71,6 +72,10 @@ physical lamp brightness.
    Entertainment client key are requested automatically.
 5. Select an existing **Entertainment area**. Create and position lights in the
    Hue app first, then refresh. CrimsonHue preserves the existing layout/channels.
+   If either channel geometry or service placement changes during sync, CrimsonHue
+   stops and asks you to refresh before restarting. Hue can change service placement
+   while leaving the channel coordinates unchanged; those remain the Point mapping
+   coordinates. Use Room calibration for the visible wall areas.
 6. New installations start with **Recommended** lighting. On **Lighting**, adjust
    overall brightness, background light and local light effects; choose Quick,
    Balanced or Calm response. Existing settings remain **Custom** until you choose
@@ -340,7 +345,8 @@ previously read light states. It does not save settings. Use it only while the
 game and paired bridge are available.
 
 `--inspect-layout` instead reads the paired user's protected credentials and prints
-only area names, channel names/IDs and raw Hue XYZ positions. Run it as the same
+only area names, channel names/IDs, raw channel XYZ positions and separate service
+placement positions. Run it as the same
 Windows user who paired the app. It performs GET requests only, does not start a
 stream or change settings, and does not print keys or full API responses. Use this
 to compare the bridge's saved layout with the Hue app before changing mapping axes.
