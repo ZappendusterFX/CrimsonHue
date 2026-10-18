@@ -51,9 +51,31 @@ static class PlayerLanternTests
                 "Own-lantern weight altered the blue world spotlight");
             foreach(var invalid in new[]{-.01, double.NaN, double.PositiveInfinity, 2.01}) {
                 try {LightMapper.Validate(settings with {PointLightStrength=invalid}); throw new Exception("Invalid point weight accepted");} catch(CrimsonHueException){}
+            }
+            foreach(var invalid in new[]{-.01, double.NaN, double.PositiveInfinity, 10.01}) {
                 try {LightMapper.Validate(settings with {SpotLightStrength=invalid}); throw new Exception("Invalid spot weight accepted");} catch(CrimsonHueException){}
             }
             try {LightMapper.Validate(settings with {PlayerLanternStrength=1.01}); throw new Exception("Invalid lantern weight accepted");} catch(CrimsonHueException){}
+        });
+        add("Spotlights accept tenfold strength without dimming point-only scenes and persist through presets", () =>
+        {
+            var frame=Frame();
+            var area=new EntertainmentArea(Fixtures.Id,"Point",false,[new(0,new(0,1,0),[],"Point")]);
+            var settings=new MappingSettings(Brightness:1,SmoothingMs:0,Spread:0,SourceDiscRadiusDegrees:180);
+            var spot=new LightContribution(new(0,1,4),new(0,0,.001),Metadata:new("standalone","spot",null,null));
+            var point=spot with {Rgb=new(.001,0,0),Metadata=new("standalone","point",null,null)};
+            Vec3 Map(LightContribution light,double weight)=>new LightMapper().Map(frame with {Lights=[light]},area,settings with {SpotLightStrength=weight},1)[0].Rgb;
+            double Decode(double encoded)=>encoded<=.04045 ? encoded/12.92 : Math.Pow((encoded+.055)/1.055,2.4);
+            Assert(Math.Abs(Decode(Map(spot,10).Z)/Decode(Map(spot,1).Z)-10)<1e-10,"Maximum spotlight boost is not tenfold");
+            Assert(Map(point,10)==Map(point,1),"Spotlight range change dimmed point-only output");
+            var prefs=new LightingPreferences(SpotLightStrength:10);
+            Assert(LightingProfile.Resolve(prefs,settings).SpotLightStrength==10,"Recommended rejected maximum spot weight");
+            var saved=new AppSettings(Mapping:settings with {SpotLightStrength=10},Lighting:prefs);
+            var loaded=JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(saved))!;
+            Assert(loaded.Mapping!.SpotLightStrength==10 && loaded.Lighting!.SpotLightStrength==10,"High weight was lost in local settings");
+            var preset=MappingPreset.Import(System.Text.Encoding.UTF8.GetBytes(MappingPreset.Export("High spot weight",saved.Mapping!)));
+            Assert(preset.Mapping.SpotLightStrength==10 && preset.ApplyTo(settings,PresetGroups.Output).SpotLightStrength==10,"High weight was lost in preset roundtrip");
+            try{LightingProfile.Validate(prefs with {SpotLightStrength=10.01});throw new Exception("Out-of-range profile accepted");}catch(CrimsonHueException){}
         });
         add("Version one presets keep neutral weights and version two requires all three source controls", () =>
         {

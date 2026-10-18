@@ -177,7 +177,7 @@ public sealed class LightMapper
             !InRange(s.AmbientTintHue, 0, 360) || !InRange(s.AmbientTintSaturation, 0, 1) ||
             !InRange(s.SourceDiscRadiusDegrees, 1, 180) || !InRange(s.SourceDiscSoftness, 0, 1) ||
             !InRange(s.DirectionOriginBlend, 0, 1) || !InRange(s.PointLightStrength, 0, 2) ||
-            !InRange(s.SpotLightStrength, 0, 2) || !InRange(s.PlayerLanternStrength, 0, 1))
+            !InRange(s.SpotLightStrength, 0, 10) || !InRange(s.PlayerLanternStrength, 0, 1))
             throw new CrimsonHueException("Invalid lighting settings.");
     }
     private static bool InRange(double value, double minimum, double maximum) =>

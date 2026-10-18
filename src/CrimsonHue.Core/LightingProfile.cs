@@ -21,7 +21,7 @@ public static class LightingProfile
     {
         if (preferences is null || !InRange(preferences.Brightness, 0, 1) ||
             !InRange(preferences.LocalAmount, 0, 2) || !InRange(preferences.BackgroundAmount, 0, 1) ||
-            !InRange(preferences.PointLightStrength, 0, 2) || !InRange(preferences.SpotLightStrength, 0, 2) ||
+            !InRange(preferences.PointLightStrength, 0, 2) || !InRange(preferences.SpotLightStrength, 0, 10) ||
             !InRange(preferences.PlayerLanternStrength, 0, 1) ||
             !Enum.IsDefined(preferences.Response) || preferences.Revision != 1)
             throw new CrimsonHueException("Invalid lighting preferences.");

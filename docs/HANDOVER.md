@@ -1,4 +1,23 @@
-# Current checkpoint — light-kind weights and own lantern strength, 2026-10-18, Codex
+# Current checkpoint — spotlight range to1000%, 2026-10-18, Codex
+
+Owner prefers expanding Spotlights above200% instead of dimming Point lights or
+changing mixing behavior. Spotlight upper bound is now10/1000% in Core,
+Recommended, Advanced and maintained native panel. Defaults, point/own ranges and
+direct source multiplication remain unchanged. Point/spot and standalone/group
+are independent: capture8934 has48/35 grouped/standalone points,31/5 spots.
+No semantic fire/blue-light categories or ownership IDs were added.
+
+Core124/124 passes: tenfold spotlight boost, unchanged point-only output,
+high-value settings/presets, upper-bound rejection and prior regressions. Fresh
+immutable Hue.asi.24/CDT.huepanel.14 validates, production/researchOFF/
+build25477059. Exact packaged controller, both package validators and exact-Hue
+hidden shared WARP/pixel/hide/reopen/resize smoke pass; image reviewed. Source/
+manifest match. Evidence/paths/hashes: [SPOTLIGHT-RANGE-VALIDATION.md](SPOTLIGHT-RANGE-VALIDATION.md) and CDT worktree
+docs/HUE_SPOTLIGHT_RANGE.md. No install, real settings/input/process write or
+physical output. Next: owner exits game, installs both matching ZIPs and adjusts
+Spotlights above200%. Physical acceptance of this new range remains pending.
+
+# Previous checkpoint — light-kind weights and own lantern strength, 2026-10-18, Codex
 
 Owner clarified two controls are needed: generic light-kind weights and separate
 own-lantern strength. Lighting now exposes Point lights/Spotlights (0–200%, initial

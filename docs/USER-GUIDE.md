@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.23 preview — setup and tuning guide
+# CrimsonHue 0.4.0-asi.24 preview — setup and tuning guide
 
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
 existing Hue Entertainment area. Its headless ASI uses CDT's in-game mixer panel. Its
@@ -7,7 +7,7 @@ or a measurement of the physical lamps.
 
 ## What to install
 
-1. Install the matching **CDT 2.2.5-huepanel.13 preview** separately in the game.
+1. Install the matching **CDT 2.2.5-huepanel.14 preview** separately in the game.
    The public CDT 2.2.4 lacks this preview's Hue panel; obtain both matching ZIPs
    from this branch's validation checkpoint. Enable its server, rendered and upstream ManyLights
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
@@ -23,8 +23,8 @@ or a measurement of the physical lamps.
    saved credentials are not in this ZIP.** See [ASI guide](ASI.md).
    Close the game and upgrade both matching packages for this version: the
    HUD close guidance is updated in CDT and the stream fix is in CrimsonHue.
-   CDT huepanel.13 includes the held-input handoff and duplicate-cursor corrections;
-   Hue .asi.23 supplies the sharper recommended spatial defaults and optional
+   CDT huepanel.14 includes the held-input handoff and duplicate-cursor corrections;
+   Hue .asi.24 supplies the sharper recommended spatial defaults and optional
    light-type and own-lantern weights; CDT.13 adds their controls. Update both.
 3. Use Windows 10/11 x64 and a Hue-compatible bridge with HTTPS API v2,
    Entertainment DTLS 1.2/PSK, color lamps and an existing Entertainment area.
@@ -83,15 +83,18 @@ launch; saved Custom configurations retain their values.
 
 **Lighting → Light balance** works in both Recommended and Custom:
 
-- **Point lights** and **Spotlights** independently weight all contributions of
-  that reported kind, including grouped sources. 100% is unchanged; 0% removes
-  that kind and 200% doubles its contribution before final output limiting.
+- **Point lights** (0–200%) and **Spotlights** (0–1000%) independently weight all
+  contributions of that reported kind, including grouped sources. 100% is
+  unchanged; 0% removes that kind, 200% doubles its contribution, and 1000%
+  multiplies spotlights by ten before final output limiting. Defaults stay at 100%.
 - **Own lantern** is an additional 0–100% multiplier for the recognized equipped
   lantern pair. Recommended starts at 10%; 0% excludes it completely. At 100% it
   follows the ordinary spotlight weight. Raising Spotlights also raises the blue
   table lamp and other spotlights; the extra lantern control keeps your own dim.
 
 The game reports geometric kinds, rather than semantic fire/blue-light types.
+Point and spot sources can each be standalone or grouped; grouping is a separate
+property. The Spotlight control affects both standalone and grouped spotlights.
 Sources without a recognized kind retain normal strength. The own-lantern match
 uses a conservative signature for game build 25477059, rather than an engine
 ownership ID. Unsupported builds, missing metadata, incomplete or ambiguous

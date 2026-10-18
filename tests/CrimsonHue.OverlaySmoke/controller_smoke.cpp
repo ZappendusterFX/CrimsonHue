@@ -146,23 +146,24 @@ int wmain(int argc, wchar_t** argv) {
             Control(view, "Brightness") == 85 && Control(view, "AmbientCutoff") == 0 &&
             Control(view, "SourceDiscRadiusDegrees") == 30; }, "Profile smoke cleanup failed");
         Command({{"action", "lighting"}, {"key", "PointLightStrength"}, {"value", .4}});
-        Command({{"action", "lighting"}, {"key", "SpotLightStrength"}, {"value", 1.6}});
+        Command({{"action", "lighting"}, {"key", "SpotLightStrength"}, {"value", 10}});
         Command({{"action", "lighting"}, {"key", "PlayerLanternStrength"}, {"value", .05}});
         state = Await([&](const Json& view) { return Control(view,"PointLightStrength")==40 &&
-            Control(view,"SpotLightStrength")==160 && Control(view,"PlayerLanternStrength")==5; }, "Recommended source weights failed");
+            Control(view,"SpotLightStrength")==1000 && Control(view,"PlayerLanternStrength")==5; }, "Recommended source weights failed");
         Command({{"action", "lighting"}, {"key", "PointLightStrength"}, {"value", 2.01}});
+        Command({{"action", "lighting"}, {"key", "SpotLightStrength"}, {"value", 10.01}});
         Command({{"action", "lighting"}, {"key", "PlayerLanternStrength"}, {"value", 1.01}});
         Sleep(100); Require(State().at("lighting")==state.at("lighting"),"Invalid weights changed Recommended");
         Command({{"action", "profile"}, {"recommended", false}});
         state = Await([](const Json& view) { return view.at("lighting").at("recommended") == false; }, "Custom mode failed");
         Command({{"action", "lighting"}, {"key", "PointLightStrength"}, {"value", .7}});
-        Command({{"action", "lighting"}, {"key", "SpotLightStrength"}, {"value", 1.2}});
+        Command({{"action", "lighting"}, {"key", "SpotLightStrength"}, {"value", 5}});
         Command({{"action", "lighting"}, {"key", "PlayerLanternStrength"}, {"value", .02}});
         state = Await([&](const Json& view) { return Control(view,"PointLightStrength")==70 &&
-            Control(view,"SpotLightStrength")==120 && Control(view,"PlayerLanternStrength")==2; }, "Custom source weights failed");
+            Control(view,"SpotLightStrength")==500 && Control(view,"PlayerLanternStrength")==2; }, "Custom source weights failed");
         Command({{"action", "profile"}, {"recommended", true}});
         state = Await([&](const Json& view) { return Control(view,"PointLightStrength")==40 &&
-            Control(view,"SpotLightStrength")==160 && Control(view,"PlayerLanternStrength")==5 &&
+            Control(view,"SpotLightStrength")==1000 && Control(view,"PlayerLanternStrength")==5 &&
             view.at("lighting").at("lanternMatches")==0; }, "Recommended weights were lost");
         Command({{"action", "lighting"}, {"key", "PointLightStrength"}, {"value", 1}});
         Command({{"action", "lighting"}, {"key", "SpotLightStrength"}, {"value", 1}});

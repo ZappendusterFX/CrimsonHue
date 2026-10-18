@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.23 — mixer hosted by CDT
+# CrimsonHue 0.4.0-asi.24 — mixer hosted by CDT
 
 CDT draws the interactive CrimsonHue mixer in its existing D3D12/ImGui frame.
 `CrimsonHue.asi` hosts the existing C# lamp controller on a hidden WPF STA. It
@@ -12,10 +12,10 @@ No separate EXE, process or visible WPF settings window is used.
    documented .NET 8 ASP.NET Core Runtime x64. Newer runtimes alone do not meet
    these .NET 8 requirements.
 2. Close Crimson Desert and stop any old desktop CrimsonHue sync. Use the matching
-   **CDT 2.2.5-huepanel.13** preview with this version. Public CDT 2.2.4 does not host
+   **CDT 2.2.5-huepanel.14** preview with this version. Public CDT 2.2.4 does not host
    the Hue panel. Install both updated packages with the game closed: Hue keeps
    sync running when X is clicked; CDT displays the matching close guidance.
-   The held-input handoff correction is in CDT huepanel.10. Hue .asi.23 provides
+   The held-input handoff correction is in CDT huepanel.10. Hue .asi.24 provides
    the sharper recommended spatial defaults and separate point/spot/own-lantern
    weights; CDT.13 exposes the controls and retains CDT.11's cursor fix.
    Update both matching packages.

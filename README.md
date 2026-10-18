@@ -3,23 +3,23 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**Branch preview: 0.4.0-asi.23.** CDT hosts the interactive Hue mixer in its own
+**Branch preview: 0.4.0-asi.24.** CDT hosts the interactive Hue mixer in its own
 D3D12 renderer. `CrimsonHue.asi` is the headless lamp controller and installs no
 graphics hooks. There is no separate settings window or process. The ZIP contains
 one ASI and documentation; application dependencies
 are embedded, and users install **.NET 8 Desktop Runtime x64** separately.
 See [ASI guide](docs/ASI.md) and [verification checkpoint](docs/HANDOVER.md).
-Use the matching **CDT 2.2.5-huepanel.13** preview; public CDT 2.2.4 lacks the panel.
+Use the matching **CDT 2.2.5-huepanel.14** preview; public CDT 2.2.4 lacks the panel.
 Install both matching packages with the game closed. The title-bar X now saves
 and hides the HUD while lighting sync continues, like the shortcut. The simple
 Lighting page, recommended profile and CDT cursor fix are included.
 Layout checks now include Hue service placement as well as channel geometry.
-The input handoff correction is in CDT huepanel.10. Hue .asi.23 sharpens the
+The input handoff correction is in CDT huepanel.10. Hue .asi.24 sharpens the
 recommended spatial defaults: 30° source radius, 20% edge softness and focus 4.
 Advanced resets use the same spatial defaults; saved Custom values are preserved.
 CDT retains the huepanel.11 correction for the extra native cursor during HUD input ownership.
-**Lighting → Light balance** weights point lights and spotlights separately
-(0–200%, initially 100%). **Own lantern** applies an additional 0–100% multiplier
+**Lighting → Light balance** weights point lights (0–200%) and spotlights
+(0–1000%) separately, initially 100% each. **Own lantern** applies an additional 0–100% multiplier
 to the complete pair recognized on build 25477059; Recommended starts at 10%.
 Missing or ambiguous matches keep the normal spotlight weight. Raw input stays
 unchanged. Both Recommended and Custom expose the controls, and version-2 presets
@@ -68,7 +68,7 @@ physical lamp brightness.
 
 ## Start
 
-1. Install the matching **CrimsonDesertTelemetry 2.2.5-huepanel.13 preview** with its server, rendered and upstream
+1. Install the matching **CrimsonDesertTelemetry 2.2.5-huepanel.14 preview** with its server, rendered and upstream
    ManyLights capture, and source visibility enabled.
 2. Install [**.NET 8 Desktop Runtime x64**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
    With the game closed, import this ZIP through DMM, or put its
