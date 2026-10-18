@@ -1,4 +1,4 @@
-# Current checkpoint — public 1.0.0 release preparation, 2026-10-18, Codex
+# Current checkpoint — public 1.0.0 published on main, 2026-10-18, Codex
 
 Owner declines the fresh GPU capture and authorizes release of the existing
 behavior, GitHub publication, descriptions/Nexus copy, and merging back to main.
@@ -12,7 +12,15 @@ API, full native40/40, and exact-Hue hidden shared WARP/pixel/hide/reopen/resize
 smoke; screenshot inspected and source manifests match. Hue ZIP SHA256
 18CB42CE155E2361FC93DEC6D7E72611CF47EE28721908D60AB13EE55508477B.
 Details: [v1.0.0-validation.md](releases/v1.0.0-validation.md). No final-ZIP install,
-game input or physical output in this operation. Merge/publication is next.
+game input or physical output in this operation.
+Both feature branches were fast-forward merged into main; this checkout is main.
+GitHub [v1.0.0](https://github.com/ZappendusterFX/CrimsonHue/releases/tag/v1.0.0)
+is published as latest/non-prerelease (release416451627,13:00:41UTC). Public page
+returns200; uploaded/downloaded ZIP bytes and GitHub digest match the tested ZIP.
+Matching CDT2.2.5 is also published; its Nexus job was skipped. Additional GitHub
+CI was still running at the final publication check; local checks above passed.
+Next: owner uses the prepared Nexus text/uploads
+manually; no fresh GPU session or other release action is requested.
 Release notes: [v1.0.0.md](releases/v1.0.0.md); copy: [NEXUS.md](NEXUS.md).
 
 # Previous checkpoint — short renderer feasibility check, 2026-10-18, Codex
