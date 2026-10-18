@@ -1,4 +1,14 @@
-# Current checkpoint — caged Scholastone lamps, 2026-10-18, Codex
+# Current checkpoint — short renderer feasibility check, 2026-10-18, Codex
+
+Requested short upstream check is complete: promising source-indexed screen-space
+hit data exists in saved GPU shaders and feeds actual ManyLights integration.
+No simple optical per-lamp flag, fresh GPU readback, cage/glass acceptance or cost
+claim. Current neutral input progresses at the cage scene. Details/next step in
+existing CDT worktree docs/RENDERER-LIGHT-CONTRIBUTION-FEASIBILITY.md. No behavior,
+settings, package, input or physical output change. Do not expand beyond this
+feasibility check until the owner requests continuation.
+
+# Previous checkpoint — caged Scholastone lamps, 2026-10-18, Codex
 
 Five visible blue wall fixtures match standalone point sources in fresh paired
 CDT feeds, repeatedly blocked with 0/9 clear rays (captures2895/4018). Hue excludes
