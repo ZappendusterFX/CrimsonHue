@@ -7,9 +7,13 @@ upload stays manual. Public guides and versions replace the private preview.
 Glass/cage collision false blocks remain explicit; renderer-derived optical
 visibility is research, not a release feature. No further game action is required.
 
-Core124/124 passes on1.0.0; CDT managed79/79 and API smoke pass. Final immutable
-package/controller/shared-renderer/native validation and publication are in
-progress. Release notes: [v1.0.0.md](releases/v1.0.0.md); copy: [NEXUS.md](NEXUS.md).
+Final packages pass: Core124/124, exact packaged controller/ZIP, CDT managed79/79,
+API, full native40/40, and exact-Hue hidden shared WARP/pixel/hide/reopen/resize
+smoke; screenshot inspected and source manifests match. Hue ZIP SHA256
+18CB42CE155E2361FC93DEC6D7E72611CF47EE28721908D60AB13EE55508477B.
+Details: [v1.0.0-validation.md](releases/v1.0.0-validation.md). No final-ZIP install,
+game input or physical output in this operation. Merge/publication is next.
+Release notes: [v1.0.0.md](releases/v1.0.0.md); copy: [NEXUS.md](NEXUS.md).
 
 # Previous checkpoint — short renderer feasibility check, 2026-10-18, Codex
 
