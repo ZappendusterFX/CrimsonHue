@@ -11,6 +11,11 @@ public sealed record LightingPreferences(bool Recommended = true, double Brightn
 /// <summary>A deterministic starting profile, not scene or lamp auto-calibration.</summary>
 public static class LightingProfile
 {
+    // Product/reset defaults are separate from MappingSettings' historical
+    // constructor defaults, which also fill omitted fields in saved presets.
+    public static MappingSettings Defaults { get; } = new(Spread: 4,
+        SourceDiscRadiusDegrees: 30, SourceDiscSoftness: .2);
+
     public static void Validate(LightingPreferences preferences)
     {
         if (preferences is null || !InRange(preferences.Brightness, 0, 1) ||
@@ -33,9 +38,9 @@ public static class LightingProfile
         };
         // The manual record is never rewritten: switching back restores it exactly.
         // Room alignment remains personal; threshold, fill and color changes do not.
-        return new MappingSettings(Brightness: preferences.Brightness,
-            LocalStrength: preferences.LocalAmount, AmbientOutput: preferences.BackgroundAmount,
-            SmoothingMs: localMs, AmbientSmoothingMs: ambientMs, CameraYawOffset: manual.CameraYawOffset);
+        return Defaults with { Brightness = preferences.Brightness,
+            LocalStrength = preferences.LocalAmount, AmbientOutput = preferences.BackgroundAmount,
+            SmoothingMs = localMs, AmbientSmoothingMs = ambientMs, CameraYawOffset = manual.CameraYawOffset };
     }
 
     public static LightingPreferences FromLegacy(MappingSettings mapping)

@@ -1,4 +1,28 @@
-# Current checkpoint — blue table lamp diagnosis, 2026-10-18, Codex
+# Current checkpoint — focused defaults and single HUD cursor, 2026-10-18, Codex
+
+Owner asks for sharper zone separation via defaults, and reports two HUD cursors
+with only one functional. Recommended/fresh initialization/Advanced reset now
+share 30-degree source radius, 20% softness, focus4; the mapper is unchanged.
+Saved Custom/legacy omitted-field behavior is preserved. Two real-scene offline
+replays retain a cool Play Bar alongside warm washers rather than all-warm output.
+This is calculated point-geometry evidence, not physical acceptance.
+
+Maintained panel hides the native cursor shape during foreground/client HUD
+ownership, handles client WM_SETCURSOR, and restores a suppressed shape when
+appropriate. Newer visible game/foreign shapes and outside-client pointers are
+preserved; no ShowCursor counter, position or input-release changes. Actual
+adapter mock regressions pass; omitting frame hide fails the double-cursor test.
+
+Fresh immutable **Hue0.4.0-asi.21 + CDT2.2.5-huepanel.11**; CDT production,
+researchOFF/build25477059. Core116/116, packaged controller/profile/reset smoke,
+both package validators, CDT12/12 focused tests and exact-Hue hidden shared
+D3D12 WARP/pixel/hide/reopen/resize smoke pass; image reviewed. Source copies match.
+Evidence/paths/hashes: [FOCUSED-ZONES-VALIDATION.md](FOCUSED-ZONES-VALIDATION.md), CDT
+worktree docs/HUE_SINGLE_CURSOR.md. No install, real settings, input, process
+write or physical output changed. Next: owner exits game, installs both packages,
+selects Recommended and assesses zone separation/one cursor/held-input return.
+
+# Previous checkpoint — blue table lamp diagnosis, 2026-10-18, Codex
 
 Owner supplied a night screenshot at the blue table lantern. Neutral API source
 1.735 GU away projects onto that lantern and is clear 9/9 in four progressing

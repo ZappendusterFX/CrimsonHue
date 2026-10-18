@@ -15,7 +15,7 @@ public partial class MainWindow
     private readonly Dictionary<string, TuningControl> tuningControls = [];
     private readonly Dictionary<string, CheckBox> tuningSwitches = [];
     private readonly DistanceCurveView distanceCurve = new() { Height = 115, Margin = new Thickness(0, 8, 0, 4) };
-    private static readonly MappingSettings defaults = new();
+    private static readonly MappingSettings defaults = LightingProfile.Defaults;
     private static readonly SwitchParameter[] switches = [];
     private static readonly Parameter[] parameters =
     [

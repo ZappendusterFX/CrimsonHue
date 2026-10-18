@@ -68,7 +68,7 @@ int wmain(int argc, wchar_t** argv) {
         Require(state.at("controls").size() == 28 && state.at("switches").empty() && state.at("channels").size() == 6, "Missing mixer/layout controls or obsolete axis switches remain");
         bool sphereDefault = false;
         for (const auto& value : state.at("controls")) if (value.at("key") == "SourceDiscRadiusDegrees")
-            sphereDefault = value.at("value") == 60.0 && value.at("min") == 1.0 && value.at("max") == 180.0 && value.at("group") == "Space";
+            sphereDefault = value.at("value") == 30.0 && value.at("initial") == 30.0 && value.at("min") == 1.0 && value.at("max") == 180.0 && value.at("group") == "Space";
         Require(sphereDefault, "Spherical radius default or range missing from controller snapshot");
 
         // Exercise the real native-to-managed command ABI. Profile selection
@@ -76,7 +76,8 @@ int wmain(int argc, wchar_t** argv) {
         Require(state.at("lighting").at("recommended") == true && state.at("lighting").at("revision") == 1 &&
             state.at("lighting").at("response") == "Balanced" && state.at("lighting").at("hasCustom") == true &&
             Control(state, "Brightness") == 85 && Control(state, "SmoothingMs") == 250 &&
-            Control(state, "AmbientSmoothingMs") == 600, "New isolated controller did not start with the recommended Balanced profile");
+            Control(state, "AmbientSmoothingMs") == 600 && Control(state, "Spread") == 4 &&
+            Control(state, "SourceDiscSoftness") == 20, "New isolated controller did not start with the recommended Balanced profile");
         Require(state.at("assessment").at("code") == "demo" && state.at("assessment").at("warning") == false &&
             !state.at("assessment").at("summary").get<std::string>().empty() &&
             state.at("assessment").at("detail").get<std::string>().find("no physical output") != std::string::npos,
@@ -143,7 +144,7 @@ int wmain(int argc, wchar_t** argv) {
         Command({{"action", "profile"}, {"recommended", true}});
         state = Await([&](const Json& view) { return view.at("lighting").at("recommended") == true &&
             Control(view, "Brightness") == 85 && Control(view, "AmbientCutoff") == 0 &&
-            Control(view, "SourceDiscRadiusDegrees") == 60; }, "Profile smoke cleanup failed");
+            Control(view, "SourceDiscRadiusDegrees") == 30; }, "Profile smoke cleanup failed");
         std::cout << "PASS Recommended/Custom ABI, simple controls, invalid-command rejection, neutral color, master-cap preservation, full custom restore and preview assessment.\n";
 
         Command({{"action", "set"}, {"key", "Brightness"}, {"value", 23.0}});
@@ -159,7 +160,9 @@ int wmain(int argc, wchar_t** argv) {
         Command({{"action", "set"}, {"key", "SourceDiscRadiusDegrees"}, {"value", 181.0}}); Sleep(100);
         state = State(); for (const auto& value : state.at("controls")) if (value.at("key") == "SourceDiscRadiusDegrees") Require(value.at("value") == 130.0, "Out-of-range spherical radius changed mapping");
         Command({{"action", "reset"}, {"group", "Output"}}); Command({{"action", "reset"}, {"group", "Space"}}); Sleep(100);
-        state = State(); for (const auto& value : state.at("controls")) if (value.at("key") == "SourceDiscRadiusDegrees") Require(value.at("value") == 60.0, "Space reset did not restore spherical radius default");
+        state = State();
+        Require(Control(state, "SourceDiscRadiusDegrees") == 30 && Control(state, "Spread") == 4 &&
+            Control(state, "SourceDiscSoftness") == 20, "Space reset did not restore the focused defaults");
 
         state = State(); Require(state.at("wallWashers").size() == 2, "Missing per-lamp wall calibration");
         for (const auto& washer : state.at("wallWashers")) {

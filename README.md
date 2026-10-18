@@ -3,19 +3,22 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**Branch preview: 0.4.0-asi.20.** CDT hosts the interactive Hue mixer in its own
+**Branch preview: 0.4.0-asi.21.** CDT hosts the interactive Hue mixer in its own
 D3D12 renderer. `CrimsonHue.asi` is the headless lamp controller and installs no
 graphics hooks. There is no separate settings window or process. The ZIP contains
 one ASI and documentation; application dependencies
 are embedded, and users install **.NET 8 Desktop Runtime x64** separately.
 See [ASI guide](docs/ASI.md) and [verification checkpoint](docs/HANDOVER.md).
-Use the matching **CDT 2.2.5-huepanel.10** preview; public CDT 2.2.4 lacks the panel.
+Use the matching **CDT 2.2.5-huepanel.11** preview; public CDT 2.2.4 lacks the panel.
 Install both matching packages with the game closed. The title-bar X now saves
 and hides the HUD while lighting sync continues, like the shortcut. The simple
 Lighting page, recommended profile and CDT cursor fix are included.
 Layout checks now include Hue service placement as well as channel geometry.
-The input handoff correction is in CDT huepanel.10; keep the existing Hue .asi.20
-controller. Release held game buttons/keys before interacting with an opened HUD.
+The input handoff correction is in CDT huepanel.10. Hue .asi.21 sharpens the
+recommended spatial defaults: 30° source radius, 20% edge softness and focus 4.
+Advanced resets use the same spatial defaults; saved Custom values are preserved.
+CDT huepanel.11 suppresses the extra native cursor during HUD input ownership.
+Release held game buttons/keys before interacting with an opened HUD.
 Physical acceptance of the new profile remains pending.
 The Hue panel uses CDT's compact body-text size and blue/cyan palette. Setup
 guides the link-button pairing and confirms CONNECTED only after authenticated
@@ -58,7 +61,7 @@ physical lamp brightness.
 
 ## Start
 
-1. Install the matching **CrimsonDesertTelemetry 2.2.5-huepanel.10 preview** with its server, rendered and upstream
+1. Install the matching **CrimsonDesertTelemetry 2.2.5-huepanel.11 preview** with its server, rendered and upstream
    ManyLights capture, and source visibility enabled.
 2. Install [**.NET 8 Desktop Runtime x64**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
    With the game closed, import this ZIP through DMM, or put its
@@ -161,11 +164,11 @@ The camera's right/up/forward axes supply orientation at every percentage.
 Changing the origin does not change the player-relative distance cutoff.
 
 Each source has a spherical angular influence with **Source influence radius**
-of 60° by default, adjustable from 1° to 180°. Contribution depends on the angle
+of 30° by default, adjustable from 1° to 180°. Contribution depends on the angle
 between the source and receiving direction. The same rule applies to left/right,
 front/rear, above/below and diagonals; no axis sign cuts a source off.
 
-**Spherical edge softness** controls the outer fraction that fades to zero, 25%
+**Spherical edge softness** controls the outer fraction that fades to zero, 20%
 by default. Choosing 0% explicitly gives the source radius a sharp edge. All
 directions outside the radius are zero. This angular distribution works around
 all camera directions, including outside the game image, without a screen-frustum
@@ -225,7 +228,7 @@ incomplete or out-of-range files are rejected without changing settings.
 | Output | Maximum brightness (85%; 0–100%), Light sensitivity (1.5×; 0–10×), Local light mix (100%; 0–400%), Output gamma (1; 0.1–4), Local light transition (100 ms; 0–1000 ms) |
 | Ambient | Ambient exposure (1×; 0–10×), Ambient reference level (4; 0.01–100 raw units), Ambient mix (40%; 0–100%), Extra background light (0%; 0–100%), Ambient black threshold (0; 0–100 raw units), Local mix in bright Ambient (100%; 0–200%), Ambient transition (400 ms; 0–5000 ms) |
 | Color | Local hue shift (0°; −180–180°), Local saturation (100%; 0–200%), Red balance / Green balance / Blue balance (each 1×; 0–4×), Ambient tint hue (0°; 0–360°), Ambient tint saturation (0%; 0–100%) |
-| Space | Direction origin (50%; 0% player–100% camera), Fade starts (0; below Off beyond, up to just under 1000 game units), Off beyond (35; 1–1000 game units), Distance falloff (2; 0.1–8), Source influence radius (60°; 1–180°), Spherical edge softness (25%; 0–100%, 0 gives a sharp radius edge), Directional focus (2; 0–16), Strongest-channel compensation (100%; 0–100%), Room direction offset (0°; −180–180°) |
+| Space | Direction origin (50%; 0% player–100% camera), Fade starts (0; below Off beyond, up to just under 1000 game units), Off beyond (35; 1–1000 game units), Distance falloff (2; 0.1–8), Source influence radius (30°; 1–180°), Spherical edge softness (20%; 0–100%, 0 gives a sharp radius edge), Directional focus (4; 0–16), Strongest-channel compensation (100%; 0–100%), Room direction offset (0°; −180–180°) |
 | Setup | Bridge pairing, imported Entertainment area and local telemetry address |
 
 The raw readout shows CDT's global sky RGB, camera sky visibility, camera-local

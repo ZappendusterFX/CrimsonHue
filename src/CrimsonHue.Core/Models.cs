@@ -70,6 +70,8 @@ public sealed record EntertainmentArea(string Id, string Name, bool Active, IRea
     }
 }
 public sealed record BridgeCredentials(string Address, string ApplicationKey, string ClientKey, string? CertificateSha256);
+// Historical omitted-field defaults for saved settings/presets. The current
+// product/profile/reset baseline is LightingProfile.Defaults.
 public sealed record MappingSettings(double Gain = 1.5, double Brightness = 0.85, double Radius = 35, double Spread = 2,
     double SmoothingMs = 100, double FadeStart = 0, double AmbientSensitivity = 1,
     double AmbientOutput = 0.4, double AmbientFloor = 0, double AmbientCutoff = 0,

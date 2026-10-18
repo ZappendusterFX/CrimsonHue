@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.20 — mixer hosted by CDT
+# CrimsonHue 0.4.0-asi.21 — mixer hosted by CDT
 
 CDT draws the interactive CrimsonHue mixer in its existing D3D12/ImGui frame.
 `CrimsonHue.asi` hosts the existing C# lamp controller on a hidden WPF STA. It
@@ -12,11 +12,12 @@ No separate EXE, process or visible WPF settings window is used.
    documented .NET 8 ASP.NET Core Runtime x64. Newer runtimes alone do not meet
    these .NET 8 requirements.
 2. Close Crimson Desert and stop any old desktop CrimsonHue sync. Use the matching
-   **CDT 2.2.5-huepanel.10** preview with this version. Public CDT 2.2.4 does not host
+   **CDT 2.2.5-huepanel.11** preview with this version. Public CDT 2.2.4 does not host
    the Hue panel. Install both updated packages with the game closed: Hue keeps
    sync running when X is clicked; CDT displays the matching close guidance.
-   The held-input handoff correction is in CDT huepanel.10. Keep the existing
-   Hue .asi.20 controller when installing that CDT update; no Hue rebuild is needed.
+   The held-input handoff correction is in CDT huepanel.10. Hue .asi.21 provides
+   the sharper recommended spatial defaults; CDT.11 also hides the duplicate
+   native cursor while the HUD owns input. Update both matching packages.
 3. For a new installation, import both ZIPs through DMM using the existing x64
    ASI loader. For this upgrade, import both matching ZIPs. CrimsonHue's
    package contains one `CrimsonHue/CrimsonHue.asi` plus documentation/notices;
@@ -58,8 +59,12 @@ active Entertainment stream. Room calibration is local and presets preserve it.
 
 This controller blends local sources by angular distance on the sphere across
 every axis, replacing the previous left/right and front/rear gates. Space offers
-**Source influence radius** (60° by default, 1–180°) and **Spherical edge softness**
-(25% by default; 0% explicitly selects a sharp radius edge). The old axis flags
+**Source influence radius** (30° recommended/reset default, 1–180°) and
+**Spherical edge softness** (20% recommended/reset default; 0% explicitly selects
+a sharp radius edge). **Directional focus** defaults to 4. These settings reduce
+overlap between neighboring color zones while retaining a smooth angular edge.
+Existing Recommended settings use them at next launch; saved Custom values and
+historical omitted-field defaults are preserved. The old axis flags
 remain serialized for compatibility but are ignored and have no HUD switches.
 Compensation uses full room geometry independently of source-radius membership;
 wall contributions average over the calibrated region. Existing wall output can

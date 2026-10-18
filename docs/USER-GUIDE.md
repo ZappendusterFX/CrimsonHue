@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.20 preview — setup and tuning guide
+# CrimsonHue 0.4.0-asi.21 preview — setup and tuning guide
 
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
 existing Hue Entertainment area. Its headless ASI uses CDT's in-game mixer panel. Its
@@ -7,7 +7,7 @@ or a measurement of the physical lamps.
 
 ## What to install
 
-1. Install the matching **CDT 2.2.5-huepanel.10 preview** separately in the game.
+1. Install the matching **CDT 2.2.5-huepanel.11 preview** separately in the game.
    The public CDT 2.2.4 lacks this preview's Hue panel; obtain both matching ZIPs
    from this branch's validation checkpoint. Enable its server, rendered and upstream ManyLights
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
@@ -23,7 +23,8 @@ or a measurement of the physical lamps.
    saved credentials are not in this ZIP.** See [ASI guide](ASI.md).
    Close the game and upgrade both matching packages for this version: the
    HUD close guidance is updated in CDT and the stream fix is in CrimsonHue.
-   The held-input handoff correction requires CDT huepanel.10; keep Hue .asi.20.
+   CDT huepanel.11 includes the held-input handoff and duplicate-cursor corrections;
+   Hue .asi.21 supplies the sharper recommended spatial defaults. Update both.
 3. Use Windows 10/11 x64 and a Hue-compatible bridge with HTTPS API v2,
    Entertainment DTLS 1.2/PSK, color lamps and an existing Entertainment area.
    Set the area and channel positions in the Hue app first. diyHue is the
@@ -74,6 +75,10 @@ New installations use **Recommended**. The normal page has three controls:
 environment layer; **Local light effects** sets the amount from nearby sources.
 **Response** chooses Quick, Balanced or Calm and coordinates both transitions.
 Balanced uses 250 ms for local sources and 600 ms for the background.
+The spatial defaults use a 30° source radius, 20% edge softness and directional
+focus 4 to keep adjacent color zones more distinct. Advanced resets use those
+same spatial defaults. Existing Recommended installations adopt them at next
+launch; saved Custom configurations retain their values.
 
 The recommended profile supplies a coherent mapping with neutral colors/gamma,
 no black threshold, no artificial background floor and continuous spherical
@@ -276,12 +281,12 @@ axis gates. The old axis-separation switches are no longer shown or applied.
 | Control (default) | Effect and interaction |
 | --- | --- |
 | **Direction origin** (50%, 0–100% camera) | Position used to classify source direction: 0% player, 100% camera lens, intermediate values along the player-to-camera line. Camera orientation is used throughout. This can move a nearby source from rear to front in third-person view. It does **not** change player-relative distance fade. |
-| **Source influence radius** (60°, 1–180°) | Angular radius around each local source direction on the sphere, including off-screen sources. Outside this radius, contribution is zero. A wider radius can smoothly reach across any room axis; 180° reaches every direction. This describes angular influence, not reflections or a physical volume. |
-| **Spherical edge softness** (25%, 0–100%) | Outer fraction of the angular radius that fades to zero. Choosing 0% explicitly gives the radius a sharp edge. The region outside the radius remains zero. |
+| **Source influence radius** (30°, 1–180°) | Angular radius around each local source direction on the sphere, including off-screen sources. Outside this radius, contribution is zero. A wider radius increases overlap and can bridge gaps between widely spaced lamp directions; 180° reaches every direction. This describes angular influence, not reflections or a physical volume. |
+| **Spherical edge softness** (20%, 0–100%) | Outer fraction of the angular radius that fades to zero. Choosing 0% explicitly gives the radius a sharp edge. The region outside the radius remains zero. |
 | **Fade starts** (0 game units, 0 to below Off beyond) | Full source distance strength up to this player-relative distance. Must stay below **Off beyond**. |
 | **Off beyond** (35 game units, 1–1000) | Source contributes nothing at or beyond this player-relative distance. Use a smaller value for a compact room effect. The units are game units, not calibrated metres. |
 | **Distance falloff** (2, 0.1–8) | Shape of the fade between **Fade starts** and **Off beyond**. Higher values suppress the middle and far part more strongly. The curve preview shows the result. |
-| **Directional focus** (2, 0–16) | Weights channels within the source's spherical influence. Zero is even before edge softness; higher values favor closer directions. Channels outside the radius receive no contribution. |
+| **Directional focus** (4, 0–16) | Weights channels within the source's spherical influence. Zero is even before edge softness; higher values favor closer directions. Channels outside the radius receive no contribution. |
 | **Strongest-channel compensation** (100%, 0–100%) | Compensates directional attenuation against the strongest affinity in the full room geometry. That geometry is independent of which channels intersect the source radius, preventing compensation jumps when channels enter or leave it. 0% leaves angular attenuation. Spherical edge softness and the wall-area average still apply. |
 | **Room direction offset** (0°, −180–180°) | Rotates game camera direction relative to the imported room layout. Use if left/right/front/rear are consistently misaligned; it does not move Hue channel positions. |
 

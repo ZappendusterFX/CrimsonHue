@@ -34,8 +34,8 @@ public partial class MainWindow : Window
     private StreamingSession? session;
     private BridgeClient? bridge;
     private BridgeProbe? probe;
-    private MappingSettings mapping = new();
-    private MappingSettings manualMapping = new();
+    private MappingSettings mapping = LightingProfile.Defaults;
+    private MappingSettings manualMapping = LightingProfile.Defaults;
     private LightingPreferences lighting = new();
     private OverlayShortcut shortcut = new();
     private WallWashLayout wallWash = WallWashLayout.Empty;
@@ -68,7 +68,7 @@ public partial class MainWindow : Window
                 selectedAreaId = saved.AreaId;
                 // A malformed shortcut must not discard the owner's existing bridge/layout.
                 if (saved.Shortcut is { } savedShortcut && OverlayShortcut.IsAllowedKey(savedShortcut.Key)) shortcut = savedShortcut;
-                var m = saved.Mapping ?? new(); LightMapper.Validate(m);
+                var m = saved.Mapping ?? LightingProfile.Defaults; LightMapper.Validate(m);
                 manualMapping = m;
                 lighting = saved.Lighting ?? (saved.Mapping is null ? new() : LightingProfile.FromLegacy(m));
                 try { LightingProfile.Validate(lighting); }

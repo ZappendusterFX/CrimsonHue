@@ -32,7 +32,8 @@ static class LightingProfileTests
             var manual = new MappingSettings(AmbientCutoff: 50, AmbientFloor: .8, OutputGamma: 3,
                 RedGain: 4, HueShiftDegrees: 80, CameraYawOffset: 23);
             var effective = LightingProfile.Resolve(preferences, manual);
-            Assert(effective == new MappingSettings(SmoothingMs: 250, AmbientSmoothingMs: 600, CameraYawOffset: 23),
+            Assert(effective == new MappingSettings(Spread: 4, SourceDiscRadiusDegrees: 30, SourceDiscSoftness: .2,
+                SmoothingMs: 250, AmbientSmoothingMs: 600, CameraYawOffset: 23),
                 "Recommended profile inherited manual thresholds, color edits or other hidden controls");
             foreach (var (response, local, ambient) in new[] {
                 (LightingResponse.Quick, 100.0, 400.0), (LightingResponse.Balanced, 250.0, 600.0), (LightingResponse.Calm, 500.0, 1000.0) })
@@ -40,6 +41,22 @@ static class LightingProfileTests
                 var result = LightingProfile.Resolve(preferences with { Response = response }, manual);
                 Assert(result.SmoothingMs == local && result.AmbientSmoothingMs == ambient, "Response preset changed");
             }
+        });
+        add("Recommended footprint separates nearby colored zones without changing the mixer", () =>
+        {
+            Vec3 Direction(double yaw) => new(Math.Sin(yaw * Math.PI / 180), Math.Cos(yaw * Math.PI / 180), 0);
+            var area = Area(Direction(-20), Direction(20));
+            var left = Direction(-30); var right = Direction(30);
+            var frame = Frame() with { Lights = [
+                new(new(left.X * 5, 0, left.Y * 5), new(1, 0, 0)),
+                new(new(right.X * 5, 0, right.Y * 5), new(0, 0, 1))] };
+            var mapping = LightingProfile.Resolve(new(), new()) with { SmoothingMs = 0 };
+            var colors = new LightMapper().Map(frame, area, mapping, 1);
+            var broad = new LightMapper().Map(frame, area, mapping with {
+                SourceDiscRadiusDegrees = 60, SourceDiscSoftness = .25, Spread = 2 }, 1);
+            Assert(broad[0].Rgb.Z > .01 && broad[1].Rgb.X > .01, "Control did not reproduce overlapping zones");
+            Assert(colors[0].Rgb.X > .1 && colors[0].Rgb.Z == 0 &&
+                colors[1].Rgb.Z > .1 && colors[1].Rgb.X == 0, "Recommended footprint mixed neighboring color zones");
         });
         add("Custom lighting and mode round trips preserve every manual value", () =>
         {
@@ -107,17 +124,29 @@ static class LightingProfileTests
         });
         add("Recommended profile keeps all axis crossings continuous", () =>
         {
-            var mapping = LightingProfile.Resolve(new(), new());
+            var mapping = LightingProfile.Resolve(new(), new()) with { SmoothingMs = 0 };
             foreach (var (left, right, before, after) in new[] {
                 (new Vec3(-.4, .8, 0), new Vec3(.4, .8, 0), new Vec3(-.0001, 1, 0), new Vec3(.0001, 1, 0)),
                 (new Vec3(.8, -.4, 0), new Vec3(.8, .4, 0), new Vec3(1, -.0001, 0), new Vec3(1, .0001, 0)),
                 (new Vec3(0, .8, -.4), new Vec3(0, .8, .4), new Vec3(0, 1, -.0001), new Vec3(0, 1, .0001)) })
             {
                 var area = Area(left, right);
-                var a = new LightMapper().Map(Frame(new(before.X, before.Z, before.Y)), area, mapping, 1);
-                var b = new LightMapper().Map(Frame(new(after.X, after.Z, after.Y)), area, mapping, 1);
-                Assert(a.Concat(b).All(c => Peak(c) > 0) && a.Zip(b).All(p => (p.First.Rgb - p.Second.Rgb).Length < .001),
-                    "Recommended profile introduced an axis cutoff");
+                var center = (before + after) / 2;
+                var previousDelta = double.PositiveInfinity;
+                // Sharper spatial gradients can exceed the old fixed difference
+                // bound. A continuous handover must converge as the step shrinks,
+                // without temporal smoothing concealing a hard axis boundary.
+                foreach (var scale in new[] { 1.0, .1, .01 })
+                {
+                    var from = center + (before - center) * scale;
+                    var to = center + (after - center) * scale;
+                    var a = new LightMapper().Map(Frame(new(from.X, from.Z, from.Y)), area, mapping, 1);
+                    var b = new LightMapper().Map(Frame(new(to.X, to.Z, to.Y)), area, mapping, 1);
+                    var delta = a.Zip(b).Max(p => (p.First.Rgb - p.Second.Rgb).Length);
+                    Assert(a.Concat(b).All(c => Peak(c) > 0) && delta < .01 && delta <= previousDelta * .2,
+                        "Recommended profile introduced a discontinuous axis cutoff");
+                    previousDelta = delta;
+                }
             }
         });
         add("Basic lighting amounts are monotonic and honor the brightness cap", () =>
