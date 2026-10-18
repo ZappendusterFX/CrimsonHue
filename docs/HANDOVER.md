@@ -1,4 +1,20 @@
-# Current checkpoint — spotlight range to1000%, 2026-10-18, Codex
+# Current checkpoint — caged Scholastone lamps, 2026-10-18, Codex
+
+Five visible blue wall fixtures match standalone point sources in fresh paired
+CDT feeds, repeatedly blocked with 0/9 clear rays (captures2895/4018). Hue excludes
+them before type weights/mapping. Offline addition of only these five sources
+with captured room/settings makes both Play Bars strongly cool-white; this is a
+counterfactual, not physical acceptance or a justified visibility bypass. The
+earlier blue table lamp was a spotlight at another location.
+
+Owner confirms enclosing cages; exact collision bodies remain unknown. Research
+belongs upstream: existing CDT worktree docs/SCHOLASTONE-LAMP-VISIBILITY.md holds
+positions, capture paths, counterfactual and the bounded next step: retain native
+per-ray hit details before choosing fixture handling. A blanket endpoint margin
+can leak through nearby walls. No code/settings/package/output changes in this
+diagnosis; Hue.asi.24/CDT.huepanel.14 remains the package pair.
+
+# Previous checkpoint — spotlight range to1000%, 2026-10-18, Codex
 
 Owner prefers expanding Spotlights above200% instead of dimming Point lights or
 changing mixing behavior. Spotlight upper bound is now10/1000% in Core,
