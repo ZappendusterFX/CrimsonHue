@@ -1,4 +1,22 @@
-# Current checkpoint — held input across HUD transitions, 2026-10-17, Codex
+# Current checkpoint — blue table lamp diagnosis, 2026-10-18, Codex
+
+Owner supplied a night screenshot at the blue table lantern. Neutral API source
+1.735 GU away projects onto that lantern and is clear 9/9 in four progressing
+captures; it is not the farther blocked candidate from the previous day. HUD is
+Streaming with fresh input, negligible Ambient and warm calculated channel output.
+The nearest source RGB is only modestly blue; stronger nearby orange sources
+dominate additive mixing. Offline existing-mapper replay with/without that source
+shows a meaningful contribution while the result stays warm. This explains loss
+of recognizable blue, not source absence. Emissive surface RGB is not supplied by
+the API; do not claim the telemetry's emitted-light color is wrong.
+
+Evidence/limits: [BLUE-LAMP-DIAGNOSIS.md](BLUE-LAMP-DIAGNOSIS.md). No production code,
+settings, game input or physical output changed. Packages remain Hue.20/CDT.10.
+If changing behavior next, evaluate generic near-source/color prominence across
+scenes; no special rule for blue, this location or ephemeral source indices.
+The input handoff's physical acceptance below remains pending.
+
+# Previous checkpoint — held input across HUD transitions, 2026-10-17, Codex
 
 Owner reports endless sword attacks after an uncertain HUD close sequence,
 cleared by reopening/closing. Exact game route/order was not traced. Confirmed
