@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.24 — mixer hosted by CDT
+# CrimsonHue 1.0.0 — mixer hosted by CDT
 
 CDT draws the interactive CrimsonHue mixer in its existing D3D12/ImGui frame.
 `CrimsonHue.asi` hosts the existing C# lamp controller on a hidden WPF STA. It
@@ -11,14 +11,12 @@ No separate EXE, process or visible WPF settings window is used.
 1. Install Microsoft .NET 8 **Desktop Runtime x64**. CDT also requires its
    documented .NET 8 ASP.NET Core Runtime x64. Newer runtimes alone do not meet
    these .NET 8 requirements.
-2. Close Crimson Desert and stop any old desktop CrimsonHue sync. Use the matching
-   **CDT 2.2.5-huepanel.14** preview with this version. Public CDT 2.2.4 does not host
-   the Hue panel. Install both updated packages with the game closed: Hue keeps
-   sync running when X is clicked; CDT displays the matching close guidance.
-   The held-input handoff correction is in CDT huepanel.10. Hue .asi.24 provides
-   the sharper recommended spatial defaults and separate point/spot/own-lantern
-   weights; CDT.13 exposes the controls and retains CDT.11's cursor fix.
-   Update both matching packages.
+2. Close Crimson Desert and stop any old desktop CrimsonHue sync. Use
+   **CrimsonDesertTelemetry 2.2.5** with this version; earlier public CDT releases
+   do not host the Hue panel. Install both packages with the game closed.
+   CrimsonHue 1.0.0 includes sharper Recommended spatial defaults and
+   separate point/spot/own-lantern weights. CDT 2.2.5 supplies the optional shared
+   panel, held-input handoff and duplicate-cursor corrections.
 3. For a new installation, import both ZIPs through DMM using the existing x64
    ASI loader. For this upgrade, import both matching ZIPs. CrimsonHue's
    package contains one `CrimsonHue/CrimsonHue.asi` plus documentation/notices;
@@ -47,7 +45,7 @@ No separate EXE, process or visible WPF settings window is used.
    stopped status so the owned
    stream can be released and captured states restored when the bridge is reachable.
 
-The Hue panel works independently of CDT's HUD/marker visibility. Optional
+The Hue panel is optional and works independently of CDT's HUD/marker visibility.
 `[CrimsonHue] Enabled=0` in CDT's INI disables the panel integration. Without a
 compatible Hue ASI there is no Hue panel; old independent-renderer ASIs are
 rejected by the UI protocol. A late ASI load can miss swapchain creation, so
@@ -69,8 +67,18 @@ historical omitted-field defaults are preserved. The old axis flags
 remain serialized for compatibility but are ignored and have no HUD switches.
 Compensation uses full room geometry independently of source-radius membership;
 wall contributions average over the calibrated region. Existing wall output can
-therefore differ from the old covered-region normalization. Physical acceptance
-of these changes remains pending.
+therefore differ from the old covered-region normalization.
+
+Point lights range from 0–200%, Spotlights from 0–1000%, and Own lantern from
+0–100%. Recommended starts with 100% / 100% / 10%. Lantern recognition is limited
+to a conservative complete-pair signature on game build 25477059, with ordinary
+spotlight behavior on unsupported or ambiguous input. Room calibration can assign
+horizontal as well as vertical segment regions; imported Hue identities stay intact.
+
+CDT's physics rays measure collision, not optical visibility. Glass or a closed
+collision shell around a visible cage lamp can exclude it before mapping. The
+release does not read a material-aware or renderer-derived optical visibility
+signal. More gain cannot recover excluded sources.
 
 ## Runtime and cache
 
@@ -133,4 +141,6 @@ Old independent-overlay/foreign-hook harness sources remain as historical
 reproduction tools, not acceptance tests for this architecture. HookRaceTests
 proved that interleaved independent MinHook installation can lose one overlay.
 The shared renderer removes that mechanism. Synthetic success is separate from
-real game/input, DMM import and physical-lamp acceptance; see HANDOVER.md.
+real game/input, DMM import and physical-lamp acceptance. The owner has used
+private builds in-game with physical lamps; the exact public 1.0.0 ZIP has not
+been installed or game-tested as part of release verification. See HANDOVER.md.

@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.24 preview — setup and tuning guide
+# CrimsonHue 1.0.0 — setup and tuning guide
 
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
 existing Hue Entertainment area. Its headless ASI uses CDT's in-game mixer panel. Its
@@ -7,9 +7,9 @@ or a measurement of the physical lamps.
 
 ## What to install
 
-1. Install the matching **CDT 2.2.5-huepanel.14 preview** separately in the game.
-   The public CDT 2.2.4 lacks this preview's Hue panel; obtain both matching ZIPs
-   from this branch's validation checkpoint. Enable its server, rendered and upstream ManyLights
+1. Install **CrimsonDesertTelemetry 2.2.5** separately in the game.
+   Earlier public CDT releases do not include the Hue panel. Download both ZIPs
+   from their GitHub releases. Enable CDT's server, rendered and upstream ManyLights
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
    For all-around light sources, CrimsonHue needs CDT's fresh confirmed-clear
    visibility results. A missing or blocked source contributes no new light;
@@ -23,16 +23,16 @@ or a measurement of the physical lamps.
    saved credentials are not in this ZIP.** See [ASI guide](ASI.md).
    Close the game and upgrade both matching packages for this version: the
    HUD close guidance is updated in CDT and the stream fix is in CrimsonHue.
-   CDT huepanel.14 includes the held-input handoff and duplicate-cursor corrections;
-   Hue .asi.24 supplies the sharper recommended spatial defaults and optional
-   light-type and own-lantern weights; CDT.13 adds their controls. Update both.
+   CDT 2.2.5 includes the held-input handoff and duplicate-cursor corrections;
+   CrimsonHue 1.0.0 supplies sharper Recommended spatial defaults and adjustable
+   light-type and own-lantern weights. Update both.
 3. Use Windows 10/11 x64 and a Hue-compatible bridge with HTTPS API v2,
    Entertainment DTLS 1.2/PSK, color lamps and an existing Entertainment area.
    Set the area and channel positions in the Hue app first. diyHue is the
    development target. A physical Hue Bridge BSB002 with two Hue Play wall washers
    has passed pairing and read-only area/light-state import. The owner reports
-   physical Entertainment output with .asi.12, but motion flicker and Ambient
-   appearance still need acceptance with this update.
+   physical Entertainment output with private builds, including Play bars and
+   wall washers. Exact 1.0.0 installation/game/input acceptance remains separate.
 4. In **Setup**, enter the bridge's own private IPv4 address and click
    **Find bridge**; it applies the address directly. For a new pairing, press the round link button **on the
    physical Hue Bridge**, then click **Trust bridge & pair** within 30 seconds.
@@ -66,8 +66,8 @@ If a game button or key is still held when opening the HUD, release it first;
 the panel shows a reminder until it can take over input.
 Press **Stop** and wait for the stopped status before quitting the game.
 Process termination can prevent restoration; the ASI cannot keep running after
-the game exits. This branch has synthetic verification, with real game and lamp
-acceptance still pending.
+the game exits. Synthetic verification does not establish real-game input,
+physical brightness, HDR-display or mod-manager behavior for the exact release ZIP.
 
 ## Everyday lighting
 
@@ -89,8 +89,8 @@ launch; saved Custom configurations retain their values.
   multiplies spotlights by ten before final output limiting. Defaults stay at 100%.
 - **Own lantern** is an additional 0–100% multiplier for the recognized equipped
   lantern pair. Recommended starts at 10%; 0% excludes it completely. At 100% it
-  follows the ordinary spotlight weight. Raising Spotlights also raises the blue
-  table lamp and other spotlights; the extra lantern control keeps your own dim.
+  follows the ordinary spotlight weight. Raising Spotlights raises other sources
+  of that kind; the extra lantern control keeps your own dim.
 
 The game reports geometric kinds, rather than semantic fire/blue-light types.
 Point and spot sources can each be standalone or grouped; grouping is a separate
@@ -133,6 +133,14 @@ and live sync continue. Use the live status to distinguish fresh input from
 missing, stale, blocked or unknown visibility. With no confirmed-clear local
 lights and zero Ambient, the default calculated output becomes black after the
 Ambient transition ends.
+
+CDT's visibility verdict is based on physics collision, not optical visibility.
+A glass pane or collision shell around a lamp cage may block all sample rays
+even though you can see the lamp or its light on a wall. Such a source is removed
+before CrimsonHue's brightness and Point/Spot controls. More gain cannot recover
+it. The release does not include material-aware or renderer-derived optical
+visibility. A lamp's apparent color also does not identify its geometric kind:
+blue fixtures can be point lights or spotlights.
 
 All 31 numeric controls remain under **Advanced**, editable in **Custom** mode.
 Each has a slider and an exact numeric input. Changes apply to
@@ -265,6 +273,9 @@ against only the covered part; the full calibrated region now defines the averag
 | **Maximum brightness** (85%, 0–100%) | Final upper limit on every channel. Imported per-channel brightness balance still applies. It cannot create light when calculated RGB is zero. |
 | **Light sensitivity** (1.5×, 0–10×) | Exposure applied to each local source before distance fade. Zero removes local sources; it does not remove Ambient. Raising it can cause bright sources to compress, making changes less obvious. |
 | **Local light mix** (100%, 0–400%) | Amount of mapped local-light RGB added to the Ambient layer. Zero removes local sources from output even when raw sources are present. |
+| **Point lights** (100%, 0–200%) | Multiplies accepted point contributions before spatial mixing. Applies to standalone and grouped points; no effect on excluded sources. |
+| **Spotlights** (100%, 0–1000%) | Multiplies accepted spot contributions before spatial mixing. Applies to standalone and grouped spots; cones are not simulated. |
+| **Own lantern** (10% Recommended, 100% neutral legacy/Custom default; 0–100%) | Additional multiplier for the complete conservatively matched lantern pair on build 25477059. Unknown or ambiguous sources keep ordinary type strength. |
 | **Output gamma** (1, 0.1–4) | Higher values lift dim **nonzero** output. Black remains black. Use carefully with lamps that have a high minimum visible brightness. |
 | **Local light transition** (100 ms, 0–1000 ms) | Smooths local brightness and color over time in every input mode. Old local color fades briefly after a visibility or direction change. Zero is immediate; 250–400 ms gives a slower response for fast wall washers. Ambient has its own transition. Missing local telemetry clears output immediately. |
 
@@ -334,13 +345,14 @@ changes when checking calibration.
 
 | Observation | Check first |
 | --- | --- |
-| Rapid flicker while moving | .asi.16 replaces hard axis switching with spherical angular blending. Keep **Spherical edge softness** above 0% for a soft source-radius edge. **Output → Local light transition** controls changes over time; 250–400 ms gives a slower response. Visibility and raw input can still change quickly; physical flicker acceptance of this update remains pending. |
+| Rapid flicker while moving | Keep **Spherical edge softness** above 0% for a soft source-radius edge. **Output → Local light transition** controls changes over time; 250–400 ms gives a slower response. Visibility and raw input can still change quickly; physical behavior depends on your hardware and scene. |
 | Ambient seems absent | While syncing, the Ambient status now says whether the stream includes Ambient or is paused. **CDT raw input** also shows the last streamed Ambient level/fill and counts of frames cleared for local data or missing Ambient. These are calculated values, not measured lamp brightness. Ambient tint saturation 0% produces neutral white fill. |
 | All lamps stay on in darkness | Inspect the **raw Ambient working level** and confirmed-clear source count. Set **Extra background light** to 0%; check the Ambient black threshold and transition. Ambient tint and output gamma cannot turn zero into light. If calculated output is tiny but a lamp remains visibly bright, the lamp/bridge may have a minimum visible output; compare the numeric channel RGB. |
 | Fire on one side lights the other | A source near a room axis can influence both sides through spherical blending. Check imported positions, wall calibration and **Room direction offset**; reduce **Source influence radius** or raise **Directional focus** for a narrower effect. Ambient remains shared fill. |
 | Rear lamp does not react to a source behind the character | Watch the raw source position and visibility, then try **Direction origin** from 0% toward 100%. Check source influence radius, the channel's imported height and **Off beyond**. A source can be behind the player but ahead of a third-person camera. |
 | Turning the camera barely changes output | Check that the raw feed and paired camera update; reduce Ambient mix while testing local sources; inspect whether a source is clear, within distance and within the channel's angular reach. A large radius or low directional focus can spread the local response. |
 | Fire is too red or too dim | Compare raw RGB with calculated RGB. Adjust local RGB balance/hue/saturation for color and sensitivity/mix/gamma for level. Changes affect **all** local sources, not only fire. A physical lamp can have its own color or minimum-brightness behavior. |
+| A visible glass/cage lamp produces no local effect | Check source visibility first. A fresh `blocked` result is excluded before Point/Spot gain; collision geometry can disagree with visible geometry or transparency. This is a known input limitation. |
 | No physical output | Confirm live CDT input, paired bridge, selected Entertainment area and **Start lighting sync**. Demo preview intentionally has no physical output. Another Entertainment app may own the stream. |
 
 Credentials are saved in the current user's DPAPI-protected store, outside the

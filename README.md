@@ -3,36 +3,32 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**Branch preview: 0.4.0-asi.24.** CDT hosts the interactive Hue mixer in its own
-D3D12 renderer. `CrimsonHue.asi` is the headless lamp controller and installs no
-graphics hooks. There is no separate settings window or process. The ZIP contains
-one ASI and documentation; application dependencies
-are embedded, and users install **.NET 8 Desktop Runtime x64** separately.
-See [ASI guide](docs/ASI.md) and [verification checkpoint](docs/HANDOVER.md).
-Use the matching **CDT 2.2.5-huepanel.14** preview; public CDT 2.2.4 lacks the panel.
-Install both matching packages with the game closed. The title-bar X now saves
-and hides the HUD while lighting sync continues, like the shortcut. The simple
-Lighting page, recommended profile and CDT cursor fix are included.
-Layout checks now include Hue service placement as well as channel geometry.
-The input handoff correction is in CDT huepanel.10. Hue .asi.24 sharpens the
-recommended spatial defaults: 30° source radius, 20% edge softness and focus 4.
-Advanced resets use the same spatial defaults; saved Custom values are preserved.
-CDT retains the huepanel.11 correction for the extra native cursor during HUD input ownership.
-**Lighting → Light balance** weights point lights (0–200%) and spotlights
-(0–1000%) separately, initially 100% each. **Own lantern** applies an additional 0–100% multiplier
-to the complete pair recognized on build 25477059; Recommended starts at 10%.
-Missing or ambiguous matches keep the normal spotlight weight. Raw input stays
-unchanged. Both Recommended and Custom expose the controls, and version-2 presets
-include them; version-1 presets import with neutral weights. Room supports horizontal washer segments through separate Side offsets
-and equal Height angles; **Segment width** applies to each segment.
-Release held game buttons/keys before interacting with an opened HUD.
-Physical acceptance of the new profile remains pending.
-The Hue panel uses CDT's compact body-text size and blue/cyan palette. Setup
-guides the link-button pairing and confirms CONNECTED only after authenticated
-area loading; a matching saved pairing is reused. Physical output remains explicit.
-This preview has synthetic native/GPU verification; real game/input and DMM
-acceptance remain pending. The linked
-0.3.3 release is the earlier desktop EXE.
+**CrimsonHue 1.0.0** is the in-game ASI release. Install it together with
+**CrimsonDesertTelemetry 2.2.5**. CDT draws the optional interactive Hue mixer in
+its existing D3D12 renderer; `CrimsonHue.asi` is the headless lamp controller and
+installs no graphics hooks. There is no separate settings window or process.
+The ZIP contains one ASI and documentation. Application dependencies are
+embedded; install **.NET 8 Desktop Runtime x64** separately.
+
+The **Lighting** page offers Recommended/Custom modes, overall brightness,
+background light, local effects and response timing. **Light balance** separately
+weights point lights (0–200%) and spotlights (0–1000%), initially 100% each.
+**Own lantern** adds a 0–100% multiplier for the conservatively recognized pair
+on game build 25477059; Recommended starts at 10%. Missing or ambiguous matches
+keep the normal spotlight weight. Raw input stays unchanged.
+
+**Room** supports ordinary lights and individually calibrated wall-washer
+segments, including horizontal arrangements. Recommended spatial defaults use a
+30° source radius, 20% edge softness and focus 4 for more distinct zones.
+**Advanced** retains all 31 numeric controls, raw readouts and shareable presets.
+The title-bar **X**, **Hide settings** and **Ctrl+Shift+H** hide the mixer while
+sync continues. Physical output starts only when explicitly requested.
+
+Read the [setup guide](docs/USER-GUIDE.md), [ASI guide](docs/ASI.md) and
+[1.0.0 release notes](docs/releases/v1.0.0.md). The owner has used private builds
+in-game with physical lamps. The exact public ZIP still requires separate
+installation/game/input acceptance; synthetic verification is recorded in
+[HANDOVER.md](docs/HANDOVER.md).
 
 **Downloads and guides:** [CrimsonHue releases](https://github.com/ZappendusterFX/CrimsonHue/releases) ·
 [complete setup and tuning guide](docs/USER-GUIDE.md) ·
@@ -41,7 +37,7 @@ CrimsonDesertTelemetry (CDT) is a separate game mod and is **not included** in
 the CrimsonHue ZIP. Install CDT separately alongside CrimsonHue using your
 existing ASI loader; CrimsonHue still consumes only CDT's neutral local API.
 
-**0.3.3 — early preview.** **Export preset** writes a versioned, readable JSON
+**Export preset** writes a versioned, readable JSON
 file containing only mixer values. Its two original axis flags remain in the
 format for compatibility; the current spherical mapper ignores them and exposes
 31 numeric controls. **Import preset** previews the
@@ -50,7 +46,7 @@ Space is off by default because it depends on the room. Import saves the chosen
 values; bridge address, Entertainment area, telemetry address and protected
 credentials stay local. See [Sharing presets](docs/USER-GUIDE.md#sharing-presets).
 
-Since 0.3.2, **Direction origin** blends the room's game-space
+**Direction origin** blends the room's game-space
 reference point between the player (0%) and camera lens (100%), starting at 50%.
 Viewing axes always follow the paired camera. This lets you choose where nearby
 sources belong around a third-person view. Local sources now blend by angular
@@ -68,7 +64,7 @@ physical lamp brightness.
 
 ## Start
 
-1. Install the matching **CrimsonDesertTelemetry 2.2.5-huepanel.14 preview** with its server, rendered and upstream
+1. Install **CrimsonDesertTelemetry 2.2.5** with its server, rendered and upstream
    ManyLights capture, and source visibility enabled.
 2. Install [**.NET 8 Desktop Runtime x64**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
    With the game closed, import this ZIP through DMM, or put its
@@ -132,23 +128,24 @@ Streaming never starts automatically when the ASI loads.
 - .NET 8 **Desktop Runtime x64**, including its WindowsDesktop/WPF framework.
   The plain .NET Runtime or ASP.NET Runtime alone does not supply WPF. .NET 9/10
   alone does not fulfill the .NET 8 requirement.
-- CrimsonDesertTelemetry 2.2.1, schema 1.6, on the same PC for all-around,
+- CrimsonDesertTelemetry 2.2.5, schema 1.6, on the same PC for all-around,
   confirmed-visible lights. Older schema 1.4/1.5 installations still use the
   original rendered-only feed without physics visibility filtering.
 - A Hue-compatible bridge with HTTPS API v2, Entertainment DTLS 1.2/PSK on UDP 2100,
   color lights and an existing Entertainment area.
-- Development target: diyHue. A physical Hue Bridge BSB002 with two Hue Play wall
-  washers has passed pairing and read-only area/light-state import. Physical
-  Entertainment output on that bridge remains untested.
+- Development hardware includes diyHue/LEDVANCE and a physical Hue Bridge BSB002
+  with Hue Play bars and wall washers. The owner reports in-game physical output
+  using private builds. Exact 1.0.0 package acceptance and other hardware remain
+  separate from those observations.
   Backend/lamp performance varies; 30 outgoing updates/s is a target, not a
   measured physical lamp refresh rate.
 
 CrimsonHue consumes the telemetry service over WebSocket/JSON. Its own ASI hosts
 the consumer; it has no game memory reader, screen capture or
-bundled game files. Its UI hooks DXGI presentation, resizing and color-space
-changes. Users need the running CDT service, not its source repository.
+bundled game files. CDT owns the shared graphics/input hooks; the Hue controller
+installs none. Users need the running CDT service, not its source repository.
 An ASI depends on the game's process lifetime: process termination can prevent
-bridge cleanup. See [ASI limits](docs/ASI.md#lifetime-and-limits).
+bridge cleanup. See [ASI limits](docs/ASI.md#graphics-and-lifetime).
 
 ## Mapping and availability
 
@@ -157,8 +154,12 @@ behind the camera. CrimsonHue requires its capture sequence, frame and timestamp
 to match `lights.rendered`, then uses the rendered capture's paired camera. Only
 sources with `sourceVisibility.status=clear`, method `physics-ray-fan` and a fresh
 measurement reach the mapper. Blocked, unknown, missing or stale verdicts do not
-light the room. If CDT marks the upstream feed unavailable, CrimsonHue clears
-output instead of switching silently to view-filtered sources. If upstream capture
+light the room. Physics collision is not optical visibility: glass and enclosing
+lamp cages can block those rays even when a lamp or its illumination is visible
+in-game. These false exclusions happen before type weights, so increasing a
+percentage cannot restore a rejected source. This release does not include
+renderer-based optical visibility. If CDT marks the upstream feed unavailable,
+CrimsonHue clears output instead of switching silently to view-filtered sources. If upstream capture
 is disabled, schema 1.6 can use the rendered feed with the same clear-only rule.
 Older schema 1.4/1.5 uses the original rendered-only behavior.
 
@@ -232,7 +233,7 @@ incomplete or out-of-range files are rejected without changing settings.
 
 | Tab | Controls (default; range) |
 | --- | --- |
-| Output | Maximum brightness (85%; 0–100%), Light sensitivity (1.5×; 0–10×), Local light mix (100%; 0–400%), Output gamma (1; 0.1–4), Local light transition (100 ms; 0–1000 ms) |
+| Output | Maximum brightness (85%; 0–100%), Light sensitivity (1.5×; 0–10×), Local light mix (100%; 0–400%), Point lights (100%; 0–200%), Spotlights (100%; 0–1000%), Own lantern (100% Custom default, 10% Recommended; 0–100%), Output gamma (1; 0.1–4), Local light transition (100 ms; 0–1000 ms) |
 | Ambient | Ambient exposure (1×; 0–10×), Ambient reference level (4; 0.01–100 raw units), Ambient mix (40%; 0–100%), Extra background light (0%; 0–100%), Ambient black threshold (0; 0–100 raw units), Local mix in bright Ambient (100%; 0–200%), Ambient transition (400 ms; 0–5000 ms) |
 | Color | Local hue shift (0°; −180–180°), Local saturation (100%; 0–200%), Red balance / Green balance / Blue balance (each 1×; 0–4×), Ambient tint hue (0°; 0–360°), Ambient tint saturation (0%; 0–100%) |
 | Space | Direction origin (50%; 0% player–100% camera), Fade starts (0; below Off beyond, up to just under 1000 game units), Off beyond (35; 1–1000 game units), Distance falloff (2; 0.1–8), Source influence radius (30°; 1–180°), Spherical edge softness (20%; 0–100%, 0 gives a sharp radius edge), Directional focus (4; 0–16), Strongest-channel compensation (100%; 0–100%), Room direction offset (0°; −180–180°) |
@@ -379,8 +380,9 @@ requiring CrimsonDesertTelemetry and .NET 8 Desktop Runtime x64. The single
 `CrimsonHue/` archive root contains one ASI plus guides and notices. The extracted
 application cache lives in the current user's LocalAppData, outside DMM/game
 directories. An EXE-free archive does not establish Nexus moderation or antivirus
-acceptance. `docs/NEXUS.md` preserves the earlier 0.3.3 desktop listing;
-`docs/ASI.md` describes this branch preview and `docs/HANDOVER.md` its verification.
+acceptance. [Nexus copy](docs/NEXUS.md) provides the current listing and update
+text; [ASI guide](docs/ASI.md) covers installation and lifecycle, and
+[HANDOVER.md](docs/HANDOVER.md) records verification.
 
 Independent project, not affiliated with Signify or Philips Hue. Third-party
 license notices accompany the release in `THIRD-PARTY-NOTICES.md` and

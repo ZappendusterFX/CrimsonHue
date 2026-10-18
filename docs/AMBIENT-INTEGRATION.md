@@ -1,10 +1,10 @@
-# Ambient and mapping controls — CrimsonHue 0.4.0-asi.18
+# Ambient and mapping controls — CrimsonHue 1.0.0
 
 CrimsonHue consumes CDT's independent `/v1/ambient/stream` and local-light feed.
 CDT owns capture and the neutral contracts. CrimsonHue shows the received values
 separately from its calculated lamp output and exposes the visual adjustments in
 the app. The producer contract is
-`C:\DEV\CrimsonDesertTelemetry\docs\AMBIENT_STREAM.md`.
+[CDT Ambient stream](https://github.com/ZappendusterFX/CrimsonDesertTelemetry/blob/v2.2.5/docs/AMBIENT_STREAM.md).
 
 The owner rejected 0.2.2's built-in dark-scene fill and orange-to-amber correction.
 Version 0.3.0 removes those special rules. **Extra background light** defaults to
@@ -93,7 +93,10 @@ deliberately keeps a baseline while valid Ambient is available.
 ## Exposed local-light and output response
 
 Only sources accepted by the existing availability, paired-capture and fresh
-confirmed-clear visibility checks reach the mapper. Color controls apply to all
+confirmed-clear visibility checks reach the mapper. This is collision-based
+visibility: glass or enclosing fixture collision can reject a visibly illuminated
+source. No optical material or screen-space contribution test is implemented.
+Color controls apply to all
 local-light colors: multiply linear RGB by Red balance, Green balance and Blue
 balance, then apply Local hue shift and Local saturation. The default values
 preserve source ratios.
@@ -101,6 +104,14 @@ There is no fire classification or automatic orange-to-yellow conversion.
 
 Light sensitivity bounds each source's HDR peak with
 `1 - exp(-peak × sensitivity)`, retaining a common RGB scale before spatial fade.
+The resulting bounded source is multiplied by its reported kind weight: Point
+lights 0–200%, Spotlights 0–1000%, both initially 100%. A conservatively matched
+own-lantern pair additionally receives the 0–100% Own lantern multiplier
+(Recommended 10%, neutral legacy/Custom default 100%). Recognition uses the
+observed complete-pair signature on build 25477059; incomplete, ambiguous or
+unsupported input keeps ordinary type weighting. Grouping is independent of
+point/spot kind and does not add a second member-count multiplier. Untyped
+sources retain unit weight. Raw source values remain unchanged.
 Player-relative distance remains full strength through Fade starts and reaches
 zero at Off beyond. With normalized interval `t`, the weight is
 `(1 - t² × (3 - 2t)) ^ falloff`. The **Distance falloff** setting supplies the
@@ -128,12 +139,14 @@ have no mapping effect and are no longer controls in the HUD.
 Each source covers a spherical cap around its direction. For unit source and
 channel directions, `theta = acos(clamp(dot, -1, 1))` is their great-circle angle.
 Divide by **Source influence radius** to obtain normalized radius `r`; `r >= 1`
-contributes zero. The default radius is 60 degrees, adjustable from 1 to 180.
+contributes zero. Recommended/reset radius is 30 degrees, adjustable from 1 to
+180; saved Custom values and historical omitted-field defaults are preserved.
 The same angle works across every axis, diagonal, rear direction and pole.
 This is angular coverage around the viewer; world-distance fade stays separate.
 A point lamp at the exact room center has no direction and remains omnidirectional.
 
-**Spherical edge softness** defaults to 25% of the angular radius. Its inner cap
+**Spherical edge softness** uses 20% of the angular radius for Recommended/reset.
+Saved Custom values and historical omitted-field defaults are preserved. Its inner cap
 (`r <= 1 - softness`) has coverage one; the outer ring uses smoothstep down to
 zero at the edge. Zero softness explicitly selects a sharp circular edge, so use
 a positive softness for continuous movement. This footprint is a mapping

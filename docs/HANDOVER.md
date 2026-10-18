@@ -1,4 +1,17 @@
-# Current checkpoint — short renderer feasibility check, 2026-10-18, Codex
+# Current checkpoint — public 1.0.0 release preparation, 2026-10-18, Codex
+
+Owner declines the fresh GPU capture and authorizes release of the existing
+behavior, GitHub publication, descriptions/Nexus copy, and merging back to main.
+Owner explicitly sets CrimsonHue1.0 (formal1.0.0); matching CDT is2.2.5. Nexus
+upload stays manual. Public guides and versions replace the private preview.
+Glass/cage collision false blocks remain explicit; renderer-derived optical
+visibility is research, not a release feature. No further game action is required.
+
+Core124/124 passes on1.0.0; CDT managed79/79 and API smoke pass. Final immutable
+package/controller/shared-renderer/native validation and publication are in
+progress. Release notes: [v1.0.0.md](releases/v1.0.0.md); copy: [NEXUS.md](NEXUS.md).
+
+# Previous checkpoint — short renderer feasibility check, 2026-10-18, Codex
 
 Requested short upstream check is complete: promising source-indexed screen-space
 hit data exists in saved GPU shaders and feeds actual ManyLights integration.
