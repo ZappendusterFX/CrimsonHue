@@ -3,21 +3,28 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**Branch preview: 0.4.0-asi.21.** CDT hosts the interactive Hue mixer in its own
+**Branch preview: 0.4.0-asi.23.** CDT hosts the interactive Hue mixer in its own
 D3D12 renderer. `CrimsonHue.asi` is the headless lamp controller and installs no
 graphics hooks. There is no separate settings window or process. The ZIP contains
 one ASI and documentation; application dependencies
 are embedded, and users install **.NET 8 Desktop Runtime x64** separately.
 See [ASI guide](docs/ASI.md) and [verification checkpoint](docs/HANDOVER.md).
-Use the matching **CDT 2.2.5-huepanel.11** preview; public CDT 2.2.4 lacks the panel.
+Use the matching **CDT 2.2.5-huepanel.13** preview; public CDT 2.2.4 lacks the panel.
 Install both matching packages with the game closed. The title-bar X now saves
 and hides the HUD while lighting sync continues, like the shortcut. The simple
 Lighting page, recommended profile and CDT cursor fix are included.
 Layout checks now include Hue service placement as well as channel geometry.
-The input handoff correction is in CDT huepanel.10. Hue .asi.21 sharpens the
+The input handoff correction is in CDT huepanel.10. Hue .asi.23 sharpens the
 recommended spatial defaults: 30° source radius, 20% edge softness and focus 4.
 Advanced resets use the same spatial defaults; saved Custom values are preserved.
-CDT huepanel.11 suppresses the extra native cursor during HUD input ownership.
+CDT retains the huepanel.11 correction for the extra native cursor during HUD input ownership.
+**Lighting → Light balance** weights point lights and spotlights separately
+(0–200%, initially 100%). **Own lantern** applies an additional 0–100% multiplier
+to the complete pair recognized on build 25477059; Recommended starts at 10%.
+Missing or ambiguous matches keep the normal spotlight weight. Raw input stays
+unchanged. Both Recommended and Custom expose the controls, and version-2 presets
+include them; version-1 presets import with neutral weights. Room supports horizontal washer segments through separate Side offsets
+and equal Height angles; **Segment width** applies to each segment.
 Release held game buttons/keys before interacting with an opened HUD.
 Physical acceptance of the new profile remains pending.
 The Hue panel uses CDT's compact body-text size and blue/cyan palette. Setup
@@ -37,7 +44,7 @@ existing ASI loader; CrimsonHue still consumes only CDT's neutral local API.
 **0.3.3 — early preview.** **Export preset** writes a versioned, readable JSON
 file containing only mixer values. Its two original axis flags remain in the
 format for compatibility; the current spherical mapper ignores them and exposes
-28 numeric controls. **Import preset** previews the
+31 numeric controls. **Import preset** previews the
 differences and lets users apply Output, Ambient, Color and Space independently.
 Space is off by default because it depends on the room. Import saves the chosen
 values; bridge address, Entertainment area, telemetry address and protected
@@ -61,7 +68,7 @@ physical lamp brightness.
 
 ## Start
 
-1. Install the matching **CrimsonDesertTelemetry 2.2.5-huepanel.11 preview** with its server, rendered and upstream
+1. Install the matching **CrimsonDesertTelemetry 2.2.5-huepanel.13 preview** with its server, rendered and upstream
    ManyLights capture, and source visibility enabled.
 2. Install [**.NET 8 Desktop Runtime x64**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
    With the game closed, import this ZIP through DMM, or put its
@@ -209,7 +216,7 @@ decision; CrimsonHue does not perform its own occlusion test.
 
 ### Controls and raw values
 
-All 28 numeric tuning controls remain in **Advanced → Custom**. Adjustments affect preview
+All 31 numeric tuning controls remain in **Advanced → Custom**. Adjustments affect preview
 and active sync immediately. **Reset this tab** restores that tab's defaults;
 **Save settings** stores the current configuration. Settings are also saved on
 Start and normal window close. Existing saved brightness is retained as entered; the 85% default
@@ -357,7 +364,7 @@ stream or change settings, and does not print keys or full API responses. Use th
 to compare the bridge's saved layout with the Hue app before changing mapping axes.
 
 The developer-only ControllerSmoke loads the actual headless ASI and installed
-runtime, verifies the hidden controller, all 28 controls, wall calibration,
+runtime, verifies the hidden controller, all 31 controls, wall calibration,
 command validation and orderly shutdown. The matching CDT checkout supplies
 `CrimsonHue.OverlaySmoke.exe`, which loads this ASI and renders both panels with
 CDT's sole renderer, checking pixel readback, independent hide, Hue-only drawing

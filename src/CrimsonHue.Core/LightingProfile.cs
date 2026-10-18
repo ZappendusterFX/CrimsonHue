@@ -6,7 +6,8 @@ public enum LightingResponse { Quick, Balanced, Calm }
 
 public sealed record LightingPreferences(bool Recommended = true, double Brightness = .85,
     double LocalAmount = 1, double BackgroundAmount = .4,
-    LightingResponse Response = LightingResponse.Balanced, int Revision = 1);
+    LightingResponse Response = LightingResponse.Balanced, int Revision = 1,
+    double PointLightStrength = 1, double SpotLightStrength = 1, double PlayerLanternStrength = .1);
 
 /// <summary>A deterministic starting profile, not scene or lamp auto-calibration.</summary>
 public static class LightingProfile
@@ -14,12 +15,14 @@ public static class LightingProfile
     // Product/reset defaults are separate from MappingSettings' historical
     // constructor defaults, which also fill omitted fields in saved presets.
     public static MappingSettings Defaults { get; } = new(Spread: 4,
-        SourceDiscRadiusDegrees: 30, SourceDiscSoftness: .2);
+        SourceDiscRadiusDegrees: 30, SourceDiscSoftness: .2, PlayerLanternStrength: .1);
 
     public static void Validate(LightingPreferences preferences)
     {
         if (preferences is null || !InRange(preferences.Brightness, 0, 1) ||
             !InRange(preferences.LocalAmount, 0, 2) || !InRange(preferences.BackgroundAmount, 0, 1) ||
+            !InRange(preferences.PointLightStrength, 0, 2) || !InRange(preferences.SpotLightStrength, 0, 2) ||
+            !InRange(preferences.PlayerLanternStrength, 0, 1) ||
             !Enum.IsDefined(preferences.Response) || preferences.Revision != 1)
             throw new CrimsonHueException("Invalid lighting preferences.");
     }
@@ -40,7 +43,9 @@ public static class LightingProfile
         // Room alignment remains personal; threshold, fill and color changes do not.
         return Defaults with { Brightness = preferences.Brightness,
             LocalStrength = preferences.LocalAmount, AmbientOutput = preferences.BackgroundAmount,
-            SmoothingMs = localMs, AmbientSmoothingMs = ambientMs, CameraYawOffset = manual.CameraYawOffset };
+            SmoothingMs = localMs, AmbientSmoothingMs = ambientMs, CameraYawOffset = manual.CameraYawOffset,
+            PointLightStrength = preferences.PointLightStrength, SpotLightStrength = preferences.SpotLightStrength,
+            PlayerLanternStrength = preferences.PlayerLanternStrength };
     }
 
     public static LightingPreferences FromLegacy(MappingSettings mapping)

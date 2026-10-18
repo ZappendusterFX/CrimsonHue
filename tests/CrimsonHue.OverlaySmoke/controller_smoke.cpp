@@ -65,7 +65,7 @@ int wmain(int argc, wchar_t** argv) {
         Sleep(100); Require(State().at("shortcut").at("key") == 'H', "Invalid shortcut overwrote saved binding");
         Command({{"action", "shortcut"}, {"key", 'H'}, {"control", true}, {"shift", true}, {"alt", false}});
         Require(state.value("smoke", false) && state.value("demo", false) && !state.value("windowVisible", true), "Engine showed a WPF window or enabled live mode");
-        Require(state.at("controls").size() == 28 && state.at("switches").empty() && state.at("channels").size() == 6, "Missing mixer/layout controls or obsolete axis switches remain");
+        Require(state.at("controls").size() == 31 && state.at("switches").empty() && state.at("channels").size() == 6, "Missing mixer/layout controls or obsolete axis switches remain");
         bool sphereDefault = false;
         for (const auto& value : state.at("controls")) if (value.at("key") == "SourceDiscRadiusDegrees")
             sphereDefault = value.at("value") == 30.0 && value.at("initial") == 30.0 && value.at("min") == 1.0 && value.at("max") == 180.0 && value.at("group") == "Space";
@@ -145,7 +145,30 @@ int wmain(int argc, wchar_t** argv) {
         state = Await([&](const Json& view) { return view.at("lighting").at("recommended") == true &&
             Control(view, "Brightness") == 85 && Control(view, "AmbientCutoff") == 0 &&
             Control(view, "SourceDiscRadiusDegrees") == 30; }, "Profile smoke cleanup failed");
-        std::cout << "PASS Recommended/Custom ABI, simple controls, invalid-command rejection, neutral color, master-cap preservation, full custom restore and preview assessment.\n";
+        Command({{"action", "lighting"}, {"key", "PointLightStrength"}, {"value", .4}});
+        Command({{"action", "lighting"}, {"key", "SpotLightStrength"}, {"value", 1.6}});
+        Command({{"action", "lighting"}, {"key", "PlayerLanternStrength"}, {"value", .05}});
+        state = Await([&](const Json& view) { return Control(view,"PointLightStrength")==40 &&
+            Control(view,"SpotLightStrength")==160 && Control(view,"PlayerLanternStrength")==5; }, "Recommended source weights failed");
+        Command({{"action", "lighting"}, {"key", "PointLightStrength"}, {"value", 2.01}});
+        Command({{"action", "lighting"}, {"key", "PlayerLanternStrength"}, {"value", 1.01}});
+        Sleep(100); Require(State().at("lighting")==state.at("lighting"),"Invalid weights changed Recommended");
+        Command({{"action", "profile"}, {"recommended", false}});
+        state = Await([](const Json& view) { return view.at("lighting").at("recommended") == false; }, "Custom mode failed");
+        Command({{"action", "lighting"}, {"key", "PointLightStrength"}, {"value", .7}});
+        Command({{"action", "lighting"}, {"key", "SpotLightStrength"}, {"value", 1.2}});
+        Command({{"action", "lighting"}, {"key", "PlayerLanternStrength"}, {"value", .02}});
+        state = Await([&](const Json& view) { return Control(view,"PointLightStrength")==70 &&
+            Control(view,"SpotLightStrength")==120 && Control(view,"PlayerLanternStrength")==2; }, "Custom source weights failed");
+        Command({{"action", "profile"}, {"recommended", true}});
+        state = Await([&](const Json& view) { return Control(view,"PointLightStrength")==40 &&
+            Control(view,"SpotLightStrength")==160 && Control(view,"PlayerLanternStrength")==5 &&
+            view.at("lighting").at("lanternMatches")==0; }, "Recommended weights were lost");
+        Command({{"action", "lighting"}, {"key", "PointLightStrength"}, {"value", 1}});
+        Command({{"action", "lighting"}, {"key", "SpotLightStrength"}, {"value", 1}});
+        Command({{"action", "lighting"}, {"key", "PlayerLanternStrength"}, {"value", .1}});
+        state = Await([&](const Json& view) {return Control(view,"PointLightStrength")==100 && Control(view,"PlayerLanternStrength")==10;},"Weight cleanup failed");
+        std::cout << "PASS Recommended/Custom ABI, separate source and own-lantern weights, invalid-command rejection, neutral color, master-cap preservation, full custom restore and preview assessment.\n";
 
         Command({{"action", "set"}, {"key", "Brightness"}, {"value", 23.0}});
         Command({{"action", "set"}, {"key", "SourceDiscRadiusDegrees"}, {"value", 130.0}});
@@ -224,7 +247,7 @@ int wmain(int argc, wchar_t** argv) {
         stop(); const auto stopStart = GetTickCount64();
         while (status() == 1 && GetTickCount64() - stopStart < 5000) Sleep(20);
         Require(status() == 2, "Engine shutdown failed");
-        std::cout << "PASS headless controller ABI, hidden WPF, 28 advanced controls, lighting profiles/assessment, spherical radius and washer commands, isolated preview, validation and host-preserving shutdown.\n";
+        std::cout << "PASS headless controller ABI, hidden WPF, 31 advanced controls, lighting profiles/assessment, spherical radius and washer commands, isolated preview, validation and host-preserving shutdown.\n";
         return 0;
     } catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 2; }
 }

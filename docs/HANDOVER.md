@@ -1,4 +1,28 @@
-# Current checkpoint — focused defaults and single HUD cursor, 2026-10-18, Codex
+# Current checkpoint — light-kind weights and own lantern strength, 2026-10-18, Codex
+
+Owner clarified two controls are needed: generic light-kind weights and separate
+own-lantern strength. Lighting now exposes Point lights/Spotlights (0–200%, initial
+100%) and Own lantern (additional 0–100%, Recommended/reset10%) in both modes.
+Weights apply after source exposure and before mixing; raw values remain intact.
+Own matching uses the observed exact-build pair, not an engine owner ID. Missing,
+unsupported, partial/ambiguous signatures keep ordinary type weight. The neutral
+API/acquisition is unchanged. Horizontal Room support is clarified; no saved
+calibration/channel identity is changed. Checkbox candidate sources/ZIPs preserved.
+
+Core123/123 pass, including typed/grouped/untyped weighting, continuous own-lantern
+strength, conservative matching, profile persistence, v1/v2 presets and horizontal
+zones. MappingSettings keeps neutral omitted-field defaults; Recommended uses
+1/1/.1. Presets v2 include all three in Output and strictly import old v1. There
+are31 numeric controls. Fresh immutable pair Hue.asi.23/CDT.huepanel.13 validates,
+production/researchOFF/build25477059. Exact packaged controller, both package
+validators, CDT12/12 focused tests and exact-Hue hidden shared WARP/pixel/hide/
+reopen/resize smoke pass in Recommended/Custom; screenshots reviewed. Source/
+manifest match. Evidence/paths/hashes: [SOURCE-WEIGHTS-VALIDATION.md](SOURCE-WEIGHTS-VALIDATION.md) and CDT
+worktree docs/HUE_SOURCE_WEIGHTS.md. No install, real settings/input/process write
+or physical output. Next: owner exits game, installs the matching pair and assesses
+the controls and horizontal washer calibration. Game/input acceptance is pending.
+
+# Previous checkpoint — focused defaults and single HUD cursor, 2026-10-18, Codex
 
 Owner asks for sharper zone separation via defaults, and reports two HUD cursors
 with only one functional. Recommended/fresh initialization/Advanced reset now

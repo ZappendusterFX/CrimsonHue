@@ -33,7 +33,7 @@ static class LightingProfileTests
                 RedGain: 4, HueShiftDegrees: 80, CameraYawOffset: 23);
             var effective = LightingProfile.Resolve(preferences, manual);
             Assert(effective == new MappingSettings(Spread: 4, SourceDiscRadiusDegrees: 30, SourceDiscSoftness: .2,
-                SmoothingMs: 250, AmbientSmoothingMs: 600, CameraYawOffset: 23),
+                SmoothingMs: 250, AmbientSmoothingMs: 600, CameraYawOffset: 23, PlayerLanternStrength: .1),
                 "Recommended profile inherited manual thresholds, color edits or other hidden controls");
             foreach (var (response, local, ambient) in new[] {
                 (LightingResponse.Quick, 100.0, 400.0), (LightingResponse.Balanced, 250.0, 600.0), (LightingResponse.Calm, 500.0, 1000.0) })
@@ -100,6 +100,9 @@ static class LightingProfileTests
                 Reject(() => LightingProfile.Validate(baseline with { Brightness = invalid }));
                 Reject(() => LightingProfile.Validate(baseline with { LocalAmount = invalid }));
                 Reject(() => LightingProfile.Validate(baseline with { BackgroundAmount = invalid }));
+                Reject(() => LightingProfile.Validate(baseline with { PointLightStrength = invalid }));
+                Reject(() => LightingProfile.Validate(baseline with { SpotLightStrength = invalid }));
+                Reject(() => LightingProfile.Validate(baseline with { PlayerLanternStrength = invalid }));
             }
             Reject(() => LightingProfile.Validate(baseline with { Brightness = 1.001 }));
             Reject(() => LightingProfile.Validate(baseline with { LocalAmount = 2.001 }));

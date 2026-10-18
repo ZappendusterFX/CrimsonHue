@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.21 — mixer hosted by CDT
+# CrimsonHue 0.4.0-asi.23 — mixer hosted by CDT
 
 CDT draws the interactive CrimsonHue mixer in its existing D3D12/ImGui frame.
 `CrimsonHue.asi` hosts the existing C# lamp controller on a hidden WPF STA. It
@@ -12,12 +12,13 @@ No separate EXE, process or visible WPF settings window is used.
    documented .NET 8 ASP.NET Core Runtime x64. Newer runtimes alone do not meet
    these .NET 8 requirements.
 2. Close Crimson Desert and stop any old desktop CrimsonHue sync. Use the matching
-   **CDT 2.2.5-huepanel.11** preview with this version. Public CDT 2.2.4 does not host
+   **CDT 2.2.5-huepanel.13** preview with this version. Public CDT 2.2.4 does not host
    the Hue panel. Install both updated packages with the game closed: Hue keeps
    sync running when X is clicked; CDT displays the matching close guidance.
-   The held-input handoff correction is in CDT huepanel.10. Hue .asi.21 provides
-   the sharper recommended spatial defaults; CDT.11 also hides the duplicate
-   native cursor while the HUD owns input. Update both matching packages.
+   The held-input handoff correction is in CDT huepanel.10. Hue .asi.23 provides
+   the sharper recommended spatial defaults and separate point/spot/own-lantern
+   weights; CDT.13 exposes the controls and retains CDT.11's cursor fix.
+   Update both matching packages.
 3. For a new installation, import both ZIPs through DMM using the existing x64
    ASI loader. For this upgrade, import both matching ZIPs. CrimsonHue's
    package contains one `CrimsonHue/CrimsonHue.asi` plus documentation/notices;
@@ -36,7 +37,7 @@ No separate EXE, process or visible WPF settings window is used.
    collapsed below the bridge flow. Setup imports your existing area and protected pairing.
    **Lighting** has three amount controls and a response choice. New setups use
    **Recommended**; existing custom values are preserved until you explicitly
-   switch. **Advanced** retains the 28 numeric controls, presets and raw readout.
+   switch. **Advanced** retains the 31 numeric controls, presets and raw readout.
    **Room** retains wall/segment calibration. **Demo preview**
    never sends physical output. **Test CH** is an explicit two-second 10% white
    segment identification with ownership-aware cleanup; demo must be off.
@@ -122,7 +123,7 @@ pwsh -File scripts/Publish-Asi.ps1
 ```
 
 The headless controller smoke verifies the actual ASI's ABI, hidden controller,
-28 controls, spherical-radius commands, washer/segment calibration, synthetic direction preview, rejected
+31 controls, spherical-radius commands, washer/segment calibration, synthetic direction preview, rejected
 physical identify, validation and host-preserving shutdown. CDT's shared overlay
 smoke adds actual D3D12/WARP rendering, pixel readback, independent hiding,
 Hue-only reopen and resize. Neither loads saved credentials or connects to lamps.

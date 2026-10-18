@@ -35,13 +35,26 @@ public partial class MainWindow
 
     private void SetLightingPreference(string key, double value)
     {
-        if (!lighting.Recommended) throw new CrimsonHueException("Select Recommended lighting before changing these controls.");
         if (!double.IsFinite(value)) throw new CrimsonHueException("Invalid lighting value.");
+        if (!lighting.Recommended && key is "PointLightStrength" or "SpotLightStrength" or "PlayerLanternStrength")
+        {
+            CommitCustomMapping(key switch {
+                "PointLightStrength" => manualMapping with { PointLightStrength = value },
+                "SpotLightStrength" => manualMapping with { SpotLightStrength = value },
+                _ => manualMapping with { PlayerLanternStrength = value } });
+            SyncTuningValues();
+            TuningStatus.Text = "Light balance changed · Save keeps it for the next launch";
+            return;
+        }
+        if (!lighting.Recommended) throw new CrimsonHueException("Select Recommended lighting before changing these controls.");
         var next = key switch
         {
             "Brightness" => lighting with { Brightness = value },
             "LocalAmount" => lighting with { LocalAmount = value },
             "BackgroundAmount" => lighting with { BackgroundAmount = value },
+            "PointLightStrength" => lighting with { PointLightStrength = value },
+            "SpotLightStrength" => lighting with { SpotLightStrength = value },
+            "PlayerLanternStrength" => lighting with { PlayerLanternStrength = value },
             "Response" when value == Math.Truncate(value) && value is >= 0 and <= 2 =>
                 lighting with { Response = (LightingResponse)(int)value },
             _ => throw new CrimsonHueException("Invalid lighting control.")

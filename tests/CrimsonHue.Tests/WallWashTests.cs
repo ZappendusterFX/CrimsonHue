@@ -24,6 +24,16 @@ static class WallWashTests
     }
     public static void Register(Action<string, Action> add, Action<string, Func<Task>> asyncTest)
     {
+        add("Horizontal washer zones map to distinct side segments using existing calibration", () =>
+        {
+            var horizontal = new WallWashLayout(Layout.Washers.Select(w => w with { HorizontalSpan = 10,
+                Segments = [new(0, YawOffset: -20, VerticalSpan: 10), new(1, VerticalSpan: 10), new(2, YawOffset: 20, VerticalSpan: 10)] }).ToArray());
+            foreach (var (yaw, index) in new[] {(-80,0),(-60,1),(-40,2),(40,3),(60,4),(80,5)})
+            {
+                var colors = new LightMapper().Map(Frame(yaw), Area, Settings with {SourceDiscRadiusDegrees=3}, 1, wallWash: horizontal);
+                Assert(colors[index].Rgb.X > .1 && colors.Where((_,i)=>i!=index).All(c=>c.Rgb==default), "Horizontal zones mixed or changed channel order");
+            }
+        });
         add("Wall areas receive sideways light at visible wall rather than emitter position", () =>
         {
             var area = Area; var mapper = new LightMapper(); var frame = Frame(-85);

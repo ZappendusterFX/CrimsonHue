@@ -64,7 +64,7 @@ int wmain(int argc, wchar_t** argv) {
         Sleep(100); Require(State().at("shortcut").at("key") == 'H', "Invalid shortcut overwrote saved binding");
         Command({{"action", "shortcut"}, {"key", 'H'}, {"control", true}, {"shift", true}, {"alt", false}});
         Require(state.value("smoke", false) && state.value("demo", false) && !state.value("windowVisible", true), "Engine showed a WPF window or enabled live mode");
-        Require(state.at("controls").size() == 28 && state.at("switches").size() == 2 && state.at("channels").size() == 6, "Missing mixer/layout controls");
+        Require(state.at("controls").size() == 31 && state.at("switches").size() == 2 && state.at("channels").size() == 6, "Missing mixer/layout controls");
         Command({{"action", "set"}, {"key", "Brightness"}, {"value", 23.0}});
         Command({{"action", "switch"}, {"key", "SeparateFrontRear"}, {"value", false}});
         Sleep(150); state = State();

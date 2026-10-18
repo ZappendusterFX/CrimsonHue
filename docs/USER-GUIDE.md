@@ -1,4 +1,4 @@
-# CrimsonHue 0.4.0-asi.21 preview — setup and tuning guide
+# CrimsonHue 0.4.0-asi.23 preview — setup and tuning guide
 
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
 existing Hue Entertainment area. Its headless ASI uses CDT's in-game mixer panel. Its
@@ -7,7 +7,7 @@ or a measurement of the physical lamps.
 
 ## What to install
 
-1. Install the matching **CDT 2.2.5-huepanel.11 preview** separately in the game.
+1. Install the matching **CDT 2.2.5-huepanel.13 preview** separately in the game.
    The public CDT 2.2.4 lacks this preview's Hue panel; obtain both matching ZIPs
    from this branch's validation checkpoint. Enable its server, rendered and upstream ManyLights
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
@@ -23,8 +23,9 @@ or a measurement of the physical lamps.
    saved credentials are not in this ZIP.** See [ASI guide](ASI.md).
    Close the game and upgrade both matching packages for this version: the
    HUD close guidance is updated in CDT and the stream fix is in CrimsonHue.
-   CDT huepanel.11 includes the held-input handoff and duplicate-cursor corrections;
-   Hue .asi.21 supplies the sharper recommended spatial defaults. Update both.
+   CDT huepanel.13 includes the held-input handoff and duplicate-cursor corrections;
+   Hue .asi.23 supplies the sharper recommended spatial defaults and optional
+   light-type and own-lantern weights; CDT.13 adds their controls. Update both.
 3. Use Windows 10/11 x64 and a Hue-compatible bridge with HTTPS API v2,
    Entertainment DTLS 1.2/PSK, color lamps and an existing Entertainment area.
    Set the area and channel positions in the Hue app first. diyHue is the
@@ -80,6 +81,26 @@ focus 4 to keep adjacent color zones more distinct. Advanced resets use those
 same spatial defaults. Existing Recommended installations adopt them at next
 launch; saved Custom configurations retain their values.
 
+**Lighting → Light balance** works in both Recommended and Custom:
+
+- **Point lights** and **Spotlights** independently weight all contributions of
+  that reported kind, including grouped sources. 100% is unchanged; 0% removes
+  that kind and 200% doubles its contribution before final output limiting.
+- **Own lantern** is an additional 0–100% multiplier for the recognized equipped
+  lantern pair. Recommended starts at 10%; 0% excludes it completely. At 100% it
+  follows the ordinary spotlight weight. Raising Spotlights also raises the blue
+  table lamp and other spotlights; the extra lantern control keeps your own dim.
+
+The game reports geometric kinds, rather than semantic fire/blue-light types.
+Sources without a recognized kind retain normal strength. The own-lantern match
+uses a conservative signature for game build 25477059, rather than an engine
+ownership ID. Unsupported builds, missing metadata, incomplete or ambiguous
+pairs keep their ordinary type weight. The matched count refers to the current
+input frame. Raw input stays unchanged; normal transitions and final output
+limits still apply. These percentages are mixer weights, not measured brightness.
+Save, Start and normal close remember each mode's values. Old Custom settings
+and version-1 presets default to 100% for all three weights to preserve behavior.
+
 The recommended profile supplies a coherent mapping with neutral colors/gamma,
 no black threshold, no artificial background floor and continuous spherical
 blending. It uses the game data; it does not normalize every dark scene into a
@@ -110,7 +131,7 @@ missing, stale, blocked or unknown visibility. With no confirmed-clear local
 lights and zero Ambient, the default calculated output becomes black after the
 Ambient transition ends.
 
-All 28 numeric controls remain under **Advanced**, editable in **Custom** mode.
+All 31 numeric controls remain under **Advanced**, editable in **Custom** mode.
 Each has a slider and an exact numeric input. Changes apply to
 the live preview and active sync immediately. **Save settings** persists them;
 **Reset this tab** restores the defaults for one tab. Start and normal window
@@ -120,7 +141,7 @@ close also save. The raw CDT values never change when you move a control.
 
 Open **Advanced → Presets**, enter an absolute `.json` file path, click **Export preset**,
 and share the resulting readable
-JSON file. It contains the 28 numeric mixer settings, plus a format version and
+JSON file. Version 2 contains the 31 numeric mixer settings, plus a format version and
 name derived from the filename. The legacy `SeparateLeftRight` and
 `SeparateFrontRear` fields remain for compatibility; they no longer affect
 mapping and have no HUD switches. It does **not** contain
@@ -136,6 +157,8 @@ Click **Apply selected** to switch to Custom and save the chosen values; if ligh
 running, the new values also affect it immediately. Cancel leaves everything as
 it was. The import checks the preset version, every required value and valid
 ranges; local bridge pairing and Entertainment area remain yours.
+The three light-balance values belong to **Output**. Version-1 presets still
+import with neutral weights; exports use version 2 and require the updated app.
 
 Shared presets cannot include Hue channel positions. Each installation reads
 those from its own Entertainment area, so the same preset can look different in
@@ -165,14 +188,19 @@ extent of each segment without changing the Hue configuration.
 1. Select your actual Entertainment area. Turn on **Demo preview only** to tune
    safely with synthetic input on those channels. **Preview one light source**
    provides direction and height sliders instead of the animated demo sources.
-2. For each light that illuminates a wall region, select **Wall area**, then set **Direction** and **Wall width**.
+2. For each light that illuminates a wall region, select **Wall area**, then set **Direction** and **Wall width** (one segment) or **Segment width** (multiple segments).
    Direction 0 is the screen, -90 is left, +90 is right, and +/-180 is behind you.
-   Width is the angular extent of the wall from your seat, not the emitter's beam
-   angle. **Start left/right** supplies an editable starting point spanning
+   Width is the angular extent of each segment's wall region from your seat, not
+   the emitter's beam angle or the total width of all segments. **Start left/right** supplies an editable starting point spanning
    front-side to side (-90 to -30 or +30 to +90 degrees); it is not a calibration.
 3. Expand each segment to set **Side offset**, **Height angle** and **Height span**.
    Height initially follows the Hue data. Do not assume the segment order matches
    the physical wall: inspect it using the separate test below.
+   For a washer lying horizontally, give its three segments the same Height angle
+   and different Side offsets. For example, offsets -10/0/+10 degrees with a
+   10-degree Segment width form three adjacent regions around the light's Direction.
+   These are starting values; fit the actual illuminated patches from your seat.
+   Reverse the offsets if channel identification shows the opposite physical order.
 4. **Save room calibration** persists it for this PC. Start and normal close also
    save it. **Point (Hue position)** disables wall mapping but keeps its settings
    for later. **Reset to imported Hue positions** removes that lamp's override. Room

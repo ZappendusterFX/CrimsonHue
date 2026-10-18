@@ -87,21 +87,43 @@ public static class TelemetryParser
                         continue;
                     var visibilityAge = visibility.GetProperty("volumeAgeMillisecondsAtCapture").GetDouble();
                     if (!double.IsFinite(visibilityAge) || visibilityAge < 0 || visibilityAge > 500) continue;
-                    lights.Add(new(position, rgb, visibilityAge));
+                    lights.Add(new(position, rgb, visibilityAge, Metadata(source)));
                 }
-                else lights.Add(new(position, rgb));
+                else lights.Add(new(position, rgb, Metadata: Metadata(source)));
             }
             var capture = selected.GetProperty("captureSequence").GetInt64();
             if (sequence < 0 || capture < 0) throw new FormatException("Invalid sequence.");
             status = requireVisibility ? $"Live · {lights.Count}/{sources.GetArrayLength()} confirmed visible" : $"Live · {lights.Count} contributions";
             return new(sequence, capture, root.GetProperty("capturedAt").GetDateTimeOffset(),
-                selected.GetProperty("capturedAt").GetDateTimeOffset(), selectedAge, player, pose, lights, sources.GetArrayLength(), feed, requireVisibility);
+                selected.GetProperty("capturedAt").GetDateTimeOffset(), selectedAge, player, pose, lights, sources.GetArrayLength(), feed, requireVisibility,
+                root.GetProperty("game").TryGetProperty("build", out var build) && build.ValueKind == JsonValueKind.String ? build.GetString() : null,
+                PlayerForward(root.GetProperty("player")));
         }
         catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or FormatException or OverflowException)
         {
             status = "Invalid telemetry: " + (ex is FormatException ? ex.Message : "incomplete or malformed snapshot");
             return null;
         }
+    }
+
+    private static Vec3? PlayerForward(JsonElement player)
+    {
+        try { return player.TryGetProperty("orientation", out var orientation) &&
+            orientation.TryGetProperty("source", out var source) && source.GetString() == "player-physics-root" &&
+            orientation.TryGetProperty("forward", out var forward) ? Vec3.Read(forward) : null; }
+        catch (Exception e) when (e is FormatException or InvalidOperationException or KeyNotFoundException) { return null; }
+    }
+
+    private static LightSourceMetadata? Metadata(JsonElement source)
+    {
+        // Optional annotations must never invalidate otherwise usable raw light.
+        string? Text(string key) => source.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        Vec3? direction = null;
+        try { if (source.TryGetProperty("direction", out var vector)) direction = Vec3.Read(vector); }
+        catch (Exception e) when (e is FormatException or InvalidOperationException or KeyNotFoundException) { }
+        return new(Text("type"), Text("kind"), direction,
+            source.TryGetProperty("coneHalfAngleDegrees", out var cone) && cone.ValueKind == JsonValueKind.Number &&
+            cone.TryGetDouble(out var value) && double.IsFinite(value) ? value : null);
     }
 }
 

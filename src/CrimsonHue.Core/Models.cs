@@ -24,10 +24,12 @@ public readonly record struct Vec3(double X, double Y, double Z)
 }
 
 public sealed record CameraPose(Vec3 Position, Vec3 Right, Vec3 Up, Vec3 Forward);
-public sealed record LightContribution(Vec3 Position, Vec3 Rgb, double? VisibilityAgeMs = null);
+public sealed record LightSourceMetadata(string? Type, string? Kind, Vec3? Direction, double? ConeHalfAngleDegrees);
+public sealed record LightContribution(Vec3 Position, Vec3 Rgb, double? VisibilityAgeMs = null, LightSourceMetadata? Metadata = null);
 public sealed record TelemetryFrame(long Sequence, long CaptureSequence, DateTimeOffset CapturedAt,
     DateTimeOffset LightCapturedAt, double ProducerAgeMs, Vec3 Player, CameraPose Camera, IReadOnlyList<LightContribution> Lights,
-    int SourceCount = 0, string Feed = "rendered", bool ConfirmedVisibleOnly = false);
+    int SourceCount = 0, string Feed = "rendered", bool ConfirmedVisibleOnly = false,
+    string? GameBuild = null, Vec3? PlayerForward = null);
 public sealed record AmbientFrame(long CaptureSequence, DateTimeOffset CapturedAt, double SkyAgeMs,
     double VisibilityAgeMs, double WorkingLevel, Vec3 WorkingRgb = default, Vec3 SkyRgb = default,
     double SkyVisibility = 0);
@@ -82,7 +84,8 @@ public sealed record MappingSettings(double Gain = 1.5, double Brightness = 0.85
     double AmbientTintHue = 0, double AmbientTintSaturation = 0,
     bool SeparateLeftRight = true, bool SeparateFrontRear = true,
     double SourceDiscRadiusDegrees = 60, double SourceDiscSoftness = 0.25,
-    double DirectionOriginBlend = 0.5)
+    double DirectionOriginBlend = 0.5, double PointLightStrength = 1,
+    double SpotLightStrength = 1, double PlayerLanternStrength = 1)
 {
     // Retain Radius in stored settings and the constructor for 0.1.0 compatibility.
     [JsonIgnore] public double FadeEnd => Radius;

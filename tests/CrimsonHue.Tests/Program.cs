@@ -57,6 +57,7 @@ var tests = new List<(string Name, Func<Task> Run)>();
 void Add(string name, Action run) => tests.Add((name, () => { run(); return Task.CompletedTask; }));
 void Async(string name, Func<Task> run) => tests.Add((name, run));
 WallWashTests.Register(Add, Async);
+PlayerLanternTests.Register(Add);
 LightingProfileTests.Register(Add);
 EntertainmentLayoutTests.Register(Add, Async);
 void Assert(bool condition, string message = "Assertion failed") { if (!condition) throw new Exception(message); }
@@ -1072,14 +1073,15 @@ Add("Shareable preset round-trips every mixer control without local setup", () =
         BlueGain: .8, OutputGamma: 1.4, DirectionNormalization: .75,
         CameraYawOffset: -20, FadeExponent: 3, AmbientTintHue: 220,
         AmbientTintSaturation: .3, SeparateLeftRight: false, SeparateFrontRear: false,
-        SourceDiscRadiusDegrees: 145, SourceDiscSoftness: .4, DirectionOriginBlend: .2);
+        SourceDiscRadiusDegrees: 145, SourceDiscSoftness: .4, DirectionOriginBlend: .2,
+        PointLightStrength: .4, SpotLightStrength: 1.8, PlayerLanternStrength: .05);
     var json = MappingPreset.Export("Warm fire", custom);
     Assert(!json.Contains("BridgeAddress", StringComparison.OrdinalIgnoreCase) &&
         !json.Contains("AreaId", StringComparison.OrdinalIgnoreCase) &&
         !json.Contains("TelemetryAddress", StringComparison.OrdinalIgnoreCase) &&
         !json.Contains("secrets", StringComparison.OrdinalIgnoreCase), "Preset exposed machine setup");
     var imported = MappingPreset.Import(Encoding.UTF8.GetBytes(json));
-    Assert(imported.Name == "Warm fire" && imported.Mapping == custom && imported.Version == 1);
+    Assert(imported.Name == "Warm fire" && imported.Mapping == custom && imported.Version == 2);
     Assert(imported.ApplyTo(new(), PresetGroups.All) == custom, "Full preset did not restore all controls");
     var sections = imported.ApplyTo(new(), PresetGroups.Output | PresetGroups.Color);
     Assert(sections.Gain == 2.3 && sections.HueShiftDegrees == 12 && sections.AmbientFloor == 0 &&
@@ -1091,7 +1093,7 @@ Add("Preset import rejects local settings, incomplete files and invalid values",
     var valid = MappingPreset.Export("Shared settings", new());
     var bytes = Encoding.UTF8.GetBytes(valid);
     Reject(() => MappingPreset.Import(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new AppSettings()))));
-    Reject(() => MappingPreset.Import(Encoding.UTF8.GetBytes(valid.Replace("\"version\": 1", "\"version\": 99"))));
+    Reject(() => MappingPreset.Import(Encoding.UTF8.GetBytes(valid.Replace("\"version\": 2", "\"version\": 99"))));
     Reject(() => MappingPreset.Import(Encoding.UTF8.GetBytes(valid.Replace("\"gain\": 1.5,", ""))));
     Reject(() => MappingPreset.Import(Encoding.UTF8.GetBytes(valid.Replace("\"gain\": 1.5", "\"gain\": 99"))));
     Reject(() => MappingPreset.Import(Encoding.UTF8.GetBytes(valid.Replace("\"name\": \"Shared settings\"", "\"name\": 5"))));

@@ -33,8 +33,13 @@ public sealed class LightMapper
         // tone mapping afterwards can turn a tiny distant HDR contribution back
         // into a saturated output, effectively undoing the fade.
         var contributions = new List<(Vec3 Direction, Vec3 Rgb)>();
+        var playerLantern = settings.PlayerLanternStrength != 1 ? PlayerLanternSignature.Find(frame) : null;
         foreach (var light in frame.Lights)
         {
+            var strength = light.Metadata?.Kind switch {
+                "point" => settings.PointLightStrength, "spot" => settings.SpotLightStrength, _ => 1 };
+            if (playerLantern?.Contains(light) == true) strength *= settings.PlayerLanternStrength;
+            if (strength == 0) continue;
             var fade = DistanceWeight((light.Position - frame.Player).Length, settings);
             if (fade <= 0) continue;
             var adjusted = AdjustColor(light.Rgb, settings);
@@ -42,7 +47,7 @@ public sealed class LightMapper
             if (peak <= 0) continue;
             var local = SourceDirection(light.Position, frame, settings);
             var bounded = adjusted * ((1 - Math.Exp(-peak * settings.Gain)) / peak);
-            contributions.Add((local, bounded * fade));
+            contributions.Add((local, bounded * (fade * strength)));
         }
         var directions = area.Channels.Select(channel => channel.Position.Unit).ToArray();
         // Use full, fixed room geometry for compensation. Its strength must not
@@ -171,7 +176,8 @@ public sealed class LightMapper
             !InRange(s.CameraYawOffset, -180, 180) || !InRange(s.FadeExponent, 0.1, 8) ||
             !InRange(s.AmbientTintHue, 0, 360) || !InRange(s.AmbientTintSaturation, 0, 1) ||
             !InRange(s.SourceDiscRadiusDegrees, 1, 180) || !InRange(s.SourceDiscSoftness, 0, 1) ||
-            !InRange(s.DirectionOriginBlend, 0, 1))
+            !InRange(s.DirectionOriginBlend, 0, 1) || !InRange(s.PointLightStrength, 0, 2) ||
+            !InRange(s.SpotLightStrength, 0, 2) || !InRange(s.PlayerLanternStrength, 0, 1))
             throw new CrimsonHueException("Invalid lighting settings.");
     }
     private static bool InRange(double value, double minimum, double maximum) =>

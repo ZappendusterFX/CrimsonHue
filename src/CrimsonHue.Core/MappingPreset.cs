@@ -18,7 +18,7 @@ public enum PresetGroups
 public sealed record MappingPreset(string Format, int Version, string Name, MappingSettings Mapping)
 {
     public const string FileFormat = "CrimsonHuePreset";
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
     public const int MaximumBytes = 64 * 1024;
 
     private static readonly JsonSerializerOptions Options = new()
@@ -31,6 +31,9 @@ public sealed record MappingPreset(string Format, int Version, string Name, Mapp
         .GetProperties(BindingFlags.Instance | BindingFlags.Public)
         .Where(p => p.GetCustomAttribute<JsonIgnoreAttribute>() is null)
         .Select(p => JsonNamingPolicy.CamelCase.ConvertName(p.Name))
+        .ToHashSet(StringComparer.Ordinal);
+    private static readonly HashSet<string> VersionOneMappingKeys = MappingKeys
+        .Except(["pointLightStrength", "spotLightStrength", "playerLanternStrength"])
         .ToHashSet(StringComparer.Ordinal);
 
     public static string Export(string name, MappingSettings mapping)
@@ -55,9 +58,9 @@ public sealed record MappingPreset(string Format, int Version, string Name, Mapp
             if (format.ValueKind != JsonValueKind.String || format.GetString() != FileFormat)
                 throw new CrimsonHueException("This is not a CrimsonHue preset. Export only mixer values from the app.");
             var version = root.GetProperty("version");
-            if (version.ValueKind != JsonValueKind.Number || !version.TryGetInt32(out var number) || number != CurrentVersion)
+            if (version.ValueKind != JsonValueKind.Number || !version.TryGetInt32(out var number) || number is not (1 or CurrentVersion))
                 throw new CrimsonHueException("Unsupported preset format version.");
-            RequireKeys(root.GetProperty("mapping"), MappingKeys, "Preset mixer values");
+            RequireKeys(root.GetProperty("mapping"), number == 1 ? VersionOneMappingKeys : MappingKeys, "Preset mixer values");
             var preset = JsonSerializer.Deserialize<MappingPreset>(bytes, Options)
                 ?? throw new CrimsonHueException("Preset file is empty.");
             ValidateName(preset.Name);
@@ -81,7 +84,9 @@ public sealed record MappingPreset(string Format, int Version, string Name, Mapp
         if (groups.HasFlag(PresetGroups.Output)) next = next with
         {
             Brightness = Mapping.Brightness, Gain = Mapping.Gain, LocalStrength = Mapping.LocalStrength,
-            OutputGamma = Mapping.OutputGamma, SmoothingMs = Mapping.SmoothingMs
+            OutputGamma = Mapping.OutputGamma, SmoothingMs = Mapping.SmoothingMs,
+            PointLightStrength = Mapping.PointLightStrength, SpotLightStrength = Mapping.SpotLightStrength,
+            PlayerLanternStrength = Mapping.PlayerLanternStrength
         };
         if (groups.HasFlag(PresetGroups.Ambient)) next = next with
         {
