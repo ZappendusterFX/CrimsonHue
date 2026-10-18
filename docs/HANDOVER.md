@@ -22,6 +22,14 @@ worktree docs/HUE_SOURCE_WEIGHTS.md. No install, real settings/input/process wri
 or physical output. Next: owner exits game, installs the matching pair and assesses
 the controls and horizontal washer calibration. Game/input acceptance is pending.
 
+Owner now reports live Spot200% only starts to look interesting. Fresh neutral
+capture8934 + passive HUD confirm Point100/Spot200/Own10, no lantern matches.
+Four nearby clear warm point groups each sum16 members; combined raw luminance
+is68.7x the one blue spotlight, before mapping. Hue processes groups once, with
+no extra member-count multiplier. Current local-only replay: blue shares7.05% /
+82.51% on bars0/1; blue raw RGB is only mildly cool. Follow-up evidence/limits in
+SOURCE-WEIGHTS-VALIDATION.md. No behavior/settings/package change in this diagnosis.
+
 # Previous checkpoint — focused defaults and single HUD cursor, 2026-10-18, Codex
 
 Owner asks for sharper zone separation via defaults, and reports two HUD cursors

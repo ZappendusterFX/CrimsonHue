@@ -74,6 +74,28 @@ presence, not a controlled emitted-brightness comparison.
 
 ## Persistence and horizontal washers
 
+### Owner follow-up: 200% spotlights only starts to become visible
+
+Fresh neutral capture **8934** and passive HUD read confirm Streaming with Point
+100%, Spot200%, Own10%, no current lantern matches and no untyped sources. Within
+8 GU, four clear warm point groups each have16 members; the fixed blue spotlight
+is1.63 GU away. Their raw luminance sums to1.82152 versus blue0.0265133 (68.7:1).
+This is raw renderer-space luminance, not physical brightness or the final Hue
+ratio. The API already sums members into each group; Hue processes each group
+once, with no extra member-count multiplier. Multiple group contributions and
+their summed RGB explain a substantial imbalance; do not divide blindly by16.
+The current blue RGB (.02283,.02708,.03175) is also only mildly blue.
+
+Offline settled local-only replay with the captured current settings/room geometry
+gives blue local-luminance shares7.05% /82.51% for bars0/1; bar1 remains only mildly
+cool RGB(.3212,.3195,.3357). This illustrates both directional distribution and
+weak raw blue saturation. Other warm spot groups also exist farther away, so
+Spotlights is not a semantic blue-light control. Evidence: ignored
+`artifacts/source-balance-spot200-20261018-093848.json`,
+`artifacts/hue-live-state/source-weights-spot200-20261018.json`,
+`artifacts/source-balance-audit/spot200-20261018-current.json`.
+No settings, code, packages or physical output were changed for this diagnosis.
+
 The three weights are numeric mixer values and persist separately in each mode.
 MappingSettings' omitted-field defaults stay at 1 for all three, preserving old
 Custom settings and version-1 presets. Existing/fresh Recommended preferences
