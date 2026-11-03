@@ -49,10 +49,22 @@ Embedded Core SHA256:F5D2993491F60B7764F930ECD9C49C6746C6769903FDC2FF91F40015938
 Builder:scripts/Publish-Asi.ps1 -Version1.0.1. All old packages remain immutable.
 Use CDT2.2.6 for gamepatch2.04.05; older compatible CDT schemas remain accepted.
 Only source/docs/build defaults changed. No settings, installation, game input,
-bridge connection or physical output was changed. Not game-tested or published.
+bridge connection or physical output was changed. Not game-tested; publication is recorded below.
 Installation is exclusively the owner’s responsibility with the game closed.
 
 Private evidence:artifacts/lantern-cdt-compatibility-tests-rechecked-20261103.log,
 lantern-cdt-compatibility-package-20261103.log,
 lantern-cdt-compatibility-package-check-20261103.json and
 lantern-cdt-compatibility-offline-replay-20261103.json.
+
+## GitHub publication
+
+The owner requested GitHub push/publication. Source was fast-forwarded to main;
+release/tag afc99e7 includes source fix5aa18ab. Stable
+[Latest1.0.1](https://github.com/ZappendusterFX/CrimsonHue/releases/tag/v1.0.1)
+published2026-11-03 12:55:37UTC. Uploaded asset digest and independently downloaded
+public ZIP both match the immutable local SHA256/size above. No configured
+repository Actions workflows/runs; local125 Core/controller/package checks above
+are the validation evidence, not a claimed new CI/game/physical test. About text
+stays accurate; Nexus remains manual. No installation was performed.
+Private publication receipt:artifacts/github-1.0.1-publication-20261103.json.

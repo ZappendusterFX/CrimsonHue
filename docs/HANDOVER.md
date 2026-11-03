@@ -1,4 +1,27 @@
-# Current checkpoint — 2026-11-03, CDT-owned build validation; Hue1.0.1 ready
+# Current checkpoint — 2026-11-03, CrimsonHue1.0.1 published on GitHub main
+
+Owner requests GitHub push/publication. Recovery branch fast-forwarded to main;
+source/tag afc99e7 includes fix5aa18ab and owner-only installation rules. Stable
+[Latest1.0.1](https://github.com/ZappendusterFX/CrimsonHue/releases/tag/v1.0.1)
+published2026-11-03 12:55:37UTC. Game-build validation now belongs solely to CDT;
+Hue retains API/data checks and the complete conservative lantern-pair matching.
+No build-number gate, new telemetry schema or game-memory reader in Hue.
+
+125/125 Core tests, exact packaged hidden-controller smoke, five-file embedded
+manifest and expanded/ZIP validators passed. Preserved new-build CDT snapshot
+parses offline(38 clear sources); no controlled new-build pair/physical-output
+claim. No repository Actions workflows/runs configured for this release; local
+checks are separately documented in [validation](LANTERN-CDT-COMPATIBILITY.md).
+
+Published ZIP:CrimsonHue-1.0.1-asi-win-x64.zip,3011765bytes. GitHub digest and fresh
+public download both match immutable local SHA256
+00630C8B32BBFF769CF9D2D2DA712B68484332C901694DCE688B8014D8A4AC13.
+Private receipt:artifacts/github-1.0.1-publication-20261103.json. About description
+remains correct/unchanged; no Nexus upload, installation, real settings, game
+input, bridge connection or lamp output. Older releases/packages preserved.
+No further work required for this publication; owner alone installs when desired.
+
+# Previous checkpoint — 2026-11-03, CDT-owned build validation; Hue1.0.1 ready
 
 Owner requests removing Hue's duplicate old-game-build gate. Hue consumes only
 CDT's neutral API; CDT validates the game. PlayerLanternSignature no longer
