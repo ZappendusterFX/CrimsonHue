@@ -9,7 +9,7 @@ internal static class OpenRgbDiagnostic
     public static readonly EntertainmentArea Front = new("openrgb-development-front", "In front of monitor", false,
         [new(0, new(0, 1, 0), [], "OpenRGB front")]);
 
-    public static async Task<int> RunAsync(bool physical, string? reportPath)
+    public static async Task<int> RunAsync(bool physical, string? reportPath, bool identify = false)
     {
         using var cancel = new CancellationTokenSource();
         ConsoleCancelEventHandler handler = (_, e) => { e.Cancel = true; cancel.Cancel(); };
@@ -23,6 +23,7 @@ internal static class OpenRgbDiagnostic
             foreach (var d in devices)
                 Console.WriteLine($"  {d.Name}: {d.Colors.Length} logical slots, {d.PreviewLeds().Length} candidate LEDs; mode {d.Modes.ElementAtOrDefault(d.ActiveMode)?.Name ?? "per-zone"}; Direct {d.DirectMode >= 0 && !d.HasZoneModes}");
             if (!physical) return 0;
+            if (identify) return await IdentifyAsync(client, devices, cancel.Token, reportPath);
 
             var saved = new SettingsStore().LoadSettings();
             var manual = saved.Mapping ?? LightingProfile.Defaults;
@@ -84,5 +85,46 @@ internal static class OpenRgbDiagnostic
             return failure is null && output.Restoration.All(r => r.Restored) ? 0 : 2;
         }
         finally { Console.CancelKeyPress -= handler; }
+    }
+
+    // Explicit physical identification, separate from both live CDT mapping and
+    // the app's synthetic Demo. Fixed colors make an otherwise-black scene's
+    // hardware path observable, using the same bounded ownership/cleanup session.
+    private static async Task<int> IdentifyAsync(OpenRgbClient client, IReadOnlyList<OpenRgbDevice> devices,
+        CancellationToken token, string? reportPath)
+    {
+        await using var output = new OpenRgbOutputSession(client);
+        var startedAt = DateTimeOffset.UtcNow; string? failure = null;
+        var stages = new List<object>();
+        try
+        {
+            Console.WriteLine("PHYSICAL IDENTIFICATION: Red, Green, Blue, White; four seconds each; RGB level 25%. Ctrl+C stops.");
+            await output.StartAsync(devices, token);
+            foreach (var (name, rgb) in new (string, Vec3)[] {
+                ("Red", new(.25,0,0)), ("Green", new(0,.25,0)),
+                ("Blue", new(0,0,.25)), ("White", new(.25,.25,.25)) })
+            {
+                await output.VerifyOwnershipAsync(token);
+                await output.WriteAsync(rgb, token);
+                Console.WriteLine("  " + name);
+                stages.Add(new { Color = name, Rgb = rgb, At = DateTimeOffset.UtcNow });
+                var phase = Stopwatch.StartNew();
+                while (phase.Elapsed < TimeSpan.FromSeconds(4))
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(500), token);
+                    await output.VerifyOwnershipAsync(token);
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or OperationCanceledException)
+        { failure = ex.Message; Console.WriteLine("Stopped: " + failure); }
+        finally { await output.RestoreAsync(); }
+        foreach (var r in output.Restoration) Console.WriteLine($"  Restore {r.Device}: {r.Restored} — {r.Detail}");
+        if (reportPath != null)
+            await File.WriteAllTextAsync(reportPath, JsonSerializer.Serialize(new {
+                StartedAt = startedAt, Kind = "Physical identification (no CDT mapping)",
+                client.ServerVersion, client.ProtocolVersion, output.DeviceCount, output.ColorWrites,
+                Failure = failure, Stages = stages, output.Restoration }, new JsonSerializerOptions { WriteIndented = true }));
+        return failure is null && output.Restoration.All(r => r.Restored) ? 0 : 2;
     }
 }

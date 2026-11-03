@@ -1,5 +1,15 @@
 # Current checkpoint — 2026-11-03, OpenRGB front-position prototype
 
+Latest follow-up at 23:48 CET: owner closed the Razer apps and asked to observe
+keyboard, mouse, DualSense and RTX 3080. A repeated 20-second live run calculated
+only black (400 frames, 16 local sources, Ambient unavailable). Added the explicit
+physical `--openrgb-identify` diagnostic: four seconds each of red/green/blue/white
+at 25%, using the existing session. All four stages completed, all five prior
+SDK states were restored. Visible response is still awaiting owner feedback.
+The app's Demo remains output-free; Core is unchanged. Build and live diagnostic
+passed. Evidence and remaining Razer background services are documented in
+[OPENRGB.md](OPENRGB.md). Do not infer hardware delivery from cached SDK colors.
+
 Owner requests a separate branch for an initial OpenRGB test alongside Hue,
 all ultimately within CrimsonHue. Branch `codex/openrgb-parallel-preview` starts
 at main `a137d83`. Core now has a bounded loopback SDK 4–6 client and an explicit

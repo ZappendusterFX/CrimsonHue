@@ -32,6 +32,18 @@ Explicit **physical output**, automatically limited to 20 seconds:
 dotnet run --project tests/CrimsonHue.Tests -c Release -- --openrgb-live-test --report artifacts/openrgb-live-test.json
 ```
 
+For an explicitly requested **physical identification** independent of CDT:
+
+```powershell
+dotnet run --project tests/CrimsonHue.Tests -c Release -- --openrgb-identify --report artifacts/openrgb-identify.json
+```
+
+Identification sends red, green, blue and white for four seconds each at 25%,
+then restores the prior state. It uses the same output ownership/cleanup session
+and does not open a telemetry connection. This is separate from the app's Demo,
+which still never sends physical output. It is useful when live mapping legitimately
+produces black, so darkness alone cannot establish whether hardware output works.
+
 The live command needs fresh CDT data before taking control. It targets 20 updates
 per second, skips unchanged quantized colors, stops on unavailable telemetry,
 and restores prior modes and color buffers in `finally`. Ctrl+C requests the same
@@ -108,6 +120,23 @@ mode/color restoration, status LEDs, external edits, invalidated device lists,
 rejected ACKs, bounds/timeouts, cancellation and front-axis mapping.
 
 ## Next step after owner feedback
+
+Owner subsequently closed the Razer applications. App processes disappeared;
+Razer Experience/elevation services remained running. The 23:41 live rerun mapped
+400 frames / 299 captures, reached the 25% cap and restored all five SDK states.
+On the next explicitly observed live run at 23:46, all 400 calculated frames were
+exactly black: 16 accepted local sources and no available Ambient. That run sent
+only one color-buffer update; it does not demonstrate visible RGB response.
+
+The explicit color identification at 23:48 completed all four stages and restored
+all five devices according to SDK readback. The owner is watching keyboard, mouse,
+DualSense and RTX 3080; their report of actual visible output remains pending.
+Both commands were built/run successfully; the Core/session implementation is
+unchanged from the 152-test pass. Private reports are in the same artifact folder:
+`live-test-razer-closed-20261103-234133.json`,
+`live-test-observed-20261103-234621.json`, and
+`identify-observed-20261103-234831.json`. Do not claim Synapse interference is
+excluded: direct hardware writes need not appear in OpenRGB's cached SDK state.
 
 Add device selection and optional per-device room positions to CrimsonHue's
 existing setup/menu, with a separate OpenRGB enable/stop state alongside Hue.

@@ -13,12 +13,13 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
-if (args.Contains("--openrgb-inspect") || args.Contains("--openrgb-live-test"))
+if (args.Contains("--openrgb-inspect") || args.Contains("--openrgb-live-test") || args.Contains("--openrgb-identify"))
 {
     var reportIndex = Array.IndexOf(args, "--report");
     if (reportIndex >= 0 && reportIndex + 1 >= args.Length) throw new ArgumentException("--report requires a path.");
-    return await OpenRgbDiagnostic.RunAsync(args.Contains("--openrgb-live-test"),
-        reportIndex < 0 ? null : args[reportIndex + 1]);
+    var identify = args.Contains("--openrgb-identify");
+    return await OpenRgbDiagnostic.RunAsync(args.Contains("--openrgb-live-test") || identify,
+        reportIndex < 0 ? null : args[reportIndex + 1], identify);
 }
 
 // Explicit read-only diagnostic: use the paired user's protected store in memory.
