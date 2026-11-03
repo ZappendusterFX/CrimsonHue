@@ -21,6 +21,14 @@ Use freshness checks, bounded DTLS and explicit stream ownership/cleanup. Demo
 preview must never send physical output. Preserve all existing work and immutable
 release packages. Separate synthetic, live telemetry and real-lamp evidence.
 
+All mod/package installation is exclusively the owner's responsibility. Assistants
+must never install, update, uninstall or roll back packages, operate DMM to change
+installations, or copy/replace/remove deployed package files. Assistants only build
+and validate packages, provide their paths and instructions, and hand installation
+off to the owner. Game shutdown does not authorize assistant installation. After
+an installation handoff, resume package acceptance checks only when the owner
+reports installation/restart; do not wait or poll for that action.
+
 Test requested changes proportionately and commit completed work in this repository.
 If user action or input is needed, end the turn immediately. Do not keep a
 session open, poll, sleep, or spend tokens waiting; resume only on the owner's
