@@ -20,7 +20,10 @@ SHA256:00630C8B32BBFF769CF9D2D2DA712B68484332C901694DCE688B8014D8A4AC13.
 patch2.04.05. Built/validated, not installed, not game/physical-output tested or
 published. Old public1.0.0 and all packages remain unchanged. Next: owner alone
 installs the complete1.0.1 ZIP with game closed when desired; no assistant install
-or waiting. GitHub publication was not requested for this new Hue change.
+or waiting. Owner now requests GitHub push/publication: fast-forward main, tag
+v1.0.1, attach the already validated immutable local ZIP and publish on GitHub.
+Existing GitHub About text remains accurate; no repository Actions workflows are
+configured. No Nexus upload or assistant installation is authorized/performed.
 
 # Previous checkpoint — public 1.0.0 published on main, 2026-10-18, Codex
 
