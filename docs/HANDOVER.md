@@ -5,7 +5,10 @@ keyboard, mouse, DualSense and RTX 3080. A repeated 20-second live run calculate
 only black (400 frames, 16 local sources, Ambient unavailable). Added the explicit
 physical `--openrgb-identify` diagnostic: four seconds each of red/green/blue/white
 at 25%, using the existing session. All four stages completed, all five prior
-SDK states were restored. Visible response is still awaiting owner feedback.
+SDK states were restored. Owner now confirms "ja haben alle exakt reagiert" for
+the observed keyboard, mouse, DualSense and RTX 3080: their visible response to
+the fixed color sequence passes acceptance. This does not cover the unobserved
+ASUS motherboard or the appearance of continuously mapped game lighting.
 The app's Demo remains output-free; Core is unchanged. Build and live diagnostic
 passed. Evidence and remaining Razer background services are documented in
 [OPENRGB.md](OPENRGB.md). Do not infer hardware delivery from cached SDK colors.
@@ -22,7 +25,7 @@ uses existing CDT consumers/LightMapper, saved profile settings and a 25% cap fo
 credentials or modify the Hue area/stream. The SDK-6 run succeeded: 398 mapped
 frames, 296 unique captures, 191 device color updates, all five restores verified
 against SDK state. Output was weak in this scene (maximum RGB 0.040465); visual
-acceptance and simultaneous physical Hue appearance remain unmeasured.
+game-mapping acceptance and simultaneous physical Hue appearance remain unmeasured.
 
 The first SDK-4 attempt exposed an installed OpenRGB 1.0 compatibility bug:
 post-rescan IDs 5–9 were treated as indexes 0–4 in its write worker. It sent no

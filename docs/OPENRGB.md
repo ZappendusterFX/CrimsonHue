@@ -109,8 +109,8 @@ with 14–41 valid local sources per sampled frame. It sent **191 device color
 updates**, and all **five prior modes and color buffers matched after restoration**.
 The maximum calculated RGB component was only **0.040465** despite the 0.25 cap:
 this scene had weak mapped front output. This proves the data/output/cleanup path;
-visible brightness, latency, color quality and parallel Hue appearance still need
-owner feedback.
+the appearance of mapped game lighting and parallel Hue output still need owner
+feedback. Fixed-color hardware identification is separately accepted below.
 
 Private evidence: `artifacts/openrgb-front-test-20261103/live-test-2.json`.
 The first failed attempt is retained as `live-test-1.json`, with read-only follow-up
@@ -119,7 +119,7 @@ The synthetic suite covers fragmented SDK 4/5/6 replies, opaque non-index IDs,
 mode/color restoration, status LEDs, external edits, invalidated device lists,
 rejected ACKs, bounds/timeouts, cancellation and front-axis mapping.
 
-## Next step after owner feedback
+## Owner verification and next step
 
 Owner subsequently closed the Razer applications. App processes disappeared;
 Razer Experience/elevation services remained running. The 23:41 live rerun mapped
@@ -129,8 +129,12 @@ exactly black: 16 accepted local sources and no available Ambient. That run sent
 only one color-buffer update; it does not demonstrate visible RGB response.
 
 The explicit color identification at 23:48 completed all four stages and restored
-all five devices according to SDK readback. The owner is watching keyboard, mouse,
-DualSense and RTX 3080; their report of actual visible output remains pending.
+all five devices according to SDK readback. The owner watched keyboard, mouse,
+DualSense and RTX 3080 and confirms "ja haben alle exakt reagiert". This accepts
+visible response to the fixed red/green/blue/white sequence on those four devices.
+The ASUS motherboard was not included in that observation. Continuously mapped
+game lighting, spatial placement and simultaneous Hue appearance remain separate
+acceptance items; no measured optical latency or refresh rate is claimed.
 Both commands were built/run successfully; the Core/session implementation is
 unchanged from the 152-test pass. Private reports are in the same artifact folder:
 `live-test-razer-closed-20261103-234133.json`,
