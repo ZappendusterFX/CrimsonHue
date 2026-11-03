@@ -20,12 +20,19 @@ Upstream work on codex/physics-visibility-cache-admission fixes current-target
 admission and ties replies to original entries;79/79 managed checks pass. This
 is a managed bookkeeping fix, not a wider ray budget or relaxed visibility gate.
 Matching companion is CDT2.2.7; its own HANDOVER owns package validation/status.
+CDT is now built/validated and committed33fa49d: maintained builder/self-test,
+expanded/ZIP checks and exact packaged-Core focused tests pass. Production INI
+is byte-identical2.2.6, both research switchesOFF and all9 featuresON. Native
+sources/definitions unchanged; no new native40-test run or live acceptance claim.
+CDT ZIP SHA256:69CFE94F305806D65CC7D16BB000C87C85C51C3B6706136DC2537BC99CA23820.
 
 Final immutable Hue ZIP:dist/CrimsonHue-1.0.3-asi-win-x64.zip(3013047bytes), SHA256
 918EE899AACD444266F578DA80502EAFF73D66A81D5B5210985826589C97AB5F.
 Exact packaged hidden-controller/ZIP checks and final-Core replays pass. Initial
 local1.0.2 ZIP remains immutable/unpublished;1.0.3 keeps its filter and updates
 companion guidance. Full evidence/limits:[MOTION-RESPONSE-20261103.md](MOTION-RESPONSE-20261103.md).
+Hue source/package work is committedba6b5f3 on codex/hue-motion-transition;
+the final companion receipt is a separate documentation commit.
 No assistant installation, settings/input/bridge/lamp changes or publication.
 Final packages are not installed/game-tested; recordings use oldCDT2.2.6, not
 the new scheduler. Owner alone installs the complete pair with game closed.

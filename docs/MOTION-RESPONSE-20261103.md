@@ -271,3 +271,23 @@ Built and validated locally, not installed or published. Installation remains
 exclusively the owner's responsibility. Use the new CDT 2.2.7 package for the
 complete correction; old packages and the running installation are preserved.
 AGENTS.md and CLAUDE.md remain byte-identical.
+
+### Completed CDT companion
+
+CDT source commit `33fa49d` on `codex/physics-visibility-cache-admission` contains
+the managed correction and regressions. Its maintained production builder,
+self-test, expanded/ZIP validation and focused tests against the exact embedded
+Core all pass. The clean INI is byte-identical to 2.2.6; both research switches
+are off and all nine features are on. Native source/profile definitions are
+unchanged. The rebuilt ASI has a different hash; no new native 40-test run or
+live/game/optical acceptance is claimed.
+
+Companion: `C:/DEV/CrimsonDesertTelemetry/artifacts/mod-manager/CrimsonDesertTelemetry-v2.2.7-ModManagers.zip`,
+1,061,211 bytes; SHA256
+`69CFE94F305806D65CC7D16BB000C87C85C51C3B6706136DC2537BC99CA23820`.
+Exact packaged Core SHA256:
+`E70B61D08C0EF1D72E7EE6E1E782628314594C156D362EAE2D0EE31C478B7540`.
+Upstream diagnosis and package proof are in that repository's
+`docs/PHYSICS-VISIBILITY-CACHE-20261103.md` and
+`docs/releases/v2.2.7-validation.md`. Neither package has been installed or
+published by the assistant. Both are ready for the owner-managed installation.
