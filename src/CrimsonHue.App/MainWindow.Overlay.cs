@@ -18,6 +18,7 @@ public partial class MainWindow
     internal void StartOverlayController()
     {
         overlayController = true;
+        BeginOpenRgbDiscovery();
         if (smoke)
         {
             AreaBox.ItemsSource = new[] { DemoData.WallWasherArea };
@@ -49,6 +50,7 @@ public partial class MainWindow
             telemetry = TelemetryStatus.Text, capture = CaptureInfo.Text, ambient = AmbientStatus.Text,
             stream = StreamStatus.Text, tuning = TuningStatus.Text, bridgeStatus = BridgeStatus.Text,
             openRgbPreviewBuild = OpenRgbPreviewBuild, openRgbPreview = OpenRgbPreviewEnabled, openRgb = openRgbSession?.State,
+            openRgbRoom = OpenRgbSnapshot(),
             bridgeConnected, bridgePhase, bridgeError, bridgeDiagnostic,
             certificate = CertificateLabel.Text, pairing = PairPanel.Visibility == Visibility.Visible,
             layout = LayoutInfo.Text, boundary = SpatialBoundaryStatus.Text,
@@ -90,6 +92,8 @@ public partial class MainWindow
             string Text(string key) => command.GetProperty(key).GetString() ?? "";
             switch (action)
             {
+                case "openRgbDiscover": BeginOpenRgbDiscovery(); break;
+                case "openRgb": SetOpenRgb(command); break;
                 case "profile": SelectLightingProfile(command.GetProperty("recommended").GetBoolean()); break;
                 case "lighting": SetLightingPreference(Text("key"), command.GetProperty("value").GetDouble()); break;
                 case "set":

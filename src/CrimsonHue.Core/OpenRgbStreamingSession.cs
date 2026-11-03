@@ -4,7 +4,7 @@ using System.Net.Sockets;
 namespace CrimsonHue.Core;
 
 public sealed record OpenRgbStreamState(string Status, bool Sending = false, int Devices = 0,
-    long Frames = 0, Vec3 Rgb = default);
+    long Frames = 0, Vec3 Rgb = default, IReadOnlyDictionary<string, Vec3>? DeviceColors = null);
 
 /// <summary>Private front-position trial, with its own mapper and SDK ownership.</summary>
 public sealed class OpenRgbStreamingSession(int port = 6742)
@@ -16,7 +16,7 @@ public sealed class OpenRgbStreamingSession(int port = 6742)
     public OpenRgbStreamState State => Volatile.Read(ref state);
 
     public async Task RunAsync(TelemetryState telemetry, AmbientState ambient,
-        Func<MappingSettings> settings, CancellationToken token)
+        Func<MappingSettings> settings, CancellationToken token, Func<OpenRgbLayout>? layout = null)
     {
         if (Interlocked.Exchange(ref running, 1) != 0) throw new InvalidOperationException("OpenRGB session already used.");
         long frames = 0; var acquired = false;
@@ -24,12 +24,18 @@ public sealed class OpenRgbStreamingSession(int port = 6742)
         {
             while (!token.IsCancellationRequested)
             {
+                var config = layout?.Invoke() ?? new OpenRgbLayout(Port: port);
+                config.Validate();
+                if (!config.Enabled || config.Devices is { Count: 0 } || config.Devices?.All(d => !d.Enabled) == true)
+                { Set("OpenRGB · disabled or no devices selected"); await Task.Delay(100, token); continue; }
                 Set("OpenRGB · waiting for fresh CDT");
-                while (telemetry.Read(out _) == null) await Task.Delay(50, token);
+                if (telemetry.Read(out _) == null) { await Task.Delay(50, token); continue; }
                 await using var client = new OpenRgbClient();
                 Set("OpenRGB · connecting to localhost:6742");
-                await client.ConnectAsync(port, token);
+                await client.ConnectAsync(config.Port, token);
                 var devices = await client.InventoryAsync(token);
+                var targets = config.Targets(devices);
+                if (targets.Count == 0) { Set("OpenRGB · selected devices not available"); await Task.Delay(1000, token); continue; }
                 // Inventory is read-only; recheck freshness before taking control.
                 if (telemetry.Read(out _) == null) continue;
                 await using var output = new OpenRgbOutputSession(client);
@@ -40,7 +46,7 @@ public sealed class OpenRgbStreamingSession(int port = 6742)
                     // Finish each bounded SDK operation before observing Stop.
                     // Canceling midway through an ACK would invalidate the socket
                     // needed for restoration. No game/Hue thread waits on this I/O.
-                    await output.StartAsync(devices);
+                    await output.StartAsync(targets.Select(t => t.Device).ToArray());
                     acquired = true;
                     var mapper = new LightMapper();
                     var clock = Stopwatch.StartNew(); var previous = 0.0; var nextCheck = 0.0;
@@ -48,6 +54,11 @@ public sealed class OpenRgbStreamingSession(int port = 6742)
                     using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(50));
                     while (!token.IsCancellationRequested)
                     {
+                        var current = layout?.Invoke() ?? config;
+                        current.Validate();
+                        var placed = current.Targets(devices);
+                        if (!current.Enabled || current.Port != config.Port ||
+                            !placed.Select(t => t.Device.Identity).SequenceEqual(targets.Select(t => t.Device.Identity))) break;
                         if (clock.Elapsed.TotalSeconds >= nextCheck)
                         {
                             await output.VerifyOwnershipAsync();
@@ -56,22 +67,23 @@ public sealed class OpenRgbStreamingSession(int port = 6742)
                         token.ThrowIfCancellationRequested();
                         var now = clock.Elapsed.TotalSeconds;
                         var frame = telemetry.Read(out _);
-                        Vec3 rgb;
+                        IReadOnlyList<ChannelColor> colors;
                         if (frame == null)
                         {
-                            mapper.Reset(); rgb = default; staleSince ??= now;
+                            mapper.Reset(); colors = placed.Select((_, i) => new ChannelColor((byte)i, default)).ToArray(); staleSince ??= now;
                         }
                         else
                         {
                             staleSince = null;
                             var mapping = settings();
-                            rgb = mapper.Map(frame, Front, mapping with { Brightness = Math.Min(.25, mapping.Brightness) },
-                                previous == 0 ? .05 : now - previous, ambient.Read(out _))[0].Rgb;
+                            colors = mapper.Map(frame, OpenRgbLayout.Area(placed), mapping with { Brightness = Math.Min(current.Brightness, mapping.Brightness) },
+                                previous == 0 ? .05 : now - previous, ambient.Read(out _));
                         }
-                        await output.WriteAsync(rgb);
+                        var deviceColors = placed.Select((t, i) => (t.Device.Identity, colors[i].Rgb)).ToDictionary(p => p.Identity, p => p.Rgb);
+                        await output.WriteDevicesAsync(deviceColors);
                         previous = now; frames++;
                         Volatile.Write(ref state, new(frame == null ? "OpenRGB · CDT stale, output cleared" :
-                            $"OpenRGB · {output.DeviceCount} devices · front · max 25%", true, output.DeviceCount, frames, rgb));
+                            $"OpenRGB · {output.DeviceCount} devices · room layout", true, output.DeviceCount, frames, colors[0].Rgb, deviceColors));
                         if (staleSince is { } since && now - since >= 1) break;
                         await timer.WaitForNextTickAsync(token);
                     }

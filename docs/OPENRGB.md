@@ -1,5 +1,33 @@
 # OpenRGB development test
 
+## Current HUD test — Hue 1.0.5-openrgb.2 + CDT 2.2.8-openrgb.1
+
+The owner requests a separate OpenRGB HUD section with devices placed in 3D.
+Implemented a dedicated tab in the existing shared panel: device discovery,
+selection, port/output limit, a rotatable orthographic 3D room, floor-plane drag,
+and left/right, back/front and height controls. The screen marks front; the origin
+is the seated viewer. Positions are normalized [-1,1], not measured metres.
+The selected device is drawn last and gets a name label; selecting in the list
+also resolves devices initially stacked at the same front position.
+
+Read devices performs only SDK inventory, never hardware rescan. Settings are
+stored locally by hashed hardware identity, including disconnected devices.
+Transient SDK IDs, internal LED values and protocol-specific flags are excluded
+from persisted identity. Configuration/positions stay outside mixer presets.
+UI changes are saved after a short debounce and on normal panel close/stop.
+Positions apply live to the OpenRGB mapper; selection/port/enable changes release
+the existing SDK ownership before reacquisition. Each selected device gets its own
+channel color at its configured 3D point. Hue's mapper and room area stay separate.
+
+New devices default to the previously accepted front position and 25% output limit.
+The common Start button still uses the existing Hue bridge/area; the OpenRGB toggle
+only controls the OpenRGB backend. Demo previews the room without physical output.
+158/158 Core tests pass, including persisted identity across changed SDK IDs and
+versions, validation, selection and two-device live spatial color changes with
+restoration. Native controller ABI verifies 3D commands, rejection and Demo
+isolation. Shared CDT D3D12 smoke renders the actual new tab from the managed ASI.
+Installed input and appearance acceptance require the owner to install both ZIPs.
+
 ## Private installable test — 1.0.5-openrgb.1
 
 The owner requested an installable test ZIP after accepting fixed-color output.

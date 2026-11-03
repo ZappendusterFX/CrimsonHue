@@ -66,6 +66,7 @@ public partial class MainWindow : Window
                 BridgeAddress.Text = saved.BridgeAddress;
                 TelemetryAddress.Text = saved.TelemetryAddress;
                 selectedAreaId = saved.AreaId;
+                LoadOpenRgbSettings(saved.OpenRgb);
                 // A malformed shortcut must not discard the owner's existing bridge/layout.
                 if (saved.Shortcut is { } savedShortcut && OverlayShortcut.IsAllowedKey(savedShortcut.Key)) shortcut = savedShortcut;
                 var m = saved.Mapping ?? LightingProfile.Defaults; LightMapper.Validate(m);
@@ -91,6 +92,7 @@ public partial class MainWindow : Window
             { BridgeStatus.Text = "Saved setup could not be loaded. Find and pair your bridge again."; }
         }
         mapping = LightingProfile.Resolve(lighting, manualMapping);
+        InitializeOpenRgb();
         StreamStatus.Text = WithOpenRgbStatus(StreamStatus.Text);
         initialized = true;
         SyncTuningValues();
@@ -332,12 +334,14 @@ public partial class MainWindow : Window
         }
         if (closing) return;
         closing = true; timer.Stop();
+        openRgbSaveTimer.Stop();
         try
         {
             await lifetime.CancelAsync();
             if (streamTask != null) await streamTask;
             if (telemetryTask != null) await telemetryTask;
             if (ambientTask != null) await ambientTask;
+            if (openRgbDiscoveryTask != null) await openRgbDiscoveryTask;
             SaveSettings();
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)

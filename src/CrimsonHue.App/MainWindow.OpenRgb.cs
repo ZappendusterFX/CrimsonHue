@@ -1,10 +1,121 @@
 using CrimsonHue.Core;
+using System.IO;
+using System.Text.Json;
+using System.Windows.Threading;
 
 namespace CrimsonHue.App;
 
 public partial class MainWindow
 {
     private OpenRgbStreamingSession? openRgbSession;
+    private OpenRgbLayout openRgbLayout = new(Enabled: OpenRgbPreviewBuild, Devices: []);
+    private IReadOnlyList<OpenRgbDevice> openRgbInventory = [];
+    private readonly LightMapper openRgbPreviewMapper = new();
+    private readonly DispatcherTimer openRgbSaveTimer = new() { Interval = TimeSpan.FromMilliseconds(600) };
+    private Task? openRgbDiscoveryTask;
+    private string openRgbDiscoveryStatus = "Read devices to connect to OpenRGB";
+
+    private void LoadOpenRgbSettings(OpenRgbLayout? saved)
+    {
+        if (saved == null) return;
+        try { saved.Validate(); openRgbLayout = saved; }
+        catch (CrimsonHueException) { openRgbDiscoveryStatus = "Invalid OpenRGB settings ignored; read devices to set up again"; }
+    }
+
+    private void InitializeOpenRgb()
+    {
+        if (smoke)
+            openRgbLayout = new(Devices: [new(new string('A', 64), "Demo keyboard", new(-.25, .6, -.3)),
+                new(new string('B', 64), "Demo mouse", new(.55, .6, -.3)),
+                new(new string('C', 64), "Demo controller", new(0, .45, -.6)),
+                new(new string('D', 64), "Demo PC lighting", new(.85, .5, -.5))]);
+        openRgbSaveTimer.Tick += (_, _) =>
+        {
+            openRgbSaveTimer.Stop();
+            try { SaveSettings(); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            { openRgbDiscoveryStatus = "Could not save OpenRGB placement"; }
+        };
+    }
+
+    private void BeginOpenRgbDiscovery()
+    {
+        if (smoke || !OpenRgbPreviewBuild || closing || openRgbDiscoveryTask?.IsCompleted == false) return;
+        openRgbDiscoveryTask = DiscoverOpenRgbAsync();
+    }
+
+    private async Task DiscoverOpenRgbAsync()
+    {
+        openRgbDiscoveryStatus = "Reading OpenRGB devices...";
+        try
+        {
+            var config = openRgbLayout;
+            await using var client = new OpenRgbClient();
+            await client.ConnectAsync(config.Port, lifetime.Token);
+            var inventory = await client.InventoryAsync(lifetime.Token);
+            if (closing || config.Port != openRgbLayout.Port) return;
+            var next = openRgbLayout.Discover(inventory);
+            openRgbInventory = inventory;
+            CommitOpenRgb(next);
+            openRgbDiscoveryStatus = $"Connected · {inventory.Count} devices · SDK {client.ProtocolVersion}";
+        }
+        catch (Exception ex) when (ex is IOException or System.Net.Sockets.SocketException or OperationCanceledException or CrimsonHueException)
+        { openRgbDiscoveryStatus = "OpenRGB unavailable · check SDK server and port"; }
+        finally { if (!closing) PublishOverlay(); }
+    }
+
+    private void CommitOpenRgb(OpenRgbLayout next)
+    {
+        next.Validate(); Volatile.Write(ref openRgbLayout, next);
+        openRgbPreviewMapper.Reset();
+        openRgbSaveTimer.Stop(); openRgbSaveTimer.Start();
+    }
+
+    private void SetOpenRgb(JsonElement command)
+    {
+        if (!OpenRgbPreviewBuild && !smoke) return;
+        var config = openRgbLayout;
+        var key = command.GetProperty("key").GetString();
+        if (key == "enabled") CommitOpenRgb(config with { Enabled = command.GetProperty("value").GetBoolean() });
+        else if (key == "port") CommitOpenRgb(config with { Port = command.GetProperty("value").GetInt32() });
+        else if (key == "brightness") CommitOpenRgb(config with { Brightness = command.GetProperty("value").GetDouble() });
+        else if (key is "position" or "deviceEnabled")
+        {
+            var id = command.GetProperty("device").GetString();
+            if (!(config.Devices ?? []).Any(p => p.DeviceKey == id)) throw new CrimsonHueException("Read OpenRGB devices first.");
+            var devices = (config.Devices ?? []).Select(p => p.DeviceKey != id ? p : key == "position" ?
+                p with { Position = Vec3.Read(command.GetProperty("position")) } :
+                p with { Enabled = command.GetProperty("value").GetBoolean() }).ToArray();
+            CommitOpenRgb(config with { Devices = devices });
+        }
+        else throw new CrimsonHueException("Unknown OpenRGB setting.");
+    }
+
+    private object OpenRgbSnapshot()
+    {
+        var config = openRgbLayout;
+        var colors = openRgbSession?.State.DeviceColors;
+        if (colors == null)
+        {
+            var frame = smoke || DemoCheck.IsChecked == true ? DemoData.Frame(uptime.Elapsed.TotalSeconds) : telemetry.Read(out _);
+            var entries = (config.Devices ?? []).Where(p => p.Enabled).ToArray();
+            if (frame != null && entries.Length > 0)
+            {
+                var area = new EntertainmentArea("openrgb-preview", "OpenRGB preview", false,
+                    entries.Select((p, i) => new EntertainmentChannel((byte)i, p.Position, [], p.Name)).ToArray());
+                var mapped = openRgbPreviewMapper.Map(frame, area, mapping with { Brightness = Math.Min(config.Brightness, mapping.Brightness) }, .1,
+                    smoke || DemoCheck.IsChecked == true ? null : ambient.Read(out _));
+                colors = entries.Select((p, i) => (p.DeviceKey, mapped[i].Rgb)).ToDictionary(p => p.DeviceKey, p => p.Rgb);
+            }
+        }
+        return new { available = OpenRgbPreviewBuild || smoke, config.Enabled, config.Port, config.Brightness,
+            status = openRgbDiscoveryStatus, busy = openRgbDiscoveryTask?.IsCompleted == false,
+            devices = (config.Devices ?? []).Select(p => {
+                var device = openRgbInventory.FirstOrDefault(d => d.Identity == p.DeviceKey);
+                return new { key = p.DeviceKey, name = device?.Name ?? p.Name, p.Enabled, position = p.Position,
+                    present = smoke || device != null, eligible = smoke || device != null && OpenRgbLayout.Eligible(device),
+                    leds = device?.PreviewLeds().Length ?? (smoke ? 3 : 0), rgb = colors?.GetValueOrDefault(p.DeviceKey) ?? default };
+            }) };
+    }
     private static bool OpenRgbPreviewBuild
     {
         get
@@ -19,14 +130,14 @@ public partial class MainWindow
     private bool OpenRgbPreviewEnabled => OpenRgbPreviewBuild && !smoke;
 
     private string WithOpenRgbStatus(string hueStatus) => !OpenRgbPreviewEnabled ? hueStatus :
-        hueStatus + " | " + (openRgbSession?.State.Status ?? "OpenRGB preview · front · max 25% · starts with sync");
+        hueStatus + " | " + (openRgbSession?.State.Status ?? "OpenRGB · open the OpenRGB tab to place devices");
 
     private async Task RunLightingAsync(StreamingSession hue, EntertainmentArea area, CancellationToken token)
     {
         using var combined = CancellationTokenSource.CreateLinkedTokenSource(token);
         var rgb = openRgbSession;
         var rgbTask = rgb == null ? Task.CompletedTask :
-            rgb.RunAsync(telemetry, ambient, () => Volatile.Read(ref mapping), combined.Token);
+            rgb.RunAsync(telemetry, ambient, () => Volatile.Read(ref mapping), combined.Token, () => Volatile.Read(ref openRgbLayout));
         try
         {
             await hue.RunAsync(area, telemetry, () => Volatile.Read(ref mapping), token,

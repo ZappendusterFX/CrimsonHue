@@ -14,6 +14,59 @@ internal static class OpenRgbTests
 
     public static void Register(Action<string, Action> add, Action<string, Func<Task>> asyncTest)
     {
+        add("OpenRGB placements survive settings roundtrip and SDK IDs changing", () =>
+        {
+            var device = OpenRgbProtocol.ParseDevice(42, new Device().Bytes());
+            Assert(device.Identity == OpenRgbProtocol.ParseDevice(999, new Device().Bytes(6), 6).Identity);
+            var layout = new OpenRgbLayout().Discover([device]);
+            var position = new Vec3(-.7, .4, -.3);
+            layout = layout with { Devices = [layout.Devices![0] with { Position = position }] };
+            var saved = System.Text.Json.JsonSerializer.Serialize(new AppSettings(OpenRgb: layout));
+            var restored = System.Text.Json.JsonSerializer.Deserialize<AppSettings>(saved)!.OpenRgb!;
+            var targets = restored.Targets([device with { Id = 999 }]);
+            Assert(targets.Single().Device.Id == 999 && targets.Single().Position == position);
+            Assert(!saved.Contains("private-test") && !saved.Contains("\"Id\""));
+            var offline = restored.Discover([]);
+            Assert(offline.Devices!.Single().Position == position);
+        });
+        add("OpenRGB layout rejects unsafe coordinates and duplicate identities and respects selection", () =>
+        {
+            var device = OpenRgbProtocol.ParseDevice(42, new Device().Bytes());
+            var layout = new OpenRgbLayout().Discover([device]);
+            var entry = layout.Devices![0];
+            foreach (var invalid in new[] { layout with { Devices = [entry, entry] },
+                layout with { Devices = [entry with { Position = new(0,0,double.NaN) }] },
+                layout with { Devices = [entry with { Position = new(0,0,1.01) }] }, layout with { Port = 0 } })
+            {
+                var rejected = false; try { invalid.Validate(); } catch (CrimsonHueException) { rejected = true; }
+                Assert(rejected);
+            }
+            Assert((layout with { Devices = [entry with { Enabled = false }] }).Targets([device]).Count == 0);
+        });
+        asyncTest("OpenRGB spatial sync sends distinct device colors and applies live 3D position edits", async () =>
+        {
+            await using var host = new Server { SecondModel = new Device { Name = "Second RGB" } };
+            var firstOriginal = host.Model.Bytes(); var secondOriginal = host.SecondModel.Bytes();
+            var first = OpenRgbProtocol.ParseDevice(host.ControllerId, firstOriginal);
+            var second = OpenRgbProtocol.ParseDevice(77, secondOriginal);
+            var layout = new OpenRgbLayout(Port: host.Port, Devices: [new(first.Identity, first.Name, new(0,1,0)),
+                new(second.Identity, second.Name, new(0,-1,0))]);
+            var telemetry = new TelemetryState();
+            using var source = new CancellationTokenSource(); using var stop = new CancellationTokenSource();
+            var feed = ProduceFront(telemetry, source.Token); var session = new OpenRgbStreamingSession();
+            var task = session.RunAsync(telemetry, new(), () => LightingProfile.Defaults with { SmoothingMs = 0 }, stop.Token,
+                () => Volatile.Read(ref layout));
+            try
+            {
+                await Fixtures.WaitUntil(() => session.State.DeviceColors?.GetValueOrDefault(first.Identity).X > .1);
+                Assert(session.State.DeviceColors![second.Identity] == default);
+                Volatile.Write(ref layout, layout with { Devices = layout.Devices!.Select(p => p with { Position = p.Position * -1 }).ToArray() });
+                await Fixtures.WaitUntil(() => session.State.DeviceColors?.GetValueOrDefault(second.Identity).X > .1);
+                Assert(session.State.DeviceColors![first.Identity] == default);
+            }
+            finally { source.Cancel(); stop.Cancel(); await feed; await task.WaitAsync(TimeSpan.FromSeconds(5)); }
+            Assert(host.Model.Bytes().SequenceEqual(firstOriginal) && host.SecondModel.Bytes().SequenceEqual(secondOriginal));
+        });
         add("OpenRGB v4 parser preserves mode properties and excludes matrix holes and gamepad status LEDs", () =>
         {
             var wire = new Device(); var parsed = OpenRgbProtocol.ParseDevice(0, wire.Bytes());
@@ -279,6 +332,7 @@ internal static class OpenRgbTests
         private readonly object gate = new();
         private readonly Task loop;
         public readonly Device Model = new();
+        public Device? SecondModel;
         public readonly List<uint> Commands = [];
         public bool Fragment;
         public uint Version = 6;
@@ -314,21 +368,22 @@ internal static class OpenRgbTests
                     var id = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(4));
                     var command = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(8));
                     var size = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(12));
-                    Assert(size < 4096 && id == (command is 0 or 40 ? 0 : ControllerId)); var body = new byte[(int)size];
+                    Assert(size < 4096 && (command is 0 or 40 ? id == 0 : id == ControllerId || (SecondModel != null && id == 77))); var body = new byte[(int)size];
                     await stream.ReadExactlyAsync(body, stop.Token); byte[]? reply = null;
                     lock (gate)
                     {
                         Commands.Add(command);
+                        var model = id == 77 ? SecondModel! : Model;
                         if (command == 1101)
                         {
                             Assert(BinaryPrimitives.ReadUInt32LittleEndian(body) == body.Length);
-                            if (!RejectWrite) Model.AcceptMode(BinaryPrimitives.ReadInt32LittleEndian(body.AsSpan(4)), body[8..], Version);
+                            if (!RejectWrite) model.AcceptMode(BinaryPrimitives.ReadInt32LittleEndian(body.AsSpan(4)), body[8..], Version);
                         }
                         else if (command == 1050)
                         {
                             Assert(BinaryPrimitives.ReadUInt32LittleEndian(body) == body.Length &&
                                 BinaryPrimitives.ReadUInt16LittleEndian(body.AsSpan(4)) == 3 && body.Length == 18);
-                            if (!RejectWrite) Model.Colors = Enumerable.Range(0,3).Select(i => BinaryPrimitives.ReadUInt32LittleEndian(body.AsSpan(6 + 4*i))).ToArray();
+                            if (!RejectWrite) model.Colors = Enumerable.Range(0,3).Select(i => BinaryPrimitives.ReadUInt32LittleEndian(body.AsSpan(6 + 4*i))).ToArray();
                         }
                         else
                         {
@@ -336,7 +391,7 @@ internal static class OpenRgbTests
                             if (command == 40) Assert(body.SequenceEqual(new byte[] { 6,0,0,0 }));
                             if (command == 1) Assert(body.SequenceEqual(Version >= 6 ? [] : BitConverter.GetBytes(Version)));
                             reply = command switch { 40 => BitConverter.GetBytes(Version),
-                                0 => Version >= 6 ? [1,0,0,0,42,0,0,0] : [1,0,0,0], _ => Model.Bytes(Version) };
+                                0 => Version >= 6 ? SecondModel == null ? [1,0,0,0,42,0,0,0] : [2,0,0,0,42,0,0,0,77,0,0,0] : [1,0,0,0], _ => model.Bytes(Version) };
                         }
                     }
                     if (BadReply == "timeout") { await Task.Delay(Timeout.Infinite, stop.Token); continue; }

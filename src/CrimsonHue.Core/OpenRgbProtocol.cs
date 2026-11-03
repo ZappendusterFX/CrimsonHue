@@ -99,10 +99,10 @@ public static class OpenRgbProtocol
                 {
                     var bytes = r.ReadUInt16(); var segmentMap = r.ReadBytes(bytes);
                     if (segmentMap.Length != bytes) throw new IOException("Truncated OpenRGB segment matrix.");
-                    layout.Append(Convert.ToHexString(segmentMap)).Append(':').Append(r.ReadUInt32());
+                    _ = r.ReadUInt32();
                 }
             }
-            if (protocol >= 5) layout.Append(':').Append(r.ReadUInt32());
+            if (protocol >= 5) _ = r.ReadUInt32();
             if (protocol >= 6)
             {
                 _ = r.ReadInt32(); var zoneModes = r.ReadUInt16(); hasZoneModes |= zoneModes > 0;
@@ -114,13 +114,13 @@ public static class OpenRgbProtocol
             zones.Add(new(zoneName, count, offset, matrix)); offset += count;
         }
         var ledCount = r.ReadUInt16(); var names = new List<string>();
-        for (var i = 0; i < ledCount; i++) { names.Add(Text()); if (protocol < 6) layout.Append(r.ReadUInt32()); }
+        for (var i = 0; i < ledCount; i++) { names.Add(Text()); if (protocol < 6) _ = r.ReadUInt32(); }
         var colors = Colors();
         if (protocol >= 5)
         {
             var displayNames = r.ReadUInt16();
             for (var i = 0; i < displayNames; i++) _ = Text();
-            layout.Append(':').Append(r.ReadUInt32());
+            _ = r.ReadUInt32();
         }
         if (protocol >= 6)
         {

@@ -15,26 +15,31 @@ if ($Version -match '-openrgb\.') {
     $previewGuide = @"
 # CrimsonHue $Version — private OpenRGB test
 
-This test build adds continuous OpenRGB output alongside Hue. Use your existing
-CDT 2.2.7 and .NET 8 Desktop Runtime x64. The native menu protocol is unchanged.
+This test build adds OpenRGB device selection and a 3D room alongside Hue.
+Use the paired CDT 2.2.8-openrgb.1 test ZIP for the new HUD tab, plus the existing
+.NET 8 Desktop Runtime x64. The native menu protocol is unchanged.
 
 1. Close the game and install this ZIP through DMM yourself, replacing the old
-   CrimsonHue package. Keep the matching CDT package installed.
+   CrimsonHue package. Install the paired CDT test ZIP as well.
 2. Start OpenRGB's SDK server on localhost port 6742. Exit Synapse/Chroma and
    other software controlling the same RGB devices for this test.
-3. Start the game, open CrimsonHue with Ctrl+Shift+H and click Start lighting sync.
-   Your existing Hue bridge/area setup is used. Loading the ASI alone sends nothing.
-4. Hue and OpenRGB now run together. All eligible OpenRGB RGB zones use the common
-   virtual position in front of the monitor, with a maximum RGB output of 25%.
-   Existing lighting/smoothing/own-lantern controls also affect OpenRGB. A scene
+3. Start the game, open CrimsonHue with Ctrl+Shift+H and select the OpenRGB tab.
+   Read devices, select the ones to include and place them around your seat in
+   the 3D room. Drag to move across the room, adjust Height to move up/down,
+   and right-drag to rotate the view. Settings save locally, including unavailable
+   devices' positions. Connection and output limit includes SDK port and brightness.
+4. Click Start lighting sync to run Hue and OpenRGB together. Your existing Hue
+   bridge/area setup is used. Loading the ASI alone sends nothing. Devices start
+   in front of the monitor; their saved individual positions determine output.
+   The OpenRGB output limit defaults to 25% and is adjustable. Existing lighting,
+   smoothing and own-lantern controls also affect OpenRGB. A scene
    with no mapped front contribution and unavailable Ambient can correctly be dark.
 5. The shared sync status includes OpenRGB's device count or connection error.
    Stop stops both outputs and restores prior states while still owned/reachable.
    Hide/close the panel keeps sync running. Stop before leaving the game.
 
 Gamepads use only their Lightbar, keyboard matrix holes stay excluded and empty
-RGB headers are never resized. Device selection and individual positions are not
-in this first test build. OpenRGB failure does not stop an otherwise healthy Hue
+RGB headers are never resized. OpenRGB failure does not stop an otherwise healthy Hue
 stream; after an SDK failure use Stop, fix the server/conflicting app, then Start.
 
 This private ZIP has build, automated and synthetic controller validation. Its

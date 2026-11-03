@@ -1,4 +1,24 @@
-# Current checkpoint — 2026-11-04, owner confirms private OpenRGB test works
+# Current checkpoint — 2026-11-04, OpenRGB device selection and 3D HUD
+
+Owner requests a separate OpenRGB HUD section to place available devices in a
+3D room after accepting the first integrated ZIP. Implemented new OpenRGB tab,
+read-only discovery, selection, port/output limit, rotatable 3D room, floor-plane
+drag and X/Y/Z controls. Positions are local normalized coordinates [-1,1], saved
+by a protocol-independent hashed hardware identity; disconnected placements remain.
+Actual output now maps a separate channel per selected device and applies live
+position edits; selection/connection changes restore before re-acquiring SDK
+ownership. Hue room/presets remain independent. Demo and smoke never send output.
+
+158/158 Core tests pass. Controller ABI and actual CDT D3D12 tab smoke pass; the
+first rendered layout was visually reviewed and compacted for visible controls.
+New paired versions: Hue1.0.5-openrgb.2 and CDT2.2.8-openrgb.1 (production telemetry,
+only the shared panel changes). CDT branch is codex/openrgb-room-panel, Hue remains
+codex/openrgb-parallel-preview. Use Sync-CdtPanel.ps1 to keep shared panel hashes
+matched. Package completion/hashes and final smoke image are recorded below when
+ready. Installed interaction/appearance acceptance is still pending owner action.
+No installation, game input, remote push or main merge is authorized/performed.
+
+# Previous checkpoint — 2026-11-04, owner confirms private OpenRGB test works
 
 After the installation handoff for `1.0.5-openrgb.1`, owner reports "funktioniert".
 Record this as positive in-game acceptance of the first integrated front-position

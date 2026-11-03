@@ -1,6 +1,14 @@
 # CrimsonHue 1.0.4 — mixer hosted by CDT
 
-Private test **1.0.5-openrgb.1** adds continuous OpenRGB output to the existing
+Private test **1.0.5-openrgb.2** adds a separate OpenRGB tab, device selection and
+an interactive 3D room. Pair it with **CDT2.2.8-openrgb.1** for the updated HUD.
+Drag a device across the room, adjust Height for vertical position and right-drag
+to orbit the view. Connection/output limit contains port and brightness. Placements
+are stored by hashed hardware identity, independently of transient SDK IDs, Hue
+areas and shareable lighting presets. New devices default to front, output25%.
+The existing bridge/area is still needed for the common Start button.
+
+The previous test **1.0.5-openrgb.1** added continuous OpenRGB output to the existing
 Start/Stop lighting sync. Its `-openrgb.` build profile enables the front-position
 trial only in explicitly named private packages. SDK server: localhost:6742;
 eligible RGB zones share `(0,1,0)` with a 25% master cap. The existing CDT2.2.7

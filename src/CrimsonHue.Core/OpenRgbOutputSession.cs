@@ -28,7 +28,7 @@ public sealed class OpenRgbOutputSession(OpenRgbClient client) : IAsyncDisposabl
     {
         if (started || stopped) throw new InvalidOperationException("OpenRGB session cannot be restarted.");
         started = true;
-        if (devices.Select(d => d.Id).Distinct().Count() != devices.Count)
+        if (devices.Select(d => d.Id).Distinct().Count() != devices.Count || devices.Select(d => d.Identity).Distinct().Count() != devices.Count)
             throw new ArgumentException("Duplicate OpenRGB device selection.");
         foreach (var device in devices)
         {
@@ -52,15 +52,19 @@ public sealed class OpenRgbOutputSession(OpenRgbClient client) : IAsyncDisposabl
     }
 
     public async Task WriteAsync(Vec3 color, CancellationToken token = default)
+        => await WriteDevicesAsync(targets.ToDictionary(t => t.Original.Identity, _ => color), token);
+
+    public async Task WriteDevicesAsync(IReadOnlyDictionary<string, Vec3> output, CancellationToken token = default)
     {
         if (!started || stopped) throw new InvalidOperationException("OpenRGB session is not running.");
         if (targets.Any(t => t.Lost)) throw new IOException("OpenRGB ownership was lost.");
-        var encoded = OpenRgbProtocol.Encode(color);
+        if (targets.Any(t => !output.ContainsKey(t.Original.Identity))) throw new ArgumentException("Missing OpenRGB device color.");
+        var encoded = output.ToDictionary(p => p.Key, p => OpenRgbProtocol.Encode(p.Value));
         foreach (var target in targets)
         {
             if (target.Lost) throw new IOException("OpenRGB ownership was lost.");
             var colors = target.Original.Colors.ToArray();
-            foreach (var index in target.Leds) colors[index] = encoded;
+            foreach (var index in target.Leds) colors[index] = encoded[target.Original.Identity];
             if (colors.SequenceEqual(target.ExpectedColors)) continue;
             target.Touched = true;
             await client.SetColorsAsync(target.Original.Id, colors, token);

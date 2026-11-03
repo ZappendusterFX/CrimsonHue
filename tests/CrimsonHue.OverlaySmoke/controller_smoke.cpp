@@ -75,6 +75,20 @@ int wmain(int argc, wchar_t** argv) {
         Require(state.value("openRgbPreviewBuild", false) == expectOpenRgb &&
             state.value("openRgbPreview", true) == false && state.at("openRgb").is_null(),
             "OpenRGB build selection is wrong or synthetic smoke could enable physical output");
+        const auto rgbKey = state.at("openRgbRoom").at("devices")[0].at("key");
+        Command({{"action","openRgb"},{"key","position"},{"device",rgbKey},
+            {"position",{{"x",-.6},{"y",.4},{"z",.75}}}});
+        state = Await([&](const Json& v) { return v.at("openRgbRoom").at("devices")[0].at("position").at("z") == .75; },
+            "OpenRGB placement command did not update 3D position");
+        const auto rgbPlaced = state.at("openRgbRoom");
+        Command({{"action","openRgb"},{"key","position"},{"device",rgbKey}, {"position",{{"x",2},{"y",0},{"z",0}}}});
+        Command({{"action","openRgb"},{"key","port"},{"value",70000}});
+        Command({{"action","openRgbDiscover"}});
+        Command({{"action","openRgb"},{"key","brightness"},{"value",.3}});
+        state = Await([&](const Json& v) { return v.at("openRgbRoom").at("brightness") == .3; }, "OpenRGB configuration barrier failed");
+        Require(state.at("openRgbRoom").at("port") == rgbPlaced.at("port") &&
+            state.at("openRgbRoom").at("devices")[0].at("position") == rgbPlaced.at("devices")[0].at("position") &&
+            !state.value("openRgbPreview",true) && state.at("openRgb").is_null(), "OpenRGB validation or Demo output isolation failed");
         // Exercise the real native-to-managed command ABI. Profile selection
         // must alter effective mapping while retaining the entire custom setup.
         Require(state.at("lighting").at("recommended") == true && state.at("lighting").at("revision") == 1 &&
