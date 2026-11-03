@@ -1,22 +1,19 @@
-# Current checkpoint — 2026-11-03, owner-go movement flicker diagnosis
+# Current checkpoint — 2026-11-03, static corridor; previous root-cause claim corrected
 
-Owner requests brief live-data diagnosis while moving. Existing passive UI reader
-and CDT5s recorder:Hue1.0.0 is installed(hash matches), Recommended/Balanced uses
-250ms local/600ms Ambient, Point200%, Spot102%, Own10%, master100%. Stream remains
-reported; no settings or physical output changed by assistant. Both CDT feeds
-stay fresh/available. A steady-RGB moving near spot is waiting228/286 frames and
-clear52/286; all78 new captures start unknown, matching upstream position-cache
-limits. Those gating changes and Ambient1.83..8.73 supply fluctuating targets.
-Glättung is active; stronger smoothing only damps that input.
+Owner clarifies NO combat/moving scene lights: walking corridor forward/back with
+180deg turns only, with scene screenshot. Do not explain this recording as combat
+or establish a moving physical lamp from changing values at a nonpersistent index.
+The earlier moving-source/cache root cause was unproven and is withdrawn.
 
-Actual packaged1.0.1 offline replay recognizes0 pairs in all286 current frames.
-Observed cone33.571743 differs from the retained pair:build-gate removal alone
-does not adapt this signature. No owner-ID or controlled lantern inference.
-Evidence:artifacts/hue-live-state/flicker-motion-20261103-go/state-1..6.json and
-lantern-replay.json. Primary upstream diagnosis:CrimsonDesertTelemetry/docs/
-HUE-MOVEMENT-FLICKER-20261103.md and private hue-flicker-motion-20261103-go capture.
-No code/package changes. Public1.0.1 remains unchanged. Diagnosis complete;
-additional fixes only when requested; no AN/AUS repetition or assistant install.
+Existing CDT recording rechecked by fixed world-position/geometric anchors within
+35GU:15 stationary anchors change visibility; one fixed spot switches six times,
+twice at unchanged light capture/RGB/position. Changes during camera/player motion
+can still be real occlusion. Exact cause is not yet established; separate pose/
+provenance, collision and association before choosing a correction. Full corrected
+upstream record:CrimsonDesertTelemetry/docs/HUE-MOVEMENT-FLICKER-20261103.md.
+Hue still measured installed1.0.0/Balanced250/600ms, Point200%, no new settings or
+physical output. Combat-response preservation is a separate future requirement.
+No new recording/code/package changes; no repeated AN/AUS requested.
 
 # Previous checkpoint — 2026-11-03, CrimsonHue1.0.1 published on GitHub main
 
