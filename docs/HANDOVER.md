@@ -1,4 +1,36 @@
-# Current checkpoint — 2026-11-03, static corridor; previous root-cause claim corrected
+# Current checkpoint — 2026-11-03, movement response and lightning; Hue 1.0.3 ready
+
+Owner authorizes a complete solution in Hue and, if necessary, CDT, then leaves
+the game running while work continues. Existing corridor capture plus explicitly
+requested 5s/30s lightning-ball recordings are analyzed; no further owner action
+is needed for offline work. Do not confuse the quiet corridor with combat or
+revive the unproven moving-source identity claim below.
+
+Hue now uses an exact two-stage local sRGB output response, retaining the selected
+63.2% step time and all settings/geometry/fresh-clear rules. At Balanced250ms,
+corridor offline rapid-change measure falls65.9%(64.6–70.2% across30Hz phases).
+Large later lightning bursts retain calculated output/near-equal blue integrals;
+short impulses can be softer/later. No semantic spell detector or unknown-as-clear.
+Ambient/reset/master limits remain independent.131/131 Core tests pass.
+
+CDT's new-build native port shows no recurrence of the old mass-clear profile bug.
+The longer lightning run separately proves historical cache admission starvation:
+retired512-position cache can block a current set of only112 selected targets.
+Upstream work on codex/physics-visibility-cache-admission fixes current-target
+admission and ties replies to original entries;79/79 managed checks pass. This
+is a managed bookkeeping fix, not a wider ray budget or relaxed visibility gate.
+Matching companion is CDT2.2.7; its own HANDOVER owns package validation/status.
+
+Final immutable Hue ZIP:dist/CrimsonHue-1.0.3-asi-win-x64.zip(3013047bytes), SHA256
+918EE899AACD444266F578DA80502EAFF73D66A81D5B5210985826589C97AB5F.
+Exact packaged hidden-controller/ZIP checks and final-Core replays pass. Initial
+local1.0.2 ZIP remains immutable/unpublished;1.0.3 keeps its filter and updates
+companion guidance. Full evidence/limits:[MOTION-RESPONSE-20261103.md](MOTION-RESPONSE-20261103.md).
+No assistant installation, settings/input/bridge/lamp changes or publication.
+Final packages are not installed/game-tested; recordings use oldCDT2.2.6, not
+the new scheduler. Owner alone installs the complete pair with game closed.
+
+# Previous checkpoint — 2026-11-03, static corridor; previous root-cause claim corrected
 
 Owner clarifies NO combat/moving scene lights: walking corridor forward/back with
 180deg turns only, with scene screenshot. Do not explain this recording as combat

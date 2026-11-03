@@ -1,4 +1,4 @@
-# CrimsonHue 1.0.1 — setup and tuning guide
+# CrimsonHue 1.0.3 — setup and tuning guide
 
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
 existing Hue Entertainment area. Its headless ASI uses CDT's in-game mixer panel. Its
@@ -7,8 +7,8 @@ or a measurement of the physical lamps.
 
 ## What to install
 
-1. Install **CrimsonDesertTelemetry 2.2.6** separately in the game for patch2.04.05.
-   Earlier public CDT releases do not include the Hue panel. Download both ZIPs
+1. Install **CrimsonDesertTelemetry 2.2.7** separately in the game for patch2.04.05.
+   CDT releases before 2.2.5 do not include the Hue panel. Download the required ZIPs
    from their GitHub releases. Enable CDT's server, rendered and upstream ManyLights
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
    For all-around light sources, CrimsonHue needs CDT's fresh confirmed-clear
@@ -21,11 +21,10 @@ or a measurement of the physical lamps.
    installed separately. Start the game; the in-game mixer opens automatically.
    **CDT, an ASI loader, the game, bridge firmware and
    saved credentials are not in this ZIP.** See [ASI guide](ASI.md).
-   Close the game and upgrade both matching packages for this version: the
-   HUD close guidance is updated in CDT and the stream fix is in CrimsonHue.
-   CDT 2.2.5 includes the held-input handoff and duplicate-cursor corrections;
-   CrimsonHue 1.0.0 supplies sharper Recommended spatial defaults and adjustable
-   light-type and own-lantern weights. Update both.
+   For the complete motion/effect update, close the game and upgrade to Hue 1.0.3
+   and CDT 2.2.7. Hue improves local output smoothing; CDT prevents retired light
+   positions from crowding out new visibility queries. Saved response values and
+   room calibration stay intact.
 3. Use Windows 10/11 x64 and a Hue-compatible bridge with HTTPS API v2,
    Entertainment DTLS 1.2/PSK, color lamps and an existing Entertainment area.
    Set the area and channel positions in the Hue app first. diyHue is the
@@ -76,6 +75,9 @@ New installations use **Recommended**. The normal page has three controls:
 environment layer; **Local light effects** sets the amount from nearby sources.
 **Response** chooses Quick, Balanced or Calm and coordinates both transitions.
 Balanced uses 250 ms for local sources and 600 ms for the background.
+The local response damps rapid fluctuations in two stages, reaching about 63% of
+a steady change in the selected time. Brief flashes remain visible but can peak
+slightly later. The background keeps its independent response.
 The spatial defaults use a 30° source radius, 20% edge softness and directional
 focus 4 to keep adjacent color zones more distinct. Advanced resets use those
 same spatial defaults. Existing Recommended installations adopt them at next
@@ -277,7 +279,7 @@ against only the covered part; the full calibrated region now defines the averag
 | **Spotlights** (100%, 0–1000%) | Multiplies accepted spot contributions before spatial mixing. Applies to standalone and grouped spots; cones are not simulated. |
 | **Own lantern** (10% Recommended, 100% neutral legacy/Custom default; 0–100%) | Additional multiplier for the complete conservatively matched lantern pair from CDT metadata. Unknown or ambiguous sources keep ordinary type strength. |
 | **Output gamma** (1, 0.1–4) | Higher values lift dim **nonzero** output. Black remains black. Use carefully with lamps that have a high minimum visible brightness. |
-| **Local light transition** (100 ms, 0–1000 ms) | Smooths local brightness and color over time in every input mode. Old local color fades briefly after a visibility or direction change. Zero is immediate; 250–400 ms gives a slower response for fast wall washers. Ambient has its own transition. Missing local telemetry clears output immediately. |
+| **Local light transition** (100 ms, 0–1000 ms) | Damps rapid local brightness and color fluctuations in every input mode. A steady change reaches about 63% in the selected time. Old local color fades briefly after a visibility or direction change; short flashes can peak slightly later. Zero is immediate. Ambient has its own transition. Missing local telemetry clears output immediately. |
 
 ## Ambient controls
 

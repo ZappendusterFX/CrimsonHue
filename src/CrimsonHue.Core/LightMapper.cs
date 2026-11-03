@@ -2,7 +2,7 @@ namespace CrimsonHue.Core;
 
 public sealed class LightMapper
 {
-    private readonly Dictionary<byte, Vec3> previous = [];
+    private readonly Dictionary<byte, LocalTransition> previous = [];
     private double ambientLevel;
     /// <summary>Last mapped Ambient strength before local mixing, gamma and master brightness.</summary>
     public double AmbientFill { get; private set; }
@@ -91,8 +91,6 @@ public sealed class LightMapper
                 sums[i] += contribution.Rgb * weights[i] * ((1 - settings.DirectionNormalization) +
                     settings.DirectionNormalization / strongest);
         }
-        var alpha = settings.SmoothingMs <= 0 ? 1 :
-            1 - Math.Exp(-Math.Clamp(deltaSeconds, 0, 1) * 1000 / settings.SmoothingMs);
         var result = new List<ChannelColor>(area.Channels.Count);
         for (var i = 0; i < area.Channels.Count; i++)
         {
@@ -102,20 +100,14 @@ public sealed class LightMapper
             // Normalize only overflow from overlapping sources; never boost the
             // attenuated sum. Mixing and ratio preservation stay in linear RGB.
             var local = sum / Math.Max(1, peak);
-            // Smooth the mapped local layer in perceived-brightness space, including
-            // confirmed-visible input and spherical spatial mapping. Instant changes in
-            // visibility/position otherwise become flashes on fast Entertainment lamps.
-            // A brief fade may retain the previous local color after a boundary change;
-            // zero transition restores immediate output. Ambient is mixed afterwards
-            // so unavailable Ambient can still disappear without a smoothing tail.
+            // Smooth only the mapped local output, never the source visibility verdict.
+            // Two stages reject rapid reversals more strongly while retaining the old
+            // 63.2% step-response time. Ambient remains independent of this local tail.
             var encodedLocal = new Vec3(Encode(local.X), Encode(local.Y), Encode(local.Z));
-            if (alpha < 1)
-            {
-                var old = previous.GetValueOrDefault(channel.Id);
-                encodedLocal = old + (encodedLocal - old) * alpha;
-                local = new(Decode(encodedLocal.X), Decode(encodedLocal.Y), Decode(encodedLocal.Z));
-            }
-            previous[channel.Id] = encodedLocal;
+            var transition = previous.GetValueOrDefault(channel.Id).Advance(encodedLocal, deltaSeconds, settings.SmoothingMs);
+            previous[channel.Id] = transition;
+            if (settings.SmoothingMs > 0)
+                local = new(Decode(transition.Output.X), Decode(transition.Output.Y), Decode(transition.Output.Z));
             var combined = ambientColor + local * localContrast;
             var combinedPeak = Math.Max(combined.X, Math.Max(combined.Y, combined.Z));
             var linear = combined / Math.Max(1, combinedPeak);
@@ -125,6 +117,26 @@ public sealed class LightMapper
             result.Add(new(channel.Id, rgb));
         }
         return result;
+    }
+
+    private readonly record struct LocalTransition(Vec3 Stage, Vec3 Output)
+    {
+        public LocalTransition Advance(Vec3 target, double deltaSeconds, double milliseconds)
+        {
+            if (milliseconds == 0) return new(target, target);
+            // (1 + k) * exp(-k) = exp(-1): the displayed duration still reaches
+            // 1 - exp(-1) of a steady step, as with the previous single-stage EMA.
+            const double responseScale = 2.146193220620583;
+            var q = Math.Clamp(deltaSeconds, 0, 1) * 1000 / milliseconds * responseScale;
+            var decay = Math.Exp(-q);
+            if (decay == 0) return new(target, target); // Includes tiny positive durations: avoid infinity * zero.
+            // Exact held-target integration, not two sequential Euler/EMA updates.
+            // Nonnegative common RGB weights prevent overshoot and color bias;
+            // the min also avoids cancellation giving a negative target weight near dt=0.
+            var coupling = Math.Min(1 - decay, q * decay);
+            return new(Stage * decay + target * (1 - decay),
+                Output * decay + Stage * coupling + target * (1 - decay - coupling));
+        }
     }
     /// <summary>0 is the raw player position; 1 is the paired camera position.
     /// Intermediate values interpolate all three coordinates without offsets.</summary>

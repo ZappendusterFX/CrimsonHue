@@ -1,4 +1,4 @@
-# CrimsonHue 1.0.1 — mixer hosted by CDT
+# CrimsonHue 1.0.3 — mixer hosted by CDT
 
 CDT draws the interactive CrimsonHue mixer in its existing D3D12/ImGui frame.
 `CrimsonHue.asi` hosts the existing C# lamp controller on a hidden WPF STA. It
@@ -18,7 +18,8 @@ No separate EXE, process or visible WPF settings window is used.
    separate point/spot/own-lantern weights. CDT 2.2.5 supplies the optional shared
    panel, held-input handoff and duplicate-cursor corrections.
 3. For a new installation, import both ZIPs through DMM using the existing x64
-   ASI loader. For this upgrade, import both matching ZIPs. CrimsonHue's
+   ASI loader. For the complete movement/effect update, use Hue 1.0.3 and CDT 2.2.7;
+   CDT also corrects cache admission for rapidly changing light positions. CrimsonHue's
    package contains one `CrimsonHue/CrimsonHue.asi` plus documentation/notices;
    it embeds its five application/dependency files. No loose DLL, JSON, CFG, EXE,
    runtime installer or loader is shipped in the Hue ZIP. Keep all CDT companions

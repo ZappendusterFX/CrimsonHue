@@ -1,4 +1,4 @@
-# Ambient and mapping controls — CrimsonHue 1.0.0
+# Ambient and mapping controls — CrimsonHue 1.0.3
 
 CrimsonHue consumes CDT's independent `/v1/ambient/stream` and local-light feed.
 CDT owns capture and the neutral contracts. CrimsonHue shows the received values
@@ -175,9 +175,24 @@ Color controls, gain and gamma all preserve zero input as zero output.
 
 **Local light transition** applies in all input modes, including confirmed-clear
 input. After local summation/overflow normalization,
-encode the local RGB to sRGB and use the exponential response
-`alpha = 1 - exp(-elapsedSeconds * 1000 / transitionMs)`. Decode the smoothed local
-RGB back to linear before combining Ambient and applying output gamma/brightness.
+encode the local RGB to sRGB and use two cascaded exponential stages. Both stages
+have time constant `transitionMs / 2.146193220620583`, preserving the previous
+single-stage response's 63.2% step time. Integrate the two-stage system exactly
+for each held target, using the previous states of both stages:
+
+```text
+q = elapsedSeconds * 1000 / transitionMs * 2.146193220620583
+e = exp(-q)
+stage = oldStage * e + target * (1 - e)
+output = oldOutput * e + oldStage * (q * e) + target * (1 - e - q * e)
+```
+
+Common nonnegative RGB weights avoid overshoot or a separate brightening bias.
+This is output shaping, not a change to CDT's verdict or a light-identity cache.
+Decode the smoothed local RGB back to linear before combining Ambient and applying
+output gamma/brightness. Rapid fluctuations are attenuated more strongly; slow
+changes are not necessarily smaller. Brief impulses can peak later. See the
+[recorded comparison and impulse checks](MOTION-RESPONSE-20261103.md).
 Zero transition is immediate. Streaming uses elapsed monotonic time between mapped
 frames; the first frame uses the nominal 1/30 second step.
 

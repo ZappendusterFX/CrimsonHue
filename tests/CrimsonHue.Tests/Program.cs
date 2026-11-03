@@ -59,6 +59,7 @@ void Async(string name, Func<Task> run) => tests.Add((name, run));
 WallWashTests.Register(Add, Async);
 PlayerLanternTests.Register(Add);
 LightingProfileTests.Register(Add);
+LocalTransitionTests.Register(Add);
 EntertainmentLayoutTests.Register(Add, Async);
 void Assert(bool condition, string message = "Assertion failed") { if (!condition) throw new Exception(message); }
 void Reject(Action action) { try { action(); } catch { return; } throw new Exception("Expected rejection"); }

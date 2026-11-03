@@ -3,8 +3,8 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**CrimsonHue 1.0.1** is the in-game ASI release. Install it together with
-**CrimsonDesertTelemetry 2.2.6**. CDT draws the optional interactive Hue mixer in
+**CrimsonHue 1.0.3** is the in-game ASI package. Install it together with
+**CrimsonDesertTelemetry 2.2.7**. CDT draws the optional interactive Hue mixer in
 its existing D3D12 renderer; `CrimsonHue.asi` is the headless lamp controller and
 installs no graphics hooks. There is no separate settings window or process.
 The ZIP contains one ASI and documentation. Application dependencies are
@@ -26,7 +26,7 @@ The title-bar **X**, **Hide settings** and **Ctrl+Shift+H** hide the mixer while
 sync continues. Physical output starts only when explicitly requested.
 
 Read the [setup guide](docs/USER-GUIDE.md), [ASI guide](docs/ASI.md) and
-[1.0.1 change notes](docs/releases/v1.0.1.md). The owner has used private builds
+[1.0.3 change notes](docs/releases/v1.0.3.md). The owner has used private builds
 in-game with physical lamps. The exact public ZIP still requires separate
 installation/game/input acceptance; synthetic verification is recorded in
 [HANDOVER.md](docs/HANDOVER.md).
@@ -208,7 +208,10 @@ corrected by the displayed gamma control and brightness-limited. Imported Hue
 brightness balance is applied where provided.
 **Local light transition** smooths brightness/color changes in every feed mode,
 including confirmed-visible input and spherical spatial mapping. The mapped local layer
-is smoothed in sRGB space, then decoded before mixing the independent Ambient layer.
+uses a two-stage response in sRGB space, then is decoded before mixing the independent
+Ambient layer. It damps rapid fluctuations more strongly while retaining the same
+time to reach 63% of a steady change. Short flashes are still softened and can peak
+slightly later; this is not a combat-effect classifier. Existing response values stay intact.
 A previous local color briefly fades after a visibility or direction change; the spatial
 rules apply to the new target. Zero transition gives immediate changes. Missing
 local telemetry clears all output/history immediately. This is an artistic estimate, not
