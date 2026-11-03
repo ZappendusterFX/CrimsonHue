@@ -14,8 +14,18 @@ first rendered layout was visually reviewed and compacted for visible controls.
 New paired versions: Hue1.0.5-openrgb.2 and CDT2.2.8-openrgb.1 (production telemetry,
 only the shared panel changes). CDT branch is codex/openrgb-room-panel, Hue remains
 codex/openrgb-parallel-preview. Use Sync-CdtPanel.ps1 to keep shared panel hashes
-matched. Package completion/hashes and final smoke image are recorded below when
-ready. Installed interaction/appearance acceptance is still pending owner action.
+matched. Final exact-candidate controller, D3D12 --openrgb and CDT input tests pass;
+the compacted screenshot was inspected and all three position controls are visible.
+Both package validators pass. Hue ZIP `dist/CrimsonHue-1.0.5-openrgb.2-asi-win-x64.zip`
+is3046282bytes, SHA256 `53288FC36F497B387EC3552DF13F44602EA49C6ABA240502D2BFD555C224503B`.
+CDT ZIP `C:/DEV/CrimsonDesertTelemetry/artifacts/mod-manager/CrimsonDesertTelemetry-v2.2.8-openrgb.1-ModManagers.zip`
+has SHA256 `1B23E4C5A60E872F808F1D21DDA604583E13349E0FC9483076679FC63D76A27E`.
+Payload commits are Hue94896bb / CDT049bbed; receipt is
+`artifacts/openrgb-room-package-receipt.json`. Final synthetic image:
+`C:/DEV/CrimsonDesertTelemetry/artifacts/openrgb-room-final.png`.
+Hand off both ZIPs to the owner with game closed, then Ctrl+Shift+H > OpenRGB >
+Read devices. Drag moves across the floor; Height is vertical; right-drag orbits.
+Installed interaction/appearance acceptance is still pending owner action.
 No installation, game input, remote push or main merge is authorized/performed.
 
 # Previous checkpoint — 2026-11-04, owner confirms private OpenRGB test works

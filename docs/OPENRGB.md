@@ -26,7 +26,18 @@ only controls the OpenRGB backend. Demo previews the room without physical outpu
 versions, validation, selection and two-device live spatial color changes with
 restoration. Native controller ABI verifies 3D commands, rejection and Demo
 isolation. Shared CDT D3D12 smoke renders the actual new tab from the managed ASI.
-Installed input and appearance acceptance require the owner to install both ZIPs.
+Final paired packages are validated, including exact ASI controller smoke, shared
+D3D12 rendering (visually inspected) and CDT input ownership. Installed input and
+appearance acceptance require the owner to install both ZIPs with game closed:
+
+- `dist/CrimsonHue-1.0.5-openrgb.2-asi-win-x64.zip`, SHA256
+  `53288FC36F497B387EC3552DF13F44602EA49C6ABA240502D2BFD555C224503B`.
+- `C:/DEV/CrimsonDesertTelemetry/artifacts/mod-manager/CrimsonDesertTelemetry-v2.2.8-openrgb.1-ModManagers.zip`, SHA256
+  `1B23E4C5A60E872F808F1D21DDA604583E13349E0FC9483076679FC63D76A27E`.
+
+Receipt: `artifacts/openrgb-room-package-receipt.json`; payload source commits
+Hue94896bb / CDT049bbed. Screenshot:
+`C:/DEV/CrimsonDesertTelemetry/artifacts/openrgb-room-final.png` (synthetic data).
 
 ## Private installable test — 1.0.5-openrgb.1
 
