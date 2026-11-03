@@ -1,4 +1,23 @@
-# Current checkpoint — 2026-11-03, owner accepts lighting; GitHub publication requested
+# Current checkpoint — 2026-11-03, accepted Hue 1.0.4 published on GitHub main
+
+Owner reports "sehr gut jetzt" and authorizes publication of both products.
+Hue source was fast-forwarded to main; release tagv1.0.4 points to560c962.
+[Stable Latest1.0.4](https://github.com/ZappendusterFX/CrimsonHue/releases/tag/v1.0.4)
+published2026-11-03 18:29:22CET. The existing immutable3013523-byte package was
+uploaded unchanged; GitHub digest and independent public download both match
+B46816F666C583163D27BC348C2B5C4ACF8FBD263159EB276AF4BE51C530194F.
+README and release notes now cover the changes since public1.0.1 and separate
+positive owner feedback from synthetic/offline evidence. Generic About text
+remains correct and unchanged. No Hue GitHub Actions workflows are configured.
+
+Companion is CDT2.2.7; its own HANDOVER records publication/CI. No installation,
+game input/settings or physical-output actions were performed by the assistant.
+Nexus remains manual; its files/listing were not edited. Owner requested only
+one-line-per-entry changelog output and calls their previous Nexus version1.1.
+Private receipt:artifacts/github-1.0.4-publication-20261103/receipt.json.
+All older packages and releases remain unchanged. No pending Hue release work.
+
+# Previous checkpoint — 2026-11-03, owner accepts lighting; GitHub publication requested
 
 After the Hue1.0.4 handoff, the owner reports "sehr gut jetzt" and requests
 GitHub publication of Hue and CDT, including necessary description updates.
