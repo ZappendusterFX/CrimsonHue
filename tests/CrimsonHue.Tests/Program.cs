@@ -13,6 +13,14 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
+if (args.Contains("--openrgb-inspect") || args.Contains("--openrgb-live-test"))
+{
+    var reportIndex = Array.IndexOf(args, "--report");
+    if (reportIndex >= 0 && reportIndex + 1 >= args.Length) throw new ArgumentException("--report requires a path.");
+    return await OpenRgbDiagnostic.RunAsync(args.Contains("--openrgb-live-test"),
+        reportIndex < 0 ? null : args[reportIndex + 1]);
+}
+
 // Explicit read-only diagnostic: use the paired user's protected store in memory.
 // Never print credentials, full API responses or stream ownership tokens.
 if (args.Contains("--inspect-connection"))
@@ -61,6 +69,7 @@ PlayerLanternTests.Register(Add);
 LightingProfileTests.Register(Add);
 LocalTransitionTests.Register(Add);
 EntertainmentLayoutTests.Register(Add, Async);
+OpenRgbTests.Register(Add, Async);
 void Assert(bool condition, string message = "Assertion failed") { if (!condition) throw new Exception(message); }
 void Reject(Action action) { try { action(); } catch { return; } throw new Exception("Expected rejection"); }
 Add("Saved bridge pairing is reused only for the same address and certificate", () =>

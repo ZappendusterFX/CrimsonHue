@@ -1,4 +1,30 @@
-# Current checkpoint — 2026-11-03, accepted Hue 1.0.4 published on GitHub main
+# Current checkpoint — 2026-11-03, OpenRGB front-position prototype
+
+Owner requests a separate branch for an initial OpenRGB test alongside Hue,
+all ultimately within CrimsonHue. Branch `codex/openrgb-parallel-preview` starts
+at main `a137d83`. Core now has a bounded loopback SDK 4–6 client and an explicit
+live output session; the existing test executable provides `--openrgb-inspect`
+and `--openrgb-live-test`. No app/menu, deployed files, CDT or packages changed.
+
+The single virtual position is `(0,1,0)` (in front of the monitor). The live test
+uses existing CDT consumers/LightMapper, saved profile settings and a 25% cap for
+20 seconds, then restores previous OpenRGB modes/colors. It does not access Hue
+credentials or modify the Hue area/stream. The SDK-6 run succeeded: 398 mapped
+frames, 296 unique captures, 191 device color updates, all five restores verified
+against SDK state. Output was weak in this scene (maximum RGB 0.040465); visual
+acceptance and simultaneous physical Hue appearance remain unmeasured.
+
+The first SDK-4 attempt exposed an installed OpenRGB 1.0 compatibility bug:
+post-rescan IDs 5–9 were treated as indexes 0–4 in its write worker. It sent no
+color updates. Native SDK 6 fixes the client path and confirms write commands.
+Read-only follow-up found all original modes intact. Details, commands, upstream
+references and private evidence paths are in [OPENRGB.md](OPENRGB.md).
+
+152/152 tests passed; the final Release build has zero warnings/errors. Do not merge,
+publish or present this as finished menu support before owner feedback and the
+remaining setup/session integration. No installation was performed or requested.
+
+# Previous checkpoint — 2026-11-03, accepted Hue 1.0.4 published on GitHub main
 
 Owner reports "sehr gut jetzt" and authorizes publication of both products.
 Hue source was fast-forwarded to main; release tagv1.0.4 points to560c962.

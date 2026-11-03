@@ -335,6 +335,10 @@ automatically and reset sequence tracking. Additive schema 1.x fields are tolera
 
 ## Build and verify
 
+An opt-in OpenRGB development prototype is documented in [docs/OPENRGB.md](docs/OPENRGB.md).
+It tests a shared virtual front position alongside Hue from this repository;
+OpenRGB setup and output are not yet included in the released ASI/menu.
+
 Use a .NET 8 SDK (or newer with the .NET 8 x64 host pack) and Visual Studio 2022
 with Desktop development with C++ and CMake tools on Windows:
 
