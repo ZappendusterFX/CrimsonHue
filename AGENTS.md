@@ -13,7 +13,10 @@ are in README.md; read docs/ASI.md for native hosting and process-lifetime limit
 Consume only the neutral HTTP/WebSocket API from C:\DEV\CrimsonDesertTelemetry.
 For telemetry, lighting research, camera or the merged ASI, work in that product
 repository and read its AGENTS.md and docs/HANDOVER.md. Do not recreate telemetry
-here. The general ambient-light feed is planned upstream; do not invent its schema.
+here. Game-build validation and allowlists belong to CDT. CrimsonHue validates
+the neutral API/schema and data; game-build labels are diagnostic metadata and
+must not gate lighting or source recognition. The general ambient-light feed is
+planned upstream; do not invent its schema.
 
 Import existing Hue Entertainment areas and channel positions. Keep credentials
 out of source, logs and releases; use the current-user protected settings store.

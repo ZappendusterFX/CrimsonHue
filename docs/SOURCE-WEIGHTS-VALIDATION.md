@@ -1,5 +1,13 @@
 # Light-kind weights and own-lantern strength — 2026-10-18
 
+## 2026-11-03 follow-up
+
+The old build25477059 requirement is removed in1.0.1. Supported-game-build
+validation belongs to CDT; Hue checks the same complete-pair metadata on any
+compatible CDT input. All geometric/pair/ambiguity checks remain. See
+[LANTERN-CDT-COMPATIBILITY.md](LANTERN-CDT-COMPATIBILITY.md) for current tests and
+package evidence. The2026-10-18 source captures/results below remain historical.
+
 ## Result
 
 Lighting now has three **Light balance** controls in both Recommended and Custom:

@@ -1,13 +1,15 @@
 namespace CrimsonHue.Core;
 
-/// <summary>Conservative, exact-build recognition of the equipped lantern pair.
+/// <summary>Conservative recognition of the equipped lantern pair from CDT metadata.
 /// This is not a durable engine identity or a general player-attachment classifier.</summary>
 public static class PlayerLanternSignature
 {
     public static IReadOnlySet<LightContribution> Find(TelemetryFrame frame)
     {
         var result = new HashSet<LightContribution>();
-        if (frame.GameBuild != "25477059" || frame.Feed != "all-around" ||
+        // CDT validates the game build before publishing usable telemetry. Its
+        // build label is diagnostic metadata, not a second allowlist for Hue.
+        if (frame.Feed != "all-around" ||
             frame.PlayerForward is not { } forward || !forward.IsFinite || Math.Abs(forward.Length - 1) > .02 ||
             Math.Abs(forward.Y) > .05) return result;
         forward = new Vec3(forward.X, 0, forward.Z).Unit;

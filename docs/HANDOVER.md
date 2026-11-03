@@ -1,4 +1,28 @@
-# Current checkpoint — public 1.0.0 published on main, 2026-10-18, Codex
+# Current checkpoint — 2026-11-03, CDT-owned build validation; Hue1.0.1 ready
+
+Owner requests removing Hue's duplicate old-game-build gate. Hue consumes only
+CDT's neutral API; CDT validates the game. PlayerLanternSignature no longer
+requires25477059. The complete pair/geometric/metadata/uniqueness checks remain
+byte-identical, as do raw data, schema/pairing/freshness/visibility checks and
+weights/settings. GameBuild stays diagnostic metadata. Rules/CLAUDE byte-identical
+and now explicitly prohibit Hue game-build allowlists.
+
+125/125 Core checks pass: old/current/future/missing labels produce identical
+pair recognition and weighting; incomplete/ambiguous cases remain unchanged.
+Actual new Core parses the existing26361232 snapshot offline(38 clear lights;
+no controlled lantern match claim). Exact packaged hidden-controller smoke and
+expanded/ZIP validators pass; manifest/ASI hashes match. No bridge/lamp/game
+input/settings/deployment changes. No repeated AN/AUS requested.
+
+Immutable ZIP:dist/CrimsonHue-1.0.1-asi-win-x64.zip
+SHA256:00630C8B32BBFF769CF9D2D2DA712B68484332C901694DCE688B8014D8A4AC13.
+[Details and evidence](LANTERN-CDT-COMPATIBILITY.md). Guides target CDT2.2.6 for
+patch2.04.05. Built/validated, not installed, not game/physical-output tested or
+published. Old public1.0.0 and all packages remain unchanged. Next: owner alone
+installs the complete1.0.1 ZIP with game closed when desired; no assistant install
+or waiting. GitHub publication was not requested for this new Hue change.
+
+# Previous checkpoint — public 1.0.0 published on main, 2026-10-18, Codex
 
 Owner declines the fresh GPU capture and authorizes release of the existing
 behavior, GitHub publication, descriptions/Nexus copy, and merging back to main.

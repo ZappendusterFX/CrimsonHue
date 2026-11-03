@@ -3,8 +3,8 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**CrimsonHue 1.0.0** is the in-game ASI release. Install it together with
-**CrimsonDesertTelemetry 2.2.5**. CDT draws the optional interactive Hue mixer in
+**CrimsonHue 1.0.1** is the in-game ASI release. Install it together with
+**CrimsonDesertTelemetry 2.2.6**. CDT draws the optional interactive Hue mixer in
 its existing D3D12 renderer; `CrimsonHue.asi` is the headless lamp controller and
 installs no graphics hooks. There is no separate settings window or process.
 The ZIP contains one ASI and documentation. Application dependencies are
@@ -14,8 +14,9 @@ The **Lighting** page offers Recommended/Custom modes, overall brightness,
 background light, local effects and response timing. **Light balance** separately
 weights point lights (0–200%) and spotlights (0–1000%), initially 100% each.
 **Own lantern** adds a 0–100% multiplier for the conservatively recognized pair
-on game build 25477059; Recommended starts at 10%. Missing or ambiguous matches
-keep the normal spotlight weight. Raw input stays unchanged.
+from CDT's all-around light data; Recommended starts at 10%. Recognition checks
+the full pair's geometry and metadata instead of the game's build label. Missing
+or ambiguous matches keep the normal spotlight weight. Raw input stays unchanged.
 
 **Room** supports ordinary lights and individually calibrated wall-washer
 segments, including horizontal arrangements. Recommended spatial defaults use a
@@ -25,7 +26,7 @@ The title-bar **X**, **Hide settings** and **Ctrl+Shift+H** hide the mixer while
 sync continues. Physical output starts only when explicitly requested.
 
 Read the [setup guide](docs/USER-GUIDE.md), [ASI guide](docs/ASI.md) and
-[1.0.0 release notes](docs/releases/v1.0.0.md). The owner has used private builds
+[1.0.1 change notes](docs/releases/v1.0.1.md). The owner has used private builds
 in-game with physical lamps. The exact public ZIP still requires separate
 installation/game/input acceptance; synthetic verification is recorded in
 [HANDOVER.md](docs/HANDOVER.md).
@@ -64,7 +65,7 @@ physical lamp brightness.
 
 ## Start
 
-1. Install **CrimsonDesertTelemetry 2.2.5** with its server, rendered and upstream
+1. Install **CrimsonDesertTelemetry 2.2.6** with its server, rendered and upstream
    ManyLights capture, and source visibility enabled.
 2. Install [**.NET 8 Desktop Runtime x64**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
    With the game closed, import this ZIP through DMM, or put its
@@ -128,7 +129,7 @@ Streaming never starts automatically when the ASI loads.
 - .NET 8 **Desktop Runtime x64**, including its WindowsDesktop/WPF framework.
   The plain .NET Runtime or ASP.NET Runtime alone does not supply WPF. .NET 9/10
   alone does not fulfill the .NET 8 requirement.
-- CrimsonDesertTelemetry 2.2.5, schema 1.6, on the same PC for all-around,
+- CrimsonDesertTelemetry 2.2.5 or later, schema 1.6, on the same PC for all-around,
   confirmed-visible lights. Older schema 1.4/1.5 installations still use the
   original rendered-only feed without physics visibility filtering.
 - A Hue-compatible bridge with HTTPS API v2, Entertainment DTLS 1.2/PSK on UDP 2100,

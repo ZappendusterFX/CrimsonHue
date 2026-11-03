@@ -112,11 +112,27 @@ static class PlayerLanternTests
                 Metadata = l.Metadata! with { Direction = l.Metadata.Direction is { } d ? new Vec3(d.Z, d.Y, -d.X) : null } }).ToArray() };
             Assert(PlayerLanternSignature.Find(moved).Count == 2, "Recognition depended on a world coordinate or heading");
         });
-        add("Lantern policy keeps incomplete ambiguous unsupported and non-player lights", () =>
+        add("CDT build labels do not change complete-pair recognition or own-lantern weighting", () =>
+        {
+            var original = Frame();
+            var area = new EntertainmentArea(Fixtures.Id, "Point", false, [new(0, new(0, 1, 0), [], "Point")]);
+            var settings = new MappingSettings(Brightness: 1, SmoothingMs: 0, SourceDiscRadiusDegrees: 180);
+            var expected = new LightMapper().Map(original with { Lights = [original.Lights[2]] }, area, settings, 1);
+            foreach (var build in new string?[] { "25477059", "26361232", "future-build", null })
+            {
+                var frame = original with { GameBuild = build };
+                Assert(PlayerLanternSignature.Find(frame).SetEquals(original.Lights.Take(2)),
+                    "A CDT build label blocked an otherwise complete lantern pair");
+                Assert(new LightMapper().Map(frame, area, settings with { PlayerLanternStrength = 0 }, 1).SequenceEqual(expected),
+                    "Own-lantern weighting depended on the CDT game-build label");
+                Assert(frame.Lights.SequenceEqual(original.Lights), "Recognition changed raw CDT light data");
+            }
+        });
+        add("Lantern policy keeps incomplete ambiguous and non-player lights on every CDT build", () =>
         {
             var f = Frame(); var a = f.Lights[0]; var b = f.Lights[1];
             foreach (var invalid in new[] {
-                f with { GameBuild = "future-build" }, f with { GameBuild = null }, f with { Feed = "rendered" },
+                f with { Feed = "rendered" },
                 f with { PlayerForward = null }, f with { PlayerForward = new(0, 0, 0) },
                 f with { Lights = [a] }, f with { Lights = [a, a, b] },
                 f with { Lights = [a with { Metadata = null }, b] },
@@ -128,12 +144,15 @@ static class PlayerLanternTests
                 f with { Lights = [a with { Position = a.Position + new Vec3(.1, 0, 0) }, b] },
                 f with { Lights = f.Lights.Select(l => l with { Position = l.Position + new Vec3(3, 0, 0) }).ToArray() },
                 f with { Lights = f.Lights.Select(l => l with { Position = l.Position + new Vec3(-1, 0, 0) }).ToArray() }
-            }) Assert(PlayerLanternSignature.Find(invalid).Count == 0, "A partial signature removed another source");
+            })
+                foreach (var build in new string?[] { "25477059", "26361232", "future-build", null })
+                    Assert(PlayerLanternSignature.Find(invalid with { GameBuild = build }).Count == 0,
+                        "A partial signature removed another source");
         });
         add("Optional lantern metadata survives parsing without filtering or invalidating raw input", () =>
         {
             var node = JsonNode.Parse(Fixtures.CurrentSnapshot())!;
-            node["game"]!["build"] = "25477059";
+            node["game"]!["build"] = "26361232";
             node["player"]!["orientation"] = JsonSerializer.SerializeToNode(new { source = "player-physics-root", forward = new Vec3(0, 0, 1) }, new JsonSerializerOptions {PropertyNamingPolicy=JsonNamingPolicy.CamelCase});
             var options = new JsonSerializerOptions {PropertyNamingPolicy=JsonNamingPolicy.CamelCase};
             node["lights"]!["upstream"]!["sources"] = new JsonArray(Frame().Lights.Select(l => JsonSerializer.SerializeToNode(new {

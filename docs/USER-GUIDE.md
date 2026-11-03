@@ -1,4 +1,4 @@
-# CrimsonHue 1.0.0 — setup and tuning guide
+# CrimsonHue 1.0.1 — setup and tuning guide
 
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
 existing Hue Entertainment area. Its headless ASI uses CDT's in-game mixer panel. Its
@@ -7,7 +7,7 @@ or a measurement of the physical lamps.
 
 ## What to install
 
-1. Install **CrimsonDesertTelemetry 2.2.5** separately in the game.
+1. Install **CrimsonDesertTelemetry 2.2.6** separately in the game for patch2.04.05.
    Earlier public CDT releases do not include the Hue panel. Download both ZIPs
    from their GitHub releases. Enable CDT's server, rendered and upstream ManyLights
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
@@ -96,8 +96,8 @@ The game reports geometric kinds, rather than semantic fire/blue-light types.
 Point and spot sources can each be standalone or grouped; grouping is a separate
 property. The Spotlight control affects both standalone and grouped spotlights.
 Sources without a recognized kind retain normal strength. The own-lantern match
-uses a conservative signature for game build 25477059, rather than an engine
-ownership ID. Unsupported builds, missing metadata, incomplete or ambiguous
+uses a conservative complete-pair signature from CDT, rather than an engine
+ownership ID or game-build allowlist. Missing metadata, incomplete or ambiguous
 pairs keep their ordinary type weight. The matched count refers to the current
 input frame. Raw input stays unchanged; normal transitions and final output
 limits still apply. These percentages are mixer weights, not measured brightness.
@@ -275,7 +275,7 @@ against only the covered part; the full calibrated region now defines the averag
 | **Local light mix** (100%, 0–400%) | Amount of mapped local-light RGB added to the Ambient layer. Zero removes local sources from output even when raw sources are present. |
 | **Point lights** (100%, 0–200%) | Multiplies accepted point contributions before spatial mixing. Applies to standalone and grouped points; no effect on excluded sources. |
 | **Spotlights** (100%, 0–1000%) | Multiplies accepted spot contributions before spatial mixing. Applies to standalone and grouped spots; cones are not simulated. |
-| **Own lantern** (10% Recommended, 100% neutral legacy/Custom default; 0–100%) | Additional multiplier for the complete conservatively matched lantern pair on build 25477059. Unknown or ambiguous sources keep ordinary type strength. |
+| **Own lantern** (10% Recommended, 100% neutral legacy/Custom default; 0–100%) | Additional multiplier for the complete conservatively matched lantern pair from CDT metadata. Unknown or ambiguous sources keep ordinary type strength. |
 | **Output gamma** (1, 0.1–4) | Higher values lift dim **nonzero** output. Black remains black. Use carefully with lamps that have a high minimum visible brightness. |
 | **Local light transition** (100 ms, 0–1000 ms) | Smooths local brightness and color over time in every input mode. Old local color fades briefly after a visibility or direction change. Zero is immediate; 250–400 ms gives a slower response for fast wall washers. Ambient has its own transition. Missing local telemetry clears output immediately. |
 

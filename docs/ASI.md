@@ -1,4 +1,4 @@
-# CrimsonHue 1.0.0 — mixer hosted by CDT
+# CrimsonHue 1.0.1 — mixer hosted by CDT
 
 CDT draws the interactive CrimsonHue mixer in its existing D3D12/ImGui frame.
 `CrimsonHue.asi` hosts the existing C# lamp controller on a hidden WPF STA. It
@@ -12,7 +12,7 @@ No separate EXE, process or visible WPF settings window is used.
    documented .NET 8 ASP.NET Core Runtime x64. Newer runtimes alone do not meet
    these .NET 8 requirements.
 2. Close Crimson Desert and stop any old desktop CrimsonHue sync. Use
-   **CrimsonDesertTelemetry 2.2.5** with this version; earlier public CDT releases
+   **CrimsonDesertTelemetry 2.2.5 or later**; game patch2.04.05 needs CDT2.2.6. Earlier releases
    do not host the Hue panel. Install both packages with the game closed.
    CrimsonHue 1.0.0 includes sharper Recommended spatial defaults and
    separate point/spot/own-lantern weights. CDT 2.2.5 supplies the optional shared
@@ -71,8 +71,8 @@ therefore differ from the old covered-region normalization.
 
 Point lights range from 0–200%, Spotlights from 0–1000%, and Own lantern from
 0–100%. Recommended starts with 100% / 100% / 10%. Lantern recognition is limited
-to a conservative complete-pair signature on game build 25477059, with ordinary
-spotlight behavior on unsupported or ambiguous input. Room calibration can assign
+to a conservative complete-pair signature in CDT metadata, independent of its
+game-build label, with ordinary spotlight behavior on incomplete or ambiguous input. Room calibration can assign
 horizontal as well as vertical segment regions; imported Hue identities stay intact.
 
 CDT's physics rays measure collision, not optical visibility. Glass or a closed
