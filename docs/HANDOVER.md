@@ -1,4 +1,24 @@
-# Current checkpoint — 2026-11-03, CrimsonHue1.0.1 published on GitHub main
+# Current checkpoint — 2026-11-03, owner-go movement flicker diagnosis
+
+Owner requests brief live-data diagnosis while moving. Existing passive UI reader
+and CDT5s recorder:Hue1.0.0 is installed(hash matches), Recommended/Balanced uses
+250ms local/600ms Ambient, Point200%, Spot102%, Own10%, master100%. Stream remains
+reported; no settings or physical output changed by assistant. Both CDT feeds
+stay fresh/available. A steady-RGB moving near spot is waiting228/286 frames and
+clear52/286; all78 new captures start unknown, matching upstream position-cache
+limits. Those gating changes and Ambient1.83..8.73 supply fluctuating targets.
+Glättung is active; stronger smoothing only damps that input.
+
+Actual packaged1.0.1 offline replay recognizes0 pairs in all286 current frames.
+Observed cone33.571743 differs from the retained pair:build-gate removal alone
+does not adapt this signature. No owner-ID or controlled lantern inference.
+Evidence:artifacts/hue-live-state/flicker-motion-20261103-go/state-1..6.json and
+lantern-replay.json. Primary upstream diagnosis:CrimsonDesertTelemetry/docs/
+HUE-MOVEMENT-FLICKER-20261103.md and private hue-flicker-motion-20261103-go capture.
+No code/package changes. Public1.0.1 remains unchanged. Diagnosis complete;
+additional fixes only when requested; no AN/AUS repetition or assistant install.
+
+# Previous checkpoint — 2026-11-03, CrimsonHue1.0.1 published on GitHub main
 
 Owner requests GitHub push/publication. Recovery branch fast-forwarded to main;
 source/tag afc99e7 includes fix5aa18ab and owner-only installation rules. Stable
