@@ -1,4 +1,4 @@
-# CrimsonHue 1.0.3 — mixer hosted by CDT
+# CrimsonHue 1.0.4 — mixer hosted by CDT
 
 CDT draws the interactive CrimsonHue mixer in its existing D3D12/ImGui frame.
 `CrimsonHue.asi` hosts the existing C# lamp controller on a hidden WPF STA. It
@@ -18,7 +18,7 @@ No separate EXE, process or visible WPF settings window is used.
    separate point/spot/own-lantern weights. CDT 2.2.5 supplies the optional shared
    panel, held-input handoff and duplicate-cursor corrections.
 3. For a new installation, import both ZIPs through DMM using the existing x64
-   ASI loader. For the complete movement/effect update, use Hue 1.0.3 and CDT 2.2.7;
+   ASI loader. For the complete movement/effect update, use Hue 1.0.4 and CDT 2.2.7;
    CDT also corrects cache admission for rapidly changing light positions. CrimsonHue's
    package contains one `CrimsonHue/CrimsonHue.asi` plus documentation/notices;
    it embeds its five application/dependency files. No loose DLL, JSON, CFG, EXE,
@@ -75,6 +75,9 @@ Point lights range from 0–200%, Spotlights from 0–1000%, and Own lantern fro
 to a conservative complete-pair signature in CDT metadata, independent of its
 game-build label, with ordinary spotlight behavior on incomplete or ambiguous input. Room calibration can assign
 horizontal as well as vertical segment regions; imported Hue identities stay intact.
+Version 1.0.4 supports the observed old/current lantern cone profiles and swinging
+motion. CDT 2.2.7 remains the matching companion; an existing 2.2.7 installation
+does not need another CDT update for this lantern correction.
 
 CDT's physics rays measure collision, not optical visibility. Glass or a closed
 collision shell around a visible cage lamp can exclude it before mapping. The

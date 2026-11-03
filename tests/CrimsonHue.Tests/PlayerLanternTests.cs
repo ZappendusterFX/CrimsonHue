@@ -5,13 +5,13 @@ using System.Text.Json.Nodes;
 static class PlayerLanternTests
 {
     static void Assert(bool value, string message) { if (!value) throw new Exception(message); }
-    static TelemetryFrame Frame()
+    static TelemetryFrame Frame(bool currentPair = false)
     {
         var at = DateTimeOffset.UtcNow;
         var position = new Vec3(.45, 1.05, .45);
         return new(1, 1, at, at, 0, default, new(default, new(1, 0, 0), new(0, 1, 0), new(0, 0, 1)),
-            [new(position, new(2.5, 1, .25), Metadata: new("standalone", "spot", new(0, 0, 1), 31.137793)),
-             new(position, new(1, .4, .1), Metadata: new("standalone", "spot", new(0, 0, 1), 26.885372)),
+            [new(position, new(1.5816667, .63611203, .17278898), Metadata: new("standalone", "spot", new(0, 0, 1), currentPair ? 33.571743 : 31.137793)),
+             new(position, new(.6326667, .25444484, .069115594), Metadata: new("standalone", "spot", new(0, 0, 1), currentPair ? 22.3392 : 26.885372)),
              new(new(0, 1, 4), new(.03, .04, .06), Metadata: new("standalone", "spot", new(0, -1, 0), 26.997278))],
             Feed: "all-around", GameBuild: "25477059", PlayerForward: new(0, 0, 1));
     }
@@ -39,8 +39,8 @@ static class PlayerLanternTests
         add("Own lantern strength scales continuously after spotlight weighting without changing other spots", () =>
         {
             var f = Frame(); var area = new EntertainmentArea(Fixtures.Id,"Point",false,[new(0,new(0,1,0),[],"Point")]);
-            var settings = new MappingSettings(Brightness:1,SmoothingMs:0,Spread:0,SourceDiscRadiusDegrees:180,SpotLightStrength:1.5);
-            var pair = f with {Lights=f.Lights.Take(2).Select(l=>l with {Rgb=l.Rgb*.01}).ToArray()};
+            var settings = new MappingSettings(Brightness:1,Gain:.01,SmoothingMs:0,Spread:0,SourceDiscRadiusDegrees:180,SpotLightStrength:1.5);
+            var pair = f with {Lights=f.Lights.Take(2).ToArray()};
             double Decode(double encoded) => encoded<=.04045 ? encoded/12.92 : Math.Pow((encoded+.055)/1.055,2.4);
             var full = new LightMapper().Map(pair,area,settings,1)[0].Rgb.X;
             var dim = new LightMapper().Map(pair,area,settings with {PlayerLanternStrength=.1},1)[0].Rgb.X;
@@ -114,9 +114,11 @@ static class PlayerLanternTests
         });
         add("CDT build labels do not change complete-pair recognition or own-lantern weighting", () =>
         {
-            var original = Frame();
             var area = new EntertainmentArea(Fixtures.Id, "Point", false, [new(0, new(0, 1, 0), [], "Point")]);
             var settings = new MappingSettings(Brightness: 1, SmoothingMs: 0, SourceDiscRadiusDegrees: 180);
+            foreach (var currentPair in new[] { false, true })
+            {
+            var original = Frame(currentPair);
             var expected = new LightMapper().Map(original with { Lights = [original.Lights[2]] }, area, settings, 1);
             foreach (var build in new string?[] { "25477059", "26361232", "future-build", null })
             {
@@ -127,27 +129,104 @@ static class PlayerLanternTests
                     "Own-lantern weighting depended on the CDT game-build label");
                 Assert(frame.Lights.SequenceEqual(original.Lights), "Recognition changed raw CDT light data");
             }
+            }
+        });
+        add("Lantern pair recognition survives recorded swing envelopes without a player-heading dependency", () =>
+        {
+            // Relative positions/directions from the preserved corridor and lightning
+            // recordings, including the 1.812 GU separation, near-ground pose and pitch.
+            var poses = new (Vec3 Position, Vec3 Direction)[] {
+                (new(-.598, .8452, -1.4873), new(-.060634192, .1536758, -.9862592)),
+                (new(.231, -.0278, -.0434), new(-.06794744, .12771432, -.98948073)),
+                (new(-.056, .83355, .5122), new(-.9345904, -.34351325, -.092409216)),
+                (new(-.331, .9265, .5077), new(-.9516835, .2771064, .13232747)),
+                (new(-.351, .7914, .3547), new(-.8135468, -.3506162, -.4639072)),
+                (new(.45, .9046, -.1393), new(.4003362, .21005446, .8919686)) };
+            foreach (var currentPair in new[] { false, true })
+            foreach (var (position, direction) in poses)
+            foreach (var heading in new Vec3?[] { null, default(Vec3), new(0, 0, 1), new(0, 1, 0), new(-1, 0, 0) })
+            {
+                var original = Frame(currentPair);
+                var player = new Vec3(20, 3, -11);
+                var pair = original.Lights.Take(2).Select(light => light with {
+                    Position = player + position,
+                    Metadata = light.Metadata! with { Direction = direction } }).ToArray();
+                var frame = original with { Player = player, PlayerForward = heading, Lights = pair };
+                Assert(PlayerLanternSignature.Find(frame).SetEquals(pair),
+                    "A complete measured lantern pair fell back to ordinary spot strength during a swing");
+                var varied = frame with { Lights = pair.Select(light => light with { Rgb = light.Rgb * 1.005 }).ToArray() };
+                Assert(PlayerLanternSignature.Find(varied).Count == 2,
+                    "Harmless sub-percent RGB variation rejected the complete pair");
+            }
+        });
+        add("Own lantern zero ten and full strength preserve unrelated points spots and spell-colored cone pairs", () =>
+        {
+            double Decode(double encoded) => encoded <= .04045 ? encoded / 12.92 : Math.Pow((encoded + .055) / 1.055, 2.4);
+            Vec3 Linear(ChannelColor color) => new(Decode(color.Rgb.X), Decode(color.Rgb.Y), Decode(color.Rgb.Z));
+            var area = new EntertainmentArea(Fixtures.Id, "Centre", false, [new(0, default, [], "Centre")]);
+            var settings = new MappingSettings(Brightness: 1, Gain: .001, SmoothingMs: 0, Spread: 0,
+                SourceDiscRadiusDegrees: 180, PointLightStrength: .7, SpotLightStrength: 1.3);
+            foreach (var currentPair in new[] { false, true })
+            {
+                var original = Frame(currentPair);
+                var spellWide = original.Lights[0] with { Position = new(.3, .9, -.2), Rgb = new(20, 30, 80) };
+                var spellNarrow = original.Lights[1] with { Position = spellWide.Position, Rgb = spellWide.Rgb / 2.5 };
+                var others = new[] { original.Lights[2], spellWide, spellNarrow,
+                    new LightContribution(new(.2, 1, 2.5), new(.2, .6, .1), Metadata: new("standalone", "point", null, null)) };
+                var frame = original with { Lights = original.Lights.Take(2).Concat(others).ToArray() };
+                Assert(PlayerLanternSignature.Find(frame).SetEquals(original.Lights.Take(2)),
+                    "A different-colored pair using the same cones interfered with lantern recognition");
+                ChannelColor Map(TelemetryFrame input, double strength) =>
+                    new LightMapper().Map(input, area, settings with { PlayerLanternStrength = strength }, 1)[0];
+                var off = Map(frame, 0);
+                var ten = Map(frame, .1);
+                var full = Map(frame, 1);
+                Assert(off == Map(frame with { Lights = others }, 1),
+                    "Zero own-lantern strength altered unrelated world or spell light");
+                Assert((Linear(ten) - Linear(off) - (Linear(full) - Linear(off)) * .1).Length < 1e-10,
+                    "Ten-percent own-lantern strength did not affect just the known pair");
+                Assert((full.Rgb - off.Rgb).Length > .001 && frame.Lights.Count == 6,
+                    "The fixture had no meaningful lantern output or raw sources were changed");
+            }
         });
         add("Lantern policy keeps incomplete ambiguous and non-player lights on every CDT build", () =>
         {
-            var f = Frame(); var a = f.Lights[0]; var b = f.Lights[1];
+            foreach (var currentPair in new[] { false, true })
+            {
+            var f = Frame(currentPair); var a = f.Lights[0]; var b = f.Lights[1];
+            var otherProfile = Frame(!currentPair).Lights.Take(2).ToArray();
+            TelemetryFrame At(Vec3 position) => f with { Lights = new[] { a, b }.Select(l => l with { Position = position }).ToArray() };
             foreach (var invalid in new[] {
                 f with { Feed = "rendered" },
-                f with { PlayerForward = null }, f with { PlayerForward = new(0, 0, 0) },
-                f with { Lights = [a] }, f with { Lights = [a, a, b] },
+                f with { Player = new(double.NaN, 0, 0) }, f with { Player = new(0, double.PositiveInfinity, 0) },
+                f with { Lights = [a] }, f with { Lights = [a, a, b] }, f with { Lights = [a, b, b] },
+                f with { Lights = [a, b, otherProfile[0]] },
+                f with { Lights = [a, b, otherProfile[0], otherProfile[1]] },
+                f with { Lights = [otherProfile[0], b] },
                 f with { Lights = [a with { Metadata = null }, b] },
                 f with { Lights = [a with { Metadata = a.Metadata! with { Type = "group" } }, b] },
                 f with { Lights = [a with { Metadata = a.Metadata! with { Kind = "point" } }, b] },
+                f with { Lights = [a with { Metadata = a.Metadata! with { Direction = null } }, b] },
+                f with { Lights = [a with { Metadata = a.Metadata! with { Direction = default(Vec3) } }, b] },
+                f with { Lights = [a with { Metadata = a.Metadata! with { Direction = new(0, 0, 1.03) } }, b] },
                 f with { Lights = [a with { Metadata = a.Metadata! with { Direction = new(0, -1, 0) } }, b] },
+                f with { Lights = [a with { Metadata = a.Metadata! with { Direction = new(.1, 0, Math.Sqrt(.99)) } }, b] },
                 f with { Lights = [a with { Metadata = a.Metadata! with { ConeHalfAngleDegrees = 40 } }, b] },
                 f with { Lights = [a, b with { Rgb = b.Rgb * .5 }] },
-                f with { Lights = [a with { Position = a.Position + new Vec3(.1, 0, 0) }, b] },
-                f with { Lights = f.Lights.Select(l => l with { Position = l.Position + new Vec3(3, 0, 0) }).ToArray() },
-                f with { Lights = f.Lights.Select(l => l with { Position = l.Position + new Vec3(-1, 0, 0) }).ToArray() }
+                f with { Lights = [a with { Rgb = a.Rgb * 2 }, b with { Rgb = b.Rgb * 2 }] },
+                f with { Lights = [a with { Rgb = a.Rgb * 1.02 }, b with { Rgb = b.Rgb * 1.02 }] },
+                f with { Lights = [a with { Rgb = new(a.Rgb.X, a.Rgb.Y * 1.02, a.Rgb.Z) },
+                                  b with { Rgb = new(b.Rgb.X, b.Rgb.Y * 1.02, b.Rgb.Z) }] },
+                f with { Lights = [a with { Rgb = a.Rgb * 1.009 }, b with { Rgb = b.Rgb * .991 }] },
+                f with { Lights = [a with { Rgb = new(double.NaN, a.Rgb.Y, a.Rgb.Z) }, b] },
+                f with { Lights = [a with { Position = new(double.NaN, 1, 0) }, b] },
+                f with { Lights = [a with { Position = a.Position + new Vec3(.031, 0, 0) }, b] },
+                At(new(2.001, 0, 0)), At(new(0, 1.751, 0)), At(new(0, -.251, 0))
             })
                 foreach (var build in new string?[] { "25477059", "26361232", "future-build", null })
                     Assert(PlayerLanternSignature.Find(invalid with { GameBuild = build }).Count == 0,
                         "A partial signature removed another source");
+            }
         });
         add("Optional lantern metadata survives parsing without filtering or invalidating raw input", () =>
         {

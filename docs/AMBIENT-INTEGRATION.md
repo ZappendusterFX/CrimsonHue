@@ -1,4 +1,4 @@
-# Ambient and mapping controls — CrimsonHue 1.0.3
+# Ambient and mapping controls — CrimsonHue 1.0.4
 
 CrimsonHue consumes CDT's independent `/v1/ambient/stream` and local-light feed.
 CDT owns capture and the neutral contracts. CrimsonHue shows the received values
@@ -108,8 +108,10 @@ The resulting bounded source is multiplied by its reported kind weight: Point
 lights 0–200%, Spotlights 0–1000%, both initially 100%. A conservatively matched
 own-lantern pair additionally receives the 0–100% Own lantern multiplier
 (Recommended 10%, neutral legacy/Custom default 100%). Recognition uses the
-observed complete-pair signature on build 25477059; incomplete, ambiguous or
-unsupported input keeps ordinary type weighting. Grouping is independent of
+observed old/current complete-pair emission and cone profiles inside a bounded
+player-relative volume, allowing the recorded lantern swing. Game-build labels
+do not gate recognition; incomplete, ambiguous or unsupported metadata keeps
+ordinary type weighting. Grouping is independent of
 point/spot kind and does not add a second member-count multiplier. Untyped
 sources retain unit weight. Raw source values remain unchanged.
 Player-relative distance remains full strength through Fade starts and reaches

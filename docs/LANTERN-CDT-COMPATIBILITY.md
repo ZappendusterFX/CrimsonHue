@@ -1,5 +1,9 @@
 # CDT-owned build compatibility and lantern recognition — 2026-11-03
 
+This records the 1.0.1 change. Hue 1.0.4 retains CDT-owned build validation and
+updates the complete-pair signature for current cones and swinging motion; see
+[LANTERN-MOTION-20261103.md](LANTERN-MOTION-20261103.md).
+
 The owner asks to remove CrimsonHue's old game-build dependency: all game data
 comes from CDT's neutral API, and CDT validates the executable/engine layout.
 CrimsonHue1.0.1 therefore removes the GameBuild==25477059 condition from

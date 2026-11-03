@@ -1,4 +1,45 @@
-# Current checkpoint — 2026-11-03, movement response and lightning; Hue 1.0.3 ready
+# Current checkpoint — 2026-11-03, swinging own lantern; Hue 1.0.4 ready
+
+Owner installed Hue1.0.3 + CDT2.2.7 themselves and reports substantially calmer
+lighting. A further 30-second outdoor capture isolates the remaining standing
+brightness increase to the equipped warm spotlight pair, previously unmatched
+and therefore weighted at Spot102% despite Own10%. Owner identifies their own
+lantern, turns it off independently, reports everything calm and asks to handle
+its swinging while running. Do not request repeated AN/AUS tests.
+
+The capture includes only an initial short walk tail and standing, not three
+complete motion cycles. Both pair members are unknown together in42 frames and
+clear together in1753; no outside-physics-budget events. Installed ASI hashes
+were verified passively after recording. Owner-off snapshot is available with
+zero upstream sources, not a feed failure. Bracketing HUD controls agree; the
+file named hue-state-during is actually after the recording. Do not call it
+synchronized lamp evidence or attribute all historical flicker to the lantern.
+
+Hue1.0.4 updates only the complete-pair recognizer: known old/current cone
+profiles and measured absolute RGB within1%, co-position/common direction,
+exactly one unambiguous same-profile pair, bounded2GU player volume and height
+-.25..1.75. Heading/one-sided pose gates are removed so recorded swinging poses
+retain Own weight. No new state/owner ID, unknown-as-clear, schema, settings or
+CDT change. CDT2.2.7 remains the companion. Own0 removes just the recognized
+pair; Recommended/default existing value remains10%. Different equipment or
+unseen poses can still fall back to ordinary spot weight.
+
+133/133 Core tests pass. Exact packaged Core recognizes raw pairs in4163/4163
+current frames (forward1795, corridor286, lightning298/1784); clear-subset pairs
+1753/52/281/1141. No mixed clear/ineligible pair occurs. Legacy ON/OFF/ON2/0/2;
+unchanged blue/caged world snapshots0. All4168frames' Own0 output exactly equals
+manual removal of only the recognized pair. Exact hidden-controller smoke,
+expanded/ZIP checks pass. See [LANTERN-MOTION-20261103.md](LANTERN-MOTION-20261103.md)
+for measurements, loaded hashes, replay assumptions and signature limits.
+
+Immutable ZIP:dist/CrimsonHue-1.0.4-asi-win-x64.zip(3013523bytes), SHA256
+B46816F666C583163D27BC348C2B5C4ACF8FBD263159EB276AF4BE51C530194F.
+Branch:codex/hue-lantern-motion. Only Hue needs an update. No assistant installs,
+settings/input/bridge/lamp changes or publication. Owner alone installs with
+game closed when desired; then exact-package physical appearance remains for
+owner acceptance. End the handoff; do not poll for installation or repeat tests.
+
+# Previous checkpoint — 2026-11-03, movement response and lightning; Hue 1.0.3 ready
 
 Owner authorizes a complete solution in Hue and, if necessary, CDT, then leaves
 the game running while work continues. Existing corridor capture plus explicitly

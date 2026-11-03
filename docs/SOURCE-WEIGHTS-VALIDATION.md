@@ -2,10 +2,16 @@
 
 ## 2026-11-03 follow-up
 
+Hue 1.0.4 also corrects recognition of the current lantern cone pair and its
+swing during motion. The evidence and current matching contract are in
+[LANTERN-MOTION-20261103.md](LANTERN-MOTION-20261103.md). The pose constraints
+described below are historical and have been replaced by measured emission plus
+a bounded attachment volume. No physics visibility rule changed.
+
 The old build25477059 requirement is removed in1.0.1. Supported-game-build
 validation belongs to CDT; Hue checks the same complete-pair metadata on any
 compatible CDT input. All geometric/pair/ambiguity checks remain. See
-[LANTERN-CDT-COMPATIBILITY.md](LANTERN-CDT-COMPATIBILITY.md) for current tests and
+[LANTERN-CDT-COMPATIBILITY.md](LANTERN-CDT-COMPATIBILITY.md) for the 1.0.1 tests and
 package evidence. The2026-10-18 source captures/results below remain historical.
 
 ## Result

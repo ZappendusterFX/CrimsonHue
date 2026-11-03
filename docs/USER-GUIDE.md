@@ -1,4 +1,4 @@
-# CrimsonHue 1.0.3 — setup and tuning guide
+# CrimsonHue 1.0.4 — setup and tuning guide
 
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
 existing Hue Entertainment area. Its headless ASI uses CDT's in-game mixer panel. Its
@@ -21,7 +21,7 @@ or a measurement of the physical lamps.
    installed separately. Start the game; the in-game mixer opens automatically.
    **CDT, an ASI loader, the game, bridge firmware and
    saved credentials are not in this ZIP.** See [ASI guide](ASI.md).
-   For the complete motion/effect update, close the game and upgrade to Hue 1.0.3
+   For the complete motion/effect update, close the game and upgrade to Hue 1.0.4
    and CDT 2.2.7. Hue improves local output smoothing; CDT prevents retired light
    positions from crowding out new visibility queries. Saved response values and
    room calibration stay intact.
@@ -103,6 +103,10 @@ ownership ID or game-build allowlist. Missing metadata, incomplete or ambiguous
 pairs keep their ordinary type weight. The matched count refers to the current
 input frame. Raw input stays unchanged; normal transitions and final output
 limits still apply. These percentages are mixer weights, not measured brightness.
+Version 1.0.4 recognizes the current lantern's light cones and its recorded swing
+while walking and turning. The Own lantern setting therefore also applies during
+those movements. Set it to 0% if you want the recognized lantern to contribute no
+room light; this leaves unrelated world lights and spell effects at their own weights.
 Save, Start and normal close remember each mode's values. Old Custom settings
 and version-1 presets default to 100% for all three weights to preserve behavior.
 

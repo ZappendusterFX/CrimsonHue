@@ -3,7 +3,7 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment.
 
-**CrimsonHue 1.0.3** is the in-game ASI package. Install it together with
+**CrimsonHue 1.0.4** is the in-game ASI package. Install it together with
 **CrimsonDesertTelemetry 2.2.7**. CDT draws the optional interactive Hue mixer in
 its existing D3D12 renderer; `CrimsonHue.asi` is the headless lamp controller and
 installs no graphics hooks. There is no separate settings window or process.
@@ -15,7 +15,8 @@ background light, local effects and response timing. **Light balance** separatel
 weights point lights (0–200%) and spotlights (0–1000%), initially 100% each.
 **Own lantern** adds a 0–100% multiplier for the conservatively recognized pair
 from CDT's all-around light data; Recommended starts at 10%. Recognition checks
-the full pair's geometry and metadata instead of the game's build label. Missing
+the known pair's emission, cone profile and proximity, including its recorded
+swinging motion. It does not depend on the game's build label. Missing
 or ambiguous matches keep the normal spotlight weight. Raw input stays unchanged.
 
 **Room** supports ordinary lights and individually calibrated wall-washer
@@ -26,7 +27,7 @@ The title-bar **X**, **Hide settings** and **Ctrl+Shift+H** hide the mixer while
 sync continues. Physical output starts only when explicitly requested.
 
 Read the [setup guide](docs/USER-GUIDE.md), [ASI guide](docs/ASI.md) and
-[1.0.3 change notes](docs/releases/v1.0.3.md). The owner has used private builds
+[1.0.4 change notes](docs/releases/v1.0.4.md). The owner has used private builds
 in-game with physical lamps. The exact public ZIP still requires separate
 installation/game/input acceptance; synthetic verification is recorded in
 [HANDOVER.md](docs/HANDOVER.md).
