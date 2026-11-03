@@ -17,10 +17,11 @@ using Json = nlohmann::json;
 void Require(bool condition, const char* message) { if (!condition) throw std::runtime_error(message); }
 void Check(HRESULT hr) { Require(SUCCEEDED(hr), "D3D12 smoke operation failed"); }
 int wmain(int argc, wchar_t** argv) {
-    if (argc != 3) return 1;
+    if (argc != 3 && argc != 4) return 1;
     try {
         const auto asi = std::filesystem::absolute(argv[1]);
         const auto png = std::filesystem::absolute(argv[2]);
+        const bool expectOpenRgb = argc == 4 && std::wstring(argv[3]) == L"--openrgb-preview";
         std::filesystem::create_directories(png.parent_path());
         SetEnvironmentVariableW(L"CRIMSONHUE_ASI_SMOKE_PATH", png.c_str());
         SetEnvironmentVariableW(L"CRIMSONHUE_ASI_OVERLAY_SMOKE", L"1");
@@ -71,6 +72,9 @@ int wmain(int argc, wchar_t** argv) {
             sphereDefault = value.at("value") == 30.0 && value.at("initial") == 30.0 && value.at("min") == 1.0 && value.at("max") == 180.0 && value.at("group") == "Space";
         Require(sphereDefault, "Spherical radius default or range missing from controller snapshot");
 
+        Require(state.value("openRgbPreviewBuild", false) == expectOpenRgb &&
+            state.value("openRgbPreview", true) == false && state.at("openRgb").is_null(),
+            "OpenRGB build selection is wrong or synthetic smoke could enable physical output");
         // Exercise the real native-to-managed command ABI. Profile selection
         // must alter effective mapping while retaining the entire custom setup.
         Require(state.at("lighting").at("recommended") == true && state.at("lighting").at("revision") == 1 &&

@@ -335,9 +335,9 @@ automatically and reset sequence tracking. Additive schema 1.x fields are tolera
 
 ## Build and verify
 
-An opt-in OpenRGB development prototype is documented in [docs/OPENRGB.md](docs/OPENRGB.md).
-It tests a shared virtual front position alongside Hue from this repository;
-OpenRGB setup and output are not yet included in the released ASI/menu.
+The private `1.0.5-openrgb.1` test profile is documented in [docs/OPENRGB.md](docs/OPENRGB.md).
+It joins continuous OpenRGB front-position output to the existing Hue Start/Stop
+buttons. Public 1.0.4 remains Hue-only; separate device selection/positions are pending.
 
 Use a .NET 8 SDK (or newer with the .NET 8 x64 host pack) and Visual Studio 2022
 with Desktop development with C++ and CMake tools on Windows:

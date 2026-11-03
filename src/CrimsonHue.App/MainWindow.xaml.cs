@@ -91,6 +91,7 @@ public partial class MainWindow : Window
             { BridgeStatus.Text = "Saved setup could not be loaded. Find and pair your bridge again."; }
         }
         mapping = LightingProfile.Resolve(lighting, manualMapping);
+        StreamStatus.Text = WithOpenRgbStatus(StreamStatus.Text);
         initialized = true;
         SyncTuningValues();
         timer.Tick += (_, _) => RefreshPreview();
@@ -222,11 +223,12 @@ public partial class MainWindow : Window
         session = new StreamingSession(bridge);
         var activeSession = session;
         var area = SelectedArea;
-        streamTask = Task.Run(() => activeSession.RunAsync(area, telemetry, () => Volatile.Read(ref mapping), streamCancel.Token,
-            ambient, () => Volatile.Read(ref wallWash)));
+        openRgbSession = OpenRgbPreviewEnabled ? new OpenRgbStreamingSession() : null;
+        var token = streamCancel.Token;
+        streamTask = Task.Run(() => RunLightingAsync(activeSession, area, token));
         UpdateButtons();
-        try { await streamTask; StreamStatus.Text = "Stopped · previous light states restored when still owned"; }
-        catch (Exception ex) { StreamStatus.Text = FriendlyError(ex); }
+        try { await streamTask; StreamStatus.Text = WithOpenRgbStatus("Stopped · previous light states restored when still owned"); }
+        catch (Exception ex) { StreamStatus.Text = WithOpenRgbStatus(FriendlyError(ex)); }
         finally
         {
             streamTask = null; session = null; streamCancel.Dispose(); streamCancel = null;
@@ -282,7 +284,7 @@ public partial class MainWindow : Window
             Output = FormatOutput(colors.FirstOrDefault(v => v.Id == c.Id)?.Rgb ?? default),
             Color = new SolidColorBrush(RoomView.ColorFrom(colors.FirstOrDefault(v => v.Id == c.Id)?.Rgb ?? default))
         }).ToArray();
-        if (session != null && streamCancel?.IsCancellationRequested != true) StreamStatus.Text = session.Status;
+        if (session != null && streamCancel?.IsCancellationRequested != true) StreamStatus.Text = WithOpenRgbStatus(session.Status);
         PublishOverlay();
     }
     private void UpdateButtons()

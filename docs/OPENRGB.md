@@ -1,5 +1,33 @@
 # OpenRGB development test
 
+## Private installable test — 1.0.5-openrgb.1
+
+The owner requested an installable test ZIP after accepting fixed-color output.
+The private `-openrgb.` build profile now joins `OpenRgbStreamingSession` to the
+existing Hue Start/Stop action in the ASI. It uses the common front point `(0,1,0)`,
+the current lighting settings and a maximum 25% RGB output. Both backends have
+their own mapper, ownership and cleanup. OpenRGB failure leaves Hue running;
+Hue stop/failure cancels and awaits OpenRGB. Nothing starts on ASI load or in Demo.
+The controller's ordinary stream-status field displays OpenRGB status, so the
+existing CDT2.2.7 panel is sufficient. No CDT source/package changes are needed.
+
+For this first test, all eligible devices are selected at Start; bridge setup is
+still required by the common Start button. Device selection and independent
+positions remain later UI work. Missing local telemetry clears output, releases
+devices after one second and waits for fresh input before reacquisition. SDK errors
+and external edits stop the OpenRGB backend until a new explicit Start. Stop is
+observed between bounded SDK operations so cancellation does not interrupt a
+successful ACK needed for restoration. Existing restore/connection limits apply.
+
+Build with `pwsh -File scripts/Publish.ps1 -Version 1.0.5-openrgb.1` using a fresh
+version; the maintained publisher inserts the private test instructions into the
+package README. Synthetic controller smoke verifies the preview build is embedded
+and its physical output stays disabled in smoke. **155/155 Core tests pass**,
+including new continuous-sync freshness, stop/restore and external-edit coverage.
+An installed game test of this package remains pending owner installation.
+
+## Development diagnostics
+
 Branch: `codex/openrgb-parallel-preview`, based on `main` at `a137d83`.
 This is a first working output prototype inside CrimsonHue Core, exercised by
 the existing development test executable. It is not in the released ASI/menu,
@@ -150,6 +178,5 @@ assignments, not something OpenRGB can discover. Persist stable hardware identit
 never a transient index or SDK connection ID. Keep output backends independent
 when calculating spatial normalization and handling failures.
 
-No CDT change, release package, installation, remote push or merge is part of
-this prototype. Owner installation rules continue to apply when menu integration
-eventually needs new packages.
+The private installable test above is the current package scope. No CDT change,
+installation, remote push or merge is included. The owner alone installs packages.

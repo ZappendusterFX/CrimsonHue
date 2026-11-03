@@ -1,4 +1,24 @@
-# Current checkpoint — 2026-11-03, OpenRGB front-position prototype
+# Current checkpoint — 2026-11-04, private OpenRGB test ZIP requested
+
+Owner asks for a test ZIP after visually accepting keyboard, mouse, DualSense
+and RTX3080 color output. Branch remains `codex/openrgb-parallel-preview`.
+Implemented continuous `OpenRgbStreamingSession`, joined to existing Hue
+Start/Stop only for explicitly named `-openrgb.` private builds. Test version is
+`1.0.5-openrgb.1`. All eligible devices share front `(0,1,0)`, cap25%, using existing
+lighting settings; selection/individual positioning remain deferred. Hue keeps
+its own mapper/area. OpenRGB failure does not stop Hue; Hue stop/failure cancels
+and awaits OpenRGB cleanup. Source loss clears/releases then waits for fresh CDT.
+SDK ownership failure stops OpenRGB until explicit restart. Demo/smoke never send.
+
+Existing CDT2.2.7 panel shows OpenRGB through its stream-status text; no CDT change
+or new package is needed. Private package README contains the setup/test steps.
+155/155 Core tests pass, including continuous freshness, Stop restoration and
+external edits. Final package/controller results and immutable hash are recorded
+after building. Read-only installed CDT health still reports supported tested
+build26361232, playing, schema1.6; this is not installed acceptance of the new ZIP.
+No game settings, installations, GitHub push or merge were performed.
+
+# Previous checkpoint — 2026-11-03, OpenRGB front-position prototype
 
 Latest follow-up at 23:48 CET: owner closed the Razer apps and asked to observe
 keyboard, mouse, DualSense and RTX 3080. A repeated 20-second live run calculated

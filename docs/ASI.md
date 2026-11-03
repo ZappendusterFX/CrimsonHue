@@ -1,5 +1,15 @@
 # CrimsonHue 1.0.4 — mixer hosted by CDT
 
+Private test **1.0.5-openrgb.1** adds continuous OpenRGB output to the existing
+Start/Stop lighting sync. Its `-openrgb.` build profile enables the front-position
+trial only in explicitly named private packages. SDK server: localhost:6742;
+eligible RGB zones share `(0,1,0)` with a 25% master cap. The existing CDT2.2.7
+panel displays OpenRGB status through the shared stream-status text. No new CDT
+package or native UI protocol is needed. Hue setup/area is still required for
+Start in this first test, and individual OpenRGB selection/placement is pending.
+Hide/close keeps both outputs running; Stop cancels both and awaits cleanup.
+The app's Demo and the packaged synthetic smoke never create OpenRGB output.
+
 CDT draws the interactive CrimsonHue mixer in its existing D3D12/ImGui frame.
 `CrimsonHue.asi` hosts the existing C# lamp controller on a hidden WPF STA. It
 installs no graphics hooks and owns no D3D12 device, swapchain or ImGui context.

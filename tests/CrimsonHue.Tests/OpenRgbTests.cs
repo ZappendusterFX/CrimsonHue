@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json.Nodes;
 using CrimsonHue.Core;
 
 internal static class OpenRgbTests
@@ -147,6 +148,68 @@ internal static class OpenRgbTests
             await session.RestoreAsync();
             Assert(host.Commands.Count(IsWrite) == 1);
         });
+        asyncTest("OpenRGB continuous sync waits for telemetry without touching the SDK", async () =>
+        {
+            await using var host = new Server();
+            using var stop = new CancellationTokenSource();
+            var session = new OpenRgbStreamingSession(host.Port);
+            var task = session.RunAsync(new(), new(), () => LightingProfile.Defaults, stop.Token);
+            try
+            {
+                await Task.Delay(150);
+                Assert(host.Commands.Count == 0 && !session.State.Sending);
+            }
+            finally { stop.Cancel(); await task.WaitAsync(TimeSpan.FromSeconds(4)); }
+        });
+        asyncTest("OpenRGB continuous sync maps fresh front light, caps RGB, clears stale input and restores on Stop", async () =>
+        {
+            await using var host = new Server(); var original = host.Model.Bytes();
+            var telemetry = new TelemetryState(); var ambient = new AmbientState();
+            using var source = new CancellationTokenSource(); using var stop = new CancellationTokenSource();
+            var feed = ProduceFront(telemetry, source.Token);
+            var session = new OpenRgbStreamingSession(host.Port);
+            var task = session.RunAsync(telemetry, ambient, () => LightingProfile.Defaults with { SmoothingMs = 0 }, stop.Token);
+            try
+            {
+                await Fixtures.WaitUntil(() => session.State.Sending && session.State.Rgb.X > .1);
+                Assert(session.State.Rgb.X <= .25 && session.State.Rgb.Y == 0 && session.State.Rgb.Z == 0);
+                source.Cancel(); await feed;
+                await Fixtures.WaitUntil(() => session.State.Sending && session.State.Rgb == default);
+            }
+            finally { source.Cancel(); stop.Cancel(); await feed; await task.WaitAsync(TimeSpan.FromSeconds(5)); }
+            Assert(host.Model.Bytes().SequenceEqual(original) && session.State.Status.Contains("restored"));
+        });
+        asyncTest("OpenRGB continuous sync preserves external edits and stops its backend", async () =>
+        {
+            await using var host = new Server();
+            var telemetry = new TelemetryState();
+            using var source = new CancellationTokenSource(); using var stop = new CancellationTokenSource();
+            var feed = ProduceFront(telemetry, source.Token);
+            var session = new OpenRgbStreamingSession(host.Port);
+            var task = session.RunAsync(telemetry, new(), () => LightingProfile.Defaults with { SmoothingMs = 0 }, stop.Token);
+            try
+            {
+                await Fixtures.WaitUntil(() => session.State.Sending && session.State.Rgb.X > .1);
+                host.Edit(d => d.Active = 0);
+                await task.WaitAsync(TimeSpan.FromSeconds(5));
+                Assert(!session.State.Sending && host.Model.Active == 0 && session.State.Status.Contains("External edit preserved"));
+            }
+            finally { source.Cancel(); stop.Cancel(); await feed; await task; }
+        });
+    }
+
+    private static async Task ProduceFront(TelemetryState telemetry, CancellationToken token)
+    {
+        long sequence = 0;
+        while (!token.IsCancellationRequested)
+        {
+            var node = JsonNode.Parse(Fixtures.Snapshot(++sequence))!;
+            node["lights"]!["rendered"]!["sources"] = new JsonArray(new JsonObject {
+                ["position"] = new JsonObject { ["x"] = 0, ["y"] = 1, ["z"] = 3 },
+                ["colorLinear"] = new JsonObject { ["x"] = 2, ["y"] = 0, ["z"] = 0 } });
+            telemetry.Accept(Encoding.UTF8.GetBytes(node.ToJsonString()));
+            try { await Task.Delay(40, token); } catch (OperationCanceledException) { }
+        }
     }
 
     private static bool IsWrite(uint command) => command >= 1000;
