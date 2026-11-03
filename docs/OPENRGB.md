@@ -30,7 +30,11 @@ and Demo isolation verified) and folder/ZIP validation. Immutable output:
 `38CEE0134B2E09254B5BB4432844A4D74604F8AD87966F32C0CBE5B77F4EB4AC`.
 Payload source: `0ddab59`. Private receipt:
 `artifacts/openrgb-package-1.0.5-openrgb.1/receipt.json`.
-An installed game test of this package remains pending owner installation.
+After the owner installation handoff, the owner reports **"funktioniert"** on
+2026-11-04. The first integrated front-position trial alongside Hue therefore
+has positive in-game owner acceptance. No additional capture, deployed hash
+comparison or independent timing/cleanup measurement accompanied that feedback.
+Selection, independent positions and production UI controls remain future work.
 
 ## Development diagnostics
 

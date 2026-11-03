@@ -1,4 +1,11 @@
-# Current checkpoint — 2026-11-04, private OpenRGB test ZIP requested
+# Current checkpoint — 2026-11-04, owner confirms private OpenRGB test works
+
+After the installation handoff for `1.0.5-openrgb.1`, owner reports "funktioniert".
+Record this as positive in-game acceptance of the first integrated front-position
+trial alongside Hue. This is owner feedback, not an additional capture, deployed
+hash comparison or detailed independent timing/cleanup measurement. No assistant
+installation or repeated test was performed. Device selection, individual room
+positions and a production enable/disable UI remain future work on this branch.
 
 Owner asks for a test ZIP after visually accepting keyboard, mouse, DualSense
 and RTX3080 color output. Branch remains `codex/openrgb-parallel-preview`.
@@ -20,12 +27,11 @@ files. ZIP is `dist/CrimsonHue-1.0.5-openrgb.1-asi-win-x64.zip`, 3035983 bytes,
 SHA256 `38CEE0134B2E09254B5BB4432844A4D74604F8AD87966F32C0CBE5B77F4EB4AC`.
 Payload source commit is `0ddab59`; private receipt is
 `artifacts/openrgb-package-1.0.5-openrgb.1/receipt.json`. Old releases are preserved.
-Hand off owner installation with game closed, then restart and use the existing
-Start lighting sync. Stop handles both backends; SDK server6742 and Synapse closed.
-Await the owner's next message after handoff, without installation or polling.
-Read-only installed CDT health still reports supported tested
-build26361232, playing, schema1.6; this is not installed acceptance of the new ZIP.
-No game settings, installations, GitHub push or merge were performed.
+The package uses existing Start lighting sync and Stop for both backends;
+SDK server6742 and Synapse closed are the documented test setup. The earlier
+read-only CDT health check reported supported tested build26361232, playing,
+schema1.6. Owner feedback above supplies installed acceptance of the test ZIP.
+No assistant game settings/installations, GitHub push or merge were performed.
 
 # Previous checkpoint — 2026-11-03, OpenRGB front-position prototype
 
