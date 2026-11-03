@@ -24,6 +24,12 @@ version; the maintained publisher inserts the private test instructions into the
 package README. Synthetic controller smoke verifies the preview build is embedded
 and its physical output stays disabled in smoke. **155/155 Core tests pass**,
 including new continuous-sync freshness, stop/restore and external-edit coverage.
+The exact package also passes synthetic controller smoke (private build selection
+and Demo isolation verified) and folder/ZIP validation. Immutable output:
+`dist/CrimsonHue-1.0.5-openrgb.1-asi-win-x64.zip`, 3035983 bytes, SHA256
+`38CEE0134B2E09254B5BB4432844A4D74604F8AD87966F32C0CBE5B77F4EB4AC`.
+Payload source: `0ddab59`. Private receipt:
+`artifacts/openrgb-package-1.0.5-openrgb.1/receipt.json`.
 An installed game test of this package remains pending owner installation.
 
 ## Development diagnostics

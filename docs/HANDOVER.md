@@ -13,8 +13,17 @@ SDK ownership failure stops OpenRGB until explicit restart. Demo/smoke never sen
 Existing CDT2.2.7 panel shows OpenRGB through its stream-status text; no CDT change
 or new package is needed. Private package README contains the setup/test steps.
 155/155 Core tests pass, including continuous freshness, Stop restoration and
-external edits. Final package/controller results and immutable hash are recorded
-after building. Read-only installed CDT health still reports supported tested
+external edits. The exact private package passes controller smoke (preview build
+flag verified, synthetic output disabled, ABI/shutdown checks) and both folder/ZIP
+validators: seven exact entries, one root, one x64 ASI with five embedded component
+files. ZIP is `dist/CrimsonHue-1.0.5-openrgb.1-asi-win-x64.zip`, 3035983 bytes,
+SHA256 `38CEE0134B2E09254B5BB4432844A4D74604F8AD87966F32C0CBE5B77F4EB4AC`.
+Payload source commit is `0ddab59`; private receipt is
+`artifacts/openrgb-package-1.0.5-openrgb.1/receipt.json`. Old releases are preserved.
+Hand off owner installation with game closed, then restart and use the existing
+Start lighting sync. Stop handles both backends; SDK server6742 and Synapse closed.
+Await the owner's next message after handoff, without installation or polling.
+Read-only installed CDT health still reports supported tested
 build26361232, playing, schema1.6; this is not installed acceptance of the new ZIP.
 No game settings, installations, GitHub push or merge were performed.
 
