@@ -1,4 +1,20 @@
-# Current checkpoint — 2026-11-03, swinging own lantern; Hue 1.0.4 ready
+# Current checkpoint — 2026-11-03, owner accepts lighting; GitHub publication requested
+
+After the Hue1.0.4 handoff, the owner reports "sehr gut jetzt" and requests
+GitHub publication of Hue and CDT, including necessary description updates.
+This is positive owner in-game appearance feedback, not an additional measured
+test or newly inspected installation. Publish the already validated immutable
+Hue1.0.4 and CDT2.2.7 ZIPs; no rebuild, installation or repeated game tests.
+Main and version tags should include the final source and current release notes.
+GitHub About text remains accurate. Nexus stays manual: the owner requests only
+a copyable one-line-per-entry Hue changelog and calls the previous Nexus version
+"1.1". Do not upload to Nexus or edit its listing. Local Nexus copy is unchanged.
+
+Validation, package hashes and implementation limits are in the checkpoint below
+and [LANTERN-MOTION-20261103.md](LANTERN-MOTION-20261103.md). Source branch before
+publication is codex/hue-lantern-motion at7187411 plus publication documentation.
+
+# Previous checkpoint — 2026-11-03, swinging own lantern; Hue 1.0.4 ready
 
 Owner installed Hue1.0.3 + CDT2.2.7 themselves and reports substantially calmer
 lighting. A further 30-second outdoor capture isolates the remaining standing

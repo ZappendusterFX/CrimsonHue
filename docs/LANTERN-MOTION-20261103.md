@@ -140,5 +140,8 @@ Build/smoke evidence: `artifacts/lantern-motion-1.0.4-package.log`.
 
 Synthetic/offline checks do not establish physical lamp appearance. No assistant
 installation, game input, settings changes or physical output is performed.
-CDT2.2.7 remains installed; the owner alone installs the new Hue package. The new
-package is not installed, game-tested or published; older packages are immutable.
+At the initial handoff, the new package had not been installed, game-tested or
+published; older packages remain immutable. The owner subsequently reports
+"sehr gut jetzt" and requests GitHub publication of Hue1.0.4 and CDT2.2.7.
+This adds positive owner appearance feedback, not a further measured test or a
+new inspection of deployed files. See HANDOVER.md for publication status.

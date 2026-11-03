@@ -30,8 +30,8 @@ or a measurement of the physical lamps.
    Set the area and channel positions in the Hue app first. diyHue is the
    development target. A physical Hue Bridge BSB002 with two Hue Play wall washers
    has passed pairing and read-only area/light-state import. The owner reports
-   physical Entertainment output with private builds, including Play bars and
-   wall washers. Exact 1.0.0 installation/game/input acceptance remains separate.
+   physical Entertainment output with Play bars and wall washers, and positive
+   in-game results with the 1.0.4 update. Other hardware remains separately unverified.
 4. In **Setup**, enter the bridge's own private IPv4 address and click
    **Find bridge**; it applies the address directly. For a new pairing, press the round link button **on the
    physical Hue Bridge**, then click **Trust bridge & pair** within 30 seconds.

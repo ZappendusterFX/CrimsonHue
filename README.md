@@ -27,10 +27,11 @@ The title-bar **X**, **Hide settings** and **Ctrl+Shift+H** hide the mixer while
 sync continues. Physical output starts only when explicitly requested.
 
 Read the [setup guide](docs/USER-GUIDE.md), [ASI guide](docs/ASI.md) and
-[1.0.4 change notes](docs/releases/v1.0.4.md). The owner has used private builds
-in-game with physical lamps. The exact public ZIP still requires separate
-installation/game/input acceptance; synthetic verification is recorded in
-[HANDOVER.md](docs/HANDOVER.md).
+[1.0.4 change notes](docs/releases/v1.0.4.md). This update combines stronger
+suppression of rapid local-light fluctuations with own-lantern recognition during
+swinging motion. The owner reports very good in-game results with the update.
+That feedback is separate from the 133 Core tests, packaged-controller checks
+and offline replay measurements recorded in [HANDOVER.md](docs/HANDOVER.md).
 
 **Downloads and guides:** [CrimsonHue releases](https://github.com/ZappendusterFX/CrimsonHue/releases) ·
 [complete setup and tuning guide](docs/USER-GUIDE.md) ·
@@ -66,7 +67,7 @@ physical lamp brightness.
 
 ## Start
 
-1. Install **CrimsonDesertTelemetry 2.2.6** with its server, rendered and upstream
+1. Install **CrimsonDesertTelemetry 2.2.7** with its server, rendered and upstream
    ManyLights capture, and source visibility enabled.
 2. Install [**.NET 8 Desktop Runtime x64**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
    With the game closed, import this ZIP through DMM, or put its
@@ -130,15 +131,16 @@ Streaming never starts automatically when the ASI loads.
 - .NET 8 **Desktop Runtime x64**, including its WindowsDesktop/WPF framework.
   The plain .NET Runtime or ASP.NET Runtime alone does not supply WPF. .NET 9/10
   alone does not fulfill the .NET 8 requirement.
-- CrimsonDesertTelemetry 2.2.5 or later, schema 1.6, on the same PC for all-around,
+- CrimsonDesertTelemetry 2.2.5 or later (use 2.2.7 for game patch 2.04.05),
+  schema 1.6, on the same PC for all-around,
   confirmed-visible lights. Older schema 1.4/1.5 installations still use the
   original rendered-only feed without physics visibility filtering.
 - A Hue-compatible bridge with HTTPS API v2, Entertainment DTLS 1.2/PSK on UDP 2100,
   color lights and an existing Entertainment area.
 - Development hardware includes diyHue/LEDVANCE and a physical Hue Bridge BSB002
-  with Hue Play bars and wall washers. The owner reports in-game physical output
-  using private builds. Exact 1.0.0 package acceptance and other hardware remain
-  separate from those observations.
+  with Hue Play bars and wall washers. The owner reports positive in-game results
+  with 1.0.4 on the development setup. Other hardware remains separate from
+  those observations.
   Backend/lamp performance varies; 30 outgoing updates/s is a target, not a
   measured physical lamp refresh rate.
 
