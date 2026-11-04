@@ -9,8 +9,18 @@ are retained. Existing Hue bridge/area/common Start/Stop remain required. Demo a
 smoke cannot create output. UI snapshot uses openRgbAvailable/openRgbOutputAllowed.
 
 161/161 Core tests pass. Pair with CDT2.2.8-build26423880-integrated.1 exact research
-candidate, production code with all features ON. Packaging/final native controller
-and shared HUD validation receipt follows. No installation, repeated lamp/spell or
+candidate, production code with all features ON. Exact headless controller and
+both folder/ZIP validators pass. Actual Hue ASI + CDT D3D12 --openrgb smoke passes
+(748802pixels); screenshot visually inspected, panel hashes match. Hue ZIP
+dist/CrimsonHue-1.0.5-asi-win-x64.zip is3047043bytes, payload0513fbd, SHA256
+CC71230E2E0577C3FBF6A56A37F10826263072DB848D2ED7AEF07BEB6A2B118B.
+CDT ZIP1076680bytes, payload942a0f2, SHA256
+0D616AA5ADE1144F8B7C5C1FE9411E10160B07049F8268BB7ECBE22FC38B1F80.
+Receipt artifacts/package-1.0.5-paired-26423880-20261104.json;
+checksums dist/CrimsonHue-1.0.5-paired-26423880-SHA256SUMS.txt.
+Passive game6340 UI read found no CLR; module/file check confirms no Hue ASI
+loaded/in bin64. No current Hue settings snapshot was obtained; install both
+handoff ZIPs, without inferring missing saved settings. No installation, repeated lamp/spell or
 new physical acceptance. Latest OpenRGB color correction's optical response and
 CDT's current-build installed acquisition remain pending. Owner alone installs;
 after handoff end the turn, resume only after owner reports installation/restart.
