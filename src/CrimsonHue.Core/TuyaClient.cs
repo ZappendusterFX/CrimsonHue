@@ -17,11 +17,31 @@ public sealed class TuyaClient
             throw new ArgumentOutOfRangeException(nameof(timeout));
     }
 
-    public Task<TuyaWriteResult> SendAsync(TuyaLamp lamp, string localKey, TuyaColorCommand command, CancellationToken token) =>
-        WriteAsync(lamp, localKey, TuyaProtocol.BuildDps(lamp, command), token);
+    public async Task<TuyaWriteResult> SendAsync(TuyaLamp lamp, string localKey, TuyaColorCommand command, CancellationToken token)
+    {
+        var dps = TuyaProtocol.BuildDps(lamp, command);
+        var result = await WriteAsync(lamp, localKey, () => new(dps, command), token);
+        return result.Result!.Value;
+    }
 
-    public Task<TuyaWriteResult> RestoreAsync(TuyaLamp lamp, string localKey, TuyaDeviceState state, CancellationToken token) =>
-        WriteAsync(lamp, localKey, TuyaProtocol.RestoreDps(lamp, state), token);
+    public async Task<TuyaWriteResult> RestoreAsync(TuyaLamp lamp, string localKey, TuyaDeviceState state, CancellationToken token)
+    {
+        var dps = TuyaProtocol.RestoreDps(lamp, state);
+        var result = await WriteAsync(lamp, localKey, () => new(dps, null), token);
+        return result.Result!.Value;
+    }
+
+    // Resolve current authorization and RGB only after connection/key negotiation.
+    // Returning null sends no control packet. Ownership bookkeeping receives the
+    // actual sent command, which can differ from the pre-handshake desired color.
+    public Task<TuyaSendResult> SendLatestAsync(TuyaLamp lamp, string localKey, Func<TuyaColorCommand?> latest,
+        CancellationToken token) => WriteAsync(lamp, localKey, () =>
+        {
+            var command = latest();
+            return command == null ? null : new(TuyaProtocol.BuildDps(lamp, command), command);
+        }, token);
+
+    private sealed record WritePayload(IReadOnlyDictionary<int, JsonElement> Dps, TuyaColorCommand? Command);
 
     public async Task<bool> ProbeAsync(TuyaLamp lamp, CancellationToken token)
     {
@@ -34,13 +54,14 @@ public sealed class TuyaClient
         catch (Exception e) when (e is SocketException or IOException) { return false; }
     }
 
-    private async Task<TuyaWriteResult> WriteAsync(TuyaLamp lamp, string localKey, IReadOnlyDictionary<int, JsonElement> dps,
+    private async Task<TuyaSendResult> WriteAsync(TuyaLamp lamp, string localKey, Func<WritePayload?> prepare,
         CancellationToken token)
     {
         lamp.Validate();
         var key = TuyaProtocol.KeyBytes(localKey);
         byte[]? session = null;
         var sent = false;
+        TuyaColorCommand? sentCommand = null;
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
         deadline.CancelAfter(timeout);
         using var socket = new TcpClient(AddressFamily.InterNetwork);
@@ -49,9 +70,12 @@ public sealed class TuyaClient
             await ConnectAsync(socket, lamp, deadline.Token);
             var stream = socket.GetStream();
             session = await NegotiateAsync(stream, key, deadline.Token);
-            var payload = TuyaProtocol.ControlPayload(dps, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+            deadline.Token.ThrowIfCancellationRequested();
+            var prepared = prepare();
+            if (prepared == null) return new(null, null);
+            var payload = TuyaProtocol.ControlPayload(prepared.Dps, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
             await stream.WriteAsync(TuyaProtocol.Pack(3, 13, payload, session), deadline.Token);
-            sent = true;
+            sent = true; sentCommand = prepared.Command;
             for (var messages = 0; messages < 16; ++messages)
             {
                 var packet = TuyaProtocol.Unpack(await TuyaProtocol.ReadPacketAsync(stream, deadline.Token), session);
@@ -67,15 +91,15 @@ public sealed class TuyaClient
                         (json.RootElement.TryGetProperty("success", out var success) && success.ValueKind == JsonValueKind.False))
                         throw new CrimsonHueException("Tuya device rejected the command.");
                 }
-                return TuyaWriteResult.Acknowledged;
+                return new(TuyaWriteResult.Acknowledged, sentCommand);
             }
-            return TuyaWriteResult.Unacknowledged;
+            return new(TuyaWriteResult.Unacknowledged, sentCommand);
         }
         catch (OperationCanceledException) when (sent)
         {
             // Cancellation cannot retract a complete command already on the
             // wire. Let the owner record the possible change before cleanup.
-            return TuyaWriteResult.Unacknowledged;
+            return new(TuyaWriteResult.Unacknowledged, sentCommand);
         }
         catch (OperationCanceledException) when (!token.IsCancellationRequested)
         {
@@ -83,7 +107,7 @@ public sealed class TuyaClient
         }
         catch (Exception e) when (e is SocketException or IOException or InvalidDataException or CryptographicException or JsonException)
         {
-            if (sent) return TuyaWriteResult.Unacknowledged;
+            if (sent) return new(TuyaWriteResult.Unacknowledged, sentCommand);
             throw new CrimsonHueException("Tuya connection or authenticated handshake failed.");
         }
         finally { CryptographicOperations.ZeroMemory(key); if (session != null) CryptographicOperations.ZeroMemory(session); }

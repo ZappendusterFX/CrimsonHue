@@ -116,6 +116,49 @@ internal static class TuyaProtocolTests
                 await FragmentWrite(stream, TuyaProtocol.Pack(901, 13, new byte[4], key), token);
             });
         });
+        asyncTest("Tuya late handshake samples current off or menu color and reports exactly what was sent", async () =>
+        {
+            foreach (var replacement in new[] { Red with { Power = false }, new TuyaColorCommand(true, new(0, 0, 1), .1) })
+            {
+                TuyaColorCommand? desired = Red; var reads = 0;
+                await Serve(async lamp =>
+                {
+                    var result = await new TuyaClient().SendLatestAsync(lamp, TestKey,
+                        () => { Interlocked.Increment(ref reads); return Volatile.Read(ref desired); }, CancellationToken.None);
+                    Assert(reads == 1 && result.Result == TuyaWriteResult.Acknowledged && result.SentCommand == replacement,
+                        "Late command result did not identify the actual sent color.");
+                }, async (stream, token) =>
+                {
+                    var (key, packet) = await Handshake(stream, token, async () =>
+                    {
+                        await Task.Delay(600, token); // Cross the producer's 500 ms freshness window.
+                        Assert(reads == 0, "Desired color was frozen before handshake completed.");
+                        Volatile.Write(ref desired, replacement);
+                    });
+                    using var json = JsonDocument.Parse(packet.Payload.AsMemory(15));
+                    var dps = json.RootElement.GetProperty("data").GetProperty("dps");
+                    Assert(dps.GetProperty("20").GetBoolean() == replacement.Power, "Obsolete powered-on command escaped.");
+                    if (replacement.Power) Assert(dps.GetProperty("24").GetString() == "00f003e80064", "Pre-handshake RGB escaped.");
+                    else Assert(dps.EnumerateObject().Count() == 1, "Latest off command retained color DPS.");
+                    Volatile.Write(ref desired, Red); // Further updates must not relabel the command already sent.
+                    await stream.WriteAsync(TuyaProtocol.Pack(91, 13, new byte[4], key), token);
+                });
+            }
+        });
+        asyncTest("Tuya authorization lost during handshake sends no control packet", async () =>
+        {
+            TuyaColorCommand? desired = Red;
+            await Serve(async lamp =>
+            {
+                var result = await new TuyaClient().SendLatestAsync(lamp, TestKey, () => Volatile.Read(ref desired), CancellationToken.None);
+                Assert(result is { Result: null, SentCommand: null }, "Revoked authorization claimed a write.");
+            }, async (stream, token) =>
+            {
+                _ = await AcceptHandshake(stream, token, async () =>
+                { await Task.Delay(600, token); Volatile.Write(ref desired, null); });
+                Assert(await stream.ReadAsync(new byte[1], token) == 0, "Revoked authorization sent a control packet.");
+            });
+        });
         asyncTest("Tuya nonzero acknowledgements fail without exposing secrets", async () =>
         {
             await Serve(lamp => RejectAsync(() => new TuyaClient().SendAsync(lamp, TestKey, Red, CancellationToken.None), "rejected"),
@@ -216,7 +259,7 @@ internal static class TuyaProtocolTests
             var unsupported = new Dictionary<int, JsonElement> { [20] = JsonSerializer.SerializeToElement(true),
                 [21] = JsonSerializer.SerializeToElement("scene") };
             // Refusal happens before opening a connection.
-            Reject(() => new TuyaClient().RestoreAsync(Lamp, TestKey, new(unsupported), CancellationToken.None));
+            await RejectAsync(() => new TuyaClient().RestoreAsync(Lamp, TestKey, new(unsupported), CancellationToken.None));
         });
     }
 
@@ -246,17 +289,24 @@ internal static class TuyaProtocolTests
         for (var i = 0; i < bytes.Length; i += 7)
             await stream.WriteAsync(bytes.AsMemory(i, Math.Min(7, bytes.Length - i)), token);
     }
-    private static async Task<(byte[] Key, TuyaPacket Packet)> Handshake(NetworkStream stream, CancellationToken token)
+    private static async Task<(byte[] Key, TuyaPacket Packet)> Handshake(NetworkStream stream, CancellationToken token,
+        Func<Task>? beforeResponse = null)
+    {
+        var session = await AcceptHandshake(stream, token, beforeResponse);
+        return (session, TuyaProtocol.Unpack(await TuyaProtocol.ReadPacketAsync(stream, token), session));
+    }
+    private static async Task<byte[]> AcceptHandshake(NetworkStream stream, CancellationToken token,
+        Func<Task>? beforeResponse = null)
     {
         var start = TuyaProtocol.Unpack(await TuyaProtocol.ReadPacketAsync(stream, token), Key);
         Assert(start.Command == 3 && start.Sequence == 1 && start.Payload.SequenceEqual(TuyaProtocol.LocalNonce), "Session start mismatch.");
+        if (beforeResponse != null) await beforeResponse();
         var remote = Enumerable.Range(0, 16).Select(i => (byte)i).ToArray();
         var mac = HMACSHA256.HashData(Key, start.Payload);
         await FragmentWrite(stream, TuyaProtocol.Pack(10, 4, [0, 0, 0, 0, .. remote, .. mac], Key), token);
         var finish = TuyaProtocol.Unpack(await TuyaProtocol.ReadPacketAsync(stream, token), Key);
         Assert(finish.Command == 5 && finish.Sequence == 2 && CryptographicOperations.FixedTimeEquals(finish.Payload, HMACSHA256.HashData(Key, remote)),
             "Session finish HMAC mismatch.");
-        var session = Convert.FromHexString("52723DCB1E501DB933331C8DEBB3C89A");
-        return (session, TuyaProtocol.Unpack(await TuyaProtocol.ReadPacketAsync(stream, token), session));
+        return Convert.FromHexString("52723DCB1E501DB933331C8DEBB3C89A");
     }
 }

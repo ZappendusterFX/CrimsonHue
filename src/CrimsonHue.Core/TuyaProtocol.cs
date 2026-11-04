@@ -8,6 +8,7 @@ namespace CrimsonHue.Core;
 
 public sealed record TuyaColorCommand(bool Power, Vec3 Rgb, double Brightness);
 public enum TuyaWriteResult { Acknowledged, Unacknowledged }
+public sealed record TuyaSendResult(TuyaWriteResult? Result, TuyaColorCommand? SentCommand);
 public sealed record TuyaDeviceState(IReadOnlyDictionary<int, JsonElement> Dps);
 public sealed record TuyaPacket(uint Sequence, uint Command, byte[] Payload);
 
