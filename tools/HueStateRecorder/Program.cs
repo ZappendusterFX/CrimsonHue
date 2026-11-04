@@ -17,7 +17,7 @@ using var writer = new StreamWriter(file) { AutoFlush = true };
 using var target = DataTarget.AttachToProcess(processId, suspend: false);
 using var runtime = target.ClrVersions.Single().CreateRuntime();
 var allowed = new[] { "ready", "demo", "smoke", "telemetry", "capture", "ambient", "stream", "canStart", "canStop",
-    "rawAmbient", "controls", "channels", "lighting", "wallWashers", "openRgb", "openRgbRoom" };
+    "rawAmbient", "controls", "channels", "lighting", "menuLighting", "wallWashers", "openRgb", "openRgbRoom" };
 var clock = Stopwatch.StartNew();
 var samples = 0;
 var rejected = 0;

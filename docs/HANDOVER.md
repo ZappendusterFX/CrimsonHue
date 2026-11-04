@@ -1,4 +1,29 @@
-# Current checkpoint — 2026-11-04, menu.2 HUD editing and pause-notice fix
+# Current checkpoint — 2026-11-04, live OpenRGB menu-color comparison
+
+Owner now uses adjustable HUD and reports saturated pink selected but pale pink
+on keyboard/mouse; asks how to adjust directly. PID34860 start20:31:15. One
+passive Hue snapshot20:35:29 (not suspended, no output/settings writes) reports:
+menu active, menu brightness100%, shared master100%, OpenRGB limit25%.
+Selected menu RGB=(.968526125,.350000024,1); Hue channel commands equal this.
+All four OpenRGB devices receive (.242131531,.087500006,.25), precisely25%.
+Evidence: artifacts/menu-openrgb-color-20261104-203529.jsonl (+summary).
+No present package hash verification in this turn; do not label the screenshot
+or color report as full menu.2/stutter acceptance.
+
+Direct current HUD adjustment: OpenRGB > Connection and output limit > Output
+limit. Increasing25% toward100% raises output. Menu color Hex allows lessgreen
+for stronger pink (e.g.#FF00FF or#FF0080). The25% scalar explains dimmer command
+values, not by itself desaturation. Menu route bypasses gameplay saturation,
+gamma/background; OpenRGB protocol only clamps/rounds RGB tobytes. Hardware
+appearance is not measured or inferred from the software snapshot.
+
+HueStateRecorder now includes credential-free menuLighting in its allowlist,
+so selectedcolor/brightness can be compared with outgoingRGB. Tool rebuilt;
+passiveprobe passes. Runtime/package behavior unchanged; no new ZIP needed.
+User settings unchanged. Next owner can adjust the existing HUD live; stop/end
+turn rather than waiting/polling for that action.
+
+# Previous checkpoint — 2026-11-04, menu.2 HUD editing and pause-notice fix
 
 Owner installed menu.1, reports changed/dark menu light and screenshot
 "Light data is unavailable" while briefly testing Skills. PID34048 start20:17:04.
