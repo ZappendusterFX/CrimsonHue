@@ -1,4 +1,22 @@
-# Current checkpoint — 2026-11-04, live upstream visibility outage and OpenRGB stop
+# Current checkpoint — 2026-11-04, owner restart restored live lighting
+
+Owner reports about 60 FPS / 100% GPU after restarting; prior session remained
+around 30 FPS with lower GPU utilization. New game PID 34956 / CDT host 35112.
+Passive snapshot at 17:43:29 CET confirms Live 17/139, spatially differing Hue
+colors, streaming active, and OpenRGB sending to four devices. CDT's paired raw
+capture has fresh clear/blocked results again (16/116, five pending, age 47 ms).
+The first check caught loading and correctly cleared outputs; it is preserved
+separately, not treated as another visibility failure. No new optical acceptance.
+
+Follow-up instantaneous counters: game CPU 50.4%, external host 1.9% across 16
+logical processors, GPU 3D 68%. This does not reproduce the owner's exact reported
+FPS/GPU window or prove the old slowdown's cause. See CDT's current checkpoint.
+Evidence: C:/DEV/CrimsonDesertTelemetry/artifacts/runtime-visibility-restart-20261104-174305-pid34956/.
+No code/settings/deployment changes. Restart recovered the observed session;
+the timing-guard latch and underlying OpenRGB disconnect cause remain unfixed.
+Check complete; no repeated scene/game action requested.
+
+# Previous checkpoint — 2026-11-04, live upstream visibility outage and OpenRGB stop
 
 Owner asks about abnormal behavior, then reports about30FPS/high CPU. Passive
 gamePID22684 snapshot at17:32:53CET confirms controller ready, demo/smoke=false,
