@@ -3,7 +3,7 @@
 ## Independent-output candidate (unpublished)
 
 This section describes **CrimsonHue 1.0.8-outputs.1** paired with
-**CrimsonDesertTelemetry 2.2.10-outputs.1**. Package validation is pending and
+**CrimsonDesertTelemetry 2.2.10-outputs.1**. It is intended for owner testing;
 no live Tuya lamp test is claimed. The published pair remains **1.0.7 / 2.2.9**:
 that stable version requires Hue setup for OpenRGB and has no Tuya backend.
 The stable setup guide continues at [Menu lighting](#menu-lighting).

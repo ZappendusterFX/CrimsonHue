@@ -3,7 +3,7 @@
 ## Unpublished independent-output candidate
 
 The next private pair is **Hue 1.0.8-outputs.1 / CDT 2.2.10-outputs.1**.
-Package validation is pending. The stable **1.0.7 / 2.2.9** behavior below remains
+It is intended for owner testing. The stable **1.0.7 / 2.2.9** behavior below remains
 the published baseline; it still requires Hue setup for OpenRGB and has no Tuya
 output. Do not use the new controls with the old shared panel.
 

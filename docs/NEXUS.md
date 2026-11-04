@@ -1,8 +1,8 @@
 # Nexus listing draft — upcoming CrimsonHue 1.0.8 (unpublished)
 
 **Preparation only; do not publish this copy as the stable release.** The next
-private test pair is **1.0.8-outputs.1 / CDT 2.2.10-outputs.1**; package validation
-is pending and no live Tuya acceptance is claimed. Public **1.0.7 / CDT 2.2.9**
+private test pair is **1.0.8-outputs.1 / CDT 2.2.10-outputs.1**, intended for owner
+testing. No live Tuya acceptance is claimed. Public **1.0.7 / CDT 2.2.9**
 still requires Hue for OpenRGB and has no Tuya backend. Fields below target a
 future public **1.0.8 / CDT 2.2.10** pair, not an uploaded or available release.
 
@@ -73,7 +73,7 @@ Adds independent Hue/OpenRGB/Tuya selection, Tuya 3.5 spatial and menu lighting,
 ```bbcode
 [size=5][b]CrimsonHue - Spatial Room Lighting[/b][/size]
 
-[b]Unpublished 1.0.8 description draft.[/b] The current test pair is CrimsonHue 1.0.8-outputs.1 / CDT 2.2.10-outputs.1. Package validation is pending; no live Tuya lamp acceptance is claimed. Published 1.0.7 / CDT 2.2.9 still requires Hue setup for OpenRGB and has no Tuya output.
+[b]Unpublished 1.0.8 description draft.[/b] The current pair, CrimsonHue 1.0.8-outputs.1 / CDT 2.2.10-outputs.1, is intended for owner testing. No live Tuya lamp acceptance is claimed. Published 1.0.7 / CDT 2.2.9 still requires Hue setup for OpenRGB and has no Tuya output.
 
 Turn Crimson Desert's live engine-light telemetry into spatial room lighting through independently selected Hue Entertainment, OpenRGB and compatible Tuya Wi-Fi 3.5 RGB devices. Nearby sources follow their direction around your setup, including sources outside the game image, with a separate adjustable background layer.
 

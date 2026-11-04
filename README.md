@@ -4,8 +4,8 @@ A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment and optional OpenRGB.
 
 **Unpublished candidate: independent Hue, OpenRGB and Tuya outputs.** The next
-test pair is **CrimsonHue 1.0.8-outputs.1 / CDT 2.2.10-outputs.1**. Its package
-validation is still pending; no live Tuya lamp acceptance is claimed. This is
+test pair is **CrimsonHue 1.0.8-outputs.1 / CDT 2.2.10-outputs.1**. This candidate
+is intended for owner testing; no live Tuya lamp acceptance is claimed. It is
 separate from the published **1.0.7 / 2.2.9** pair described below.
 
 In the candidate, **Setup → Lighting outputs** selects Hue, OpenRGB and Tuya LAN
