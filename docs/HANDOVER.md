@@ -1,4 +1,31 @@
-# Current checkpoint — 2026-11-04, CDT menu.3 fixes repeated ready notification
+# Current checkpoint — 2026-11-04, CrimsonHue 1.0.7 and CDT 2.2.9 published
+
+Owner requested two stable GitHub releases and refreshed descriptions/Nexus copy.
+Published Latest: https://github.com/ZappendusterFX/CrimsonHue/releases/tag/v1.0.7
+and https://github.com/ZappendusterFX/CrimsonDesertTelemetry/releases/tag/v2.2.9.
+README, release notes and repository About descriptions updated. Nexus text is
+prepared only: docs/NEXUS.md; CDT docs/NEXUS-2.2.9.md and NEXUS_DESCRIPTION.bbcode.
+CDT NEXUS_AUTO_PUBLISH=false; publication workflow41915295705 correctly skipped.
+
+Production ZIP: dist/CrimsonHue-1.0.7-asi-win-x64.zip (3,061,656 bytes).
+SHA256 CF0B8F887835CAA56A5A2EB2083B78215F9FEDB8F98B8CD5857DC9B93D1231D0.
+Payload source50a3e4e; immutable release tag699ab63. ZIP and SHA256SUMS uploaded;
+public download independently matches. Evidence: docs/releases/v1.0.7-validation.md,
+artifacts/release-1.0.7-receipt.json and release-1.0.7-github-publication.json.
+Core177/177, packaged controller, both shared Lighting/OpenRGB renderer smokes and
+folder/ZIP validation pass. Paired CDT94 managed/45 native tests and release CI pass.
+CDT-only test fixture timing correction bcd6cd1 does not change either payload/tag;
+its full GitHub CI41914422512 also passes.
+
+Menu color/brightness editable in HUD, optional Gold preset, warm-white20% default;
+OpenRGB reset/absent-device cleanup and quiet pause/resume notifications included.
+Controller-only Skills stutter remains unresolved and is explicitly documented.
+No exact public ZIP installation/game acceptance, physical output or deployed-file
+changes by assistants. Prior installed private-menu evidence remains separate.
+Next owner-only optional action: stop sync, close game and install both public ZIPs
+through DMM. Do not poll for installation or operate DMM; resume only on owner report.
+
+# Previous checkpoint — 2026-11-04, CDT menu.3 fixes repeated ready notification
 
 Owner reports "Telemetry is ready" after every menu pause. CDT NoticeTracker
 mistook intentional pause for scene loading. Fixed in CDT98b8859: fresh explicit
