@@ -1,10 +1,17 @@
-# Current checkpoint — 2026-11-04, gameplay menu-state baseline captured in CDT
+# Current checkpoint — 2026-11-04, Skills-state difference captured in CDT
+
+Owner's "Skills" produced three stable samples18:49:17CET, samePID16716. Only
+captured change versus gameplay: SkillTree root+BA goes0 ->1, stable throughout.
+All other roots/fields/identities unchanged, no rejected reads. Correlation only;
+next owner returns to gameplay and replies "Spiel", then FROM CDT run
+& ./scripts/Read-MenuStateCandidates.ps1 -Label gameplay to verify return.
+Evidence: CDT artifacts/menu-state-skills-20261104-184916-617-81e54805303046e19fd6270411c39e6a.json.
+No production/menu-output change or installation; no waiting/polling for owner.
 
 Owner's "Spiel" produced three stable read-only baseline samples at18:47:58CET,
 PID16716: six menu roots,144subscriptions, no rejected roots; every A4/A8=593.
 Evidence in CDT artifacts/menu-state-gameplay-20261104-184757-378-bf992a97a14545619c5d8afd8a3d0e75.json.
-No open/closed semantics proven yet. Next: owner opens Skills and replies "Skills";
-then FROM CDT run & ./scripts/Read-MenuStateCandidates.ps1 -Label skills. No build,
+No open/closed semantics proven yet. Skills sample is now recorded above. No build,
 installation, output change or wait for owner. See CDT current HANDOVER.
 
 Owner asks how to implement menu lighting. CDT has prepared a bounded read-only
