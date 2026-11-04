@@ -1,4 +1,16 @@
-# Current checkpoint — 2026-11-04, CDT tick diagnostic ready; owner handoff
+# Current checkpoint — 2026-11-04, installed tick probe advances during gameplay
+
+Owner installed CDT 2.2.9-tick.1 and reports gameplay. New PID 32972; loaded ASI
+and five executable/config companions match package hashes (read-only check).
+Gameplay recording 19:52:07-10 CET: 47 fresh running samples, counter 22018 ->
+22320, no errors. Function-entry progress is not FPS or lighting sampling rate.
+Evidence in CDT artifacts/simulation-ticks-gameplay-20261104-195207-550-5ef478405e6342a695786d43e6fc143d.json.
+Next owner opens Skills with preview running and replies "Skills"; FROM CDT run
+& ./scripts/Read-SimulationTickDiagnostic.ps1 -Label skills immediately.
+No more installation needed for this comparison; do not wait/poll for owner.
+No automatic menu light or capture pause has been implemented yet.
+
+# Previous checkpoint — 2026-11-04, CDT tick diagnostic ready; owner handoff
 
 CDT source 3f810c0 produced validated private production-profile 2.2.9-tick.1,
 Research OFF, optional monitor ON. ZIP:
