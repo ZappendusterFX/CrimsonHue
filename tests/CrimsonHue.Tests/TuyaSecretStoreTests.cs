@@ -5,7 +5,7 @@ using CrimsonHue.Core;
 
 internal static class TuyaSecretStoreTests
 {
-    private const string Key = "fixture-only-key!";
+    private const string Key = "fixture-only-key";
     private static TuyaLamp Lamp(string id = "fixture-lamp", string host = "127.0.0.1") =>
         new(id, "Synthetic lamp", host, "device-" + id, new(.2, .7, -.1));
     private static void Check(bool condition, string message)
