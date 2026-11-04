@@ -1,4 +1,11 @@
-# Current checkpoint — 2026-11-04, menu-state comparison preparation in CDT
+# Current checkpoint — 2026-11-04, gameplay menu-state baseline captured in CDT
+
+Owner's "Spiel" produced three stable read-only baseline samples at18:47:58CET,
+PID16716: six menu roots,144subscriptions, no rejected roots; every A4/A8=593.
+Evidence in CDT artifacts/menu-state-gameplay-20261104-184757-378-bf992a97a14545619c5d8afd8a3d0e75.json.
+No open/closed semantics proven yet. Next: owner opens Skills and replies "Skills";
+then FROM CDT run & ./scripts/Read-MenuStateCandidates.ps1 -Label skills. No build,
+installation, output change or wait for owner. See CDT current HANDOVER.
 
 Owner asks how to implement menu lighting. CDT has prepared a bounded read-only
 observer for real UI root instances, following offline CommonRoot registration
@@ -10,10 +17,9 @@ Intended behavior: verified menu pauses new native light/Ambient/physics acquisi
 in CDT; Hue holds configurable fixed menu light with its stream still owned.
 Verified exit requires fresh data before blending back. Never treat unknown/stale
 menu state as proof or call a constant color alone an acquisition/stutter fix.
-Observer passes exact-EXE offline and synthetic bounds/race/identity checks; no
-live process read yet. Next: owner in normal gameplay replies "Spiel", then run
-FROM CDT & ./scripts/Read-MenuStateCandidates.ps1 -Label gameplay. Later Skills
-and gameplay-return reads require separate owner handoffs. LightSync may remain
+Observer passes exact-EXE offline and synthetic bounds/race/identity checks;
+the first live gameplay read also passed as above. Skills and gameplay-return
+reads require separate owner handoffs. LightSync may remain
 off; no new installation or output changes needed. No confirmation of previous reset
 packages being installed has been received; do not run their acceptance checks.
 
