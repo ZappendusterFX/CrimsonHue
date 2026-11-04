@@ -1,4 +1,25 @@
-# Current checkpoint — 2026-11-04, public1.0.6 published alongside CDT2.2.8
+# Current checkpoint — 2026-11-04, live upstream visibility outage and OpenRGB stop
+
+Owner asks about abnormal behavior, then reports about30FPS/high CPU. Passive
+gamePID22684 snapshot at17:32:53CET confirms controller ready, demo/smoke=false,
+Live0/142 confirmed visible, Hue streaming neutral Ambient-only colors on all
+eight channels. CDT still publishes fresh raw light/Ambient data, but every
+upstream source is unknown/physics-stopped-restart-required. Its native log says
+continuous visibility stopped until restart: unknown-fan-time-budget. See CDT's
+current HANDOVER for the latched timing guard and preserved original logs.
+
+OpenRGB is also stopped, sending=false, restoration incomplete/connection
+unavailable for mouse/DualSense/GPU/keyboard; underlying disconnect cause is not
+retained in this status. Actual current response=Calm, brightness1/background.4.
+Deployed Hue1.0.6 ASI and CDT2.2.8 native/Core exactly match public ZIP payloads.
+CPU snapshots put game22-38%, external host3-6% on16 logical processors; game-side
+mod cost is not separable from game CPU. Slowdown cause remains unproven.
+
+Evidence: C:/DEV/CrimsonDesertTelemetry/artifacts/runtime-visibility-stop-20261104-173252-pid22684/.
+Read-only inspection only; no lamp/game/settings/deployment changes or fix.
+Next: owner restarts the game, then recheck after their report; do not poll.
+
+# Previous checkpoint — 2026-11-04, public1.0.6 published alongside CDT2.2.8
 
 Main and v1.0.6 pushed; stable Latest published12:02:57UTC. Tag source is
 7c796a84729cd307fb641e45fa93ef828dbe7eb5; only release/handover docs differ from
