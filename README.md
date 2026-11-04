@@ -335,9 +335,10 @@ automatically and reset sequence tracking. Additive schema 1.x fields are tolera
 
 ## Build and verify
 
-The private `1.0.5-openrgb.2` test profile is documented in [docs/OPENRGB.md](docs/OPENRGB.md).
-With CDT `2.2.8-openrgb.1`, it adds an OpenRGB tab for device selection and 3D room
-placement, alongside the existing Hue Start/Stop. Public 1.0.4 remains Hue-only.
+The private `1.0.5-openrgb.3` test profile is documented in [docs/OPENRGB.md](docs/OPENRGB.md).
+With CDT `2.2.8-openrgb.2`, it adds an OpenRGB tab for device selection, 3D room
+placement and independent light coverage/background balance alongside Hue Start/Stop.
+Public 1.0.4 remains Hue-only.
 
 Use a .NET 8 SDK (or newer with the .NET 8 x64 host pack) and Visual Studio 2022
 with Desktop development with C++ and CMake tools on Windows:

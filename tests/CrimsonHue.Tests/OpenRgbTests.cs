@@ -14,6 +14,46 @@ internal static class OpenRgbTests
 
     public static void Register(Action<string, Action> add, Action<string, Func<Task>> asyncTest)
     {
+        add("OpenRGB desk coverage retains a blue effect above devices without whitening or changing Hue settings", () =>
+        {
+            var at = DateTimeOffset.UtcNow;
+            var frame = new TelemetryFrame(1,1,at,at,0,default,
+                new(default,new(1,0,0),new(0,1,0),new(0,0,1)), [new(new(0,2,3),new(0,0,20))]);
+            var area = OpenRgbStreamingSession.Front with { Channels = [new(0,new(-.24,.79,-.21),[],"Desk keyboard")] };
+            var shared = LightingProfile.Defaults with { Brightness = 1, SmoothingMs = 0, AmbientSmoothingMs = 0 };
+            var sky = new AmbientFrame(1,at,0,0,1.3);
+            var old = new LightMapper().Map(frame,area,shared with { Brightness = .25 },.05,sky)[0].Rgb;
+            var next = new LightMapper().Map(frame,area,new OpenRgbLayout().Mapping(shared),.05,sky)[0].Rgb;
+            Assert(Math.Abs(old.X-old.Z)<1e-12 && old.X>.08, "Old narrow desk mapping no longer reproduces neutral-only output");
+            Assert(next.Z>.2 && next.X<.06 && next.Y<.06 && next.Z<=.25);
+            Assert(shared.SourceDiscRadiusDegrees==30 && shared.AmbientOutput==.4 && shared.Brightness==1);
+        });
+        add("OpenRGB response defaults migrate old layouts, roundtrip, and reject invalid settings", () =>
+        {
+            var old = System.Text.Json.JsonSerializer.Deserialize<OpenRgbLayout>("{\"Brightness\":0.5,\"Devices\":[]}")!;
+            Assert(old.SourceRadiusDegrees==90 && old.BackgroundAmount==.25 && old.Brightness==.5);
+            var custom = old with { SourceRadiusDegrees=65, BackgroundAmount=.7 };
+            var restored=System.Text.Json.JsonSerializer.Deserialize<OpenRgbLayout>(System.Text.Json.JsonSerializer.Serialize(custom))!;
+            Assert(restored.SourceRadiusDegrees==65 && restored.BackgroundAmount==.7 && restored.Brightness==.5 && restored.Devices?.Count==0);
+            foreach(var invalid in new[] { custom with {SourceRadiusDegrees=0}, custom with {SourceRadiusDegrees=181},
+                custom with {BackgroundAmount=double.NaN}, custom with {BackgroundAmount=1.1} })
+            {
+                var rejected=false;try{invalid.Validate();}catch(CrimsonHueException){rejected=true;}Assert(rejected);
+            }
+        });
+        add("OpenRGB background balance is independent and neutral sources never acquire invented color", () =>
+        {
+            var at=DateTimeOffset.UtcNow; var shared=LightingProfile.Defaults with {SmoothingMs=0,AmbientSmoothingMs=0};
+            var frame=new TelemetryFrame(1,1,at,at,0,default,new(default,new(1,0,0),new(0,1,0),new(0,0,1)),[]);
+            var sky=new AmbientFrame(1,at,0,0,1.3);
+            var quiet=new LightMapper();var full=new LightMapper();
+            quiet.Map(frame,OpenRgbStreamingSession.Front,new OpenRgbLayout().Mapping(shared),.05,sky);
+            full.Map(frame,OpenRgbStreamingSession.Front,new OpenRgbLayout(BackgroundAmount:1).Mapping(shared),.05,sky);
+            Assert(Math.Abs(quiet.AmbientFill*4-full.AmbientFill)<1e-12);
+            var local = new LightMapper().Map(frame with {Lights=[new(new(0,0,3),new(1,1,1))]},
+                OpenRgbStreamingSession.Front,new OpenRgbLayout(BackgroundAmount:0).Mapping(shared),.05,sky)[0].Rgb;
+            Assert(local.X==local.Y && local.Y==local.Z && local.X>0);
+        });
         add("OpenRGB placements survive settings roundtrip and SDK IDs changing", () =>
         {
             var device = OpenRgbProtocol.ParseDevice(42, new Device().Bytes());

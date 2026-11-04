@@ -78,6 +78,8 @@ public partial class MainWindow
         if (key == "enabled") CommitOpenRgb(config with { Enabled = command.GetProperty("value").GetBoolean() });
         else if (key == "port") CommitOpenRgb(config with { Port = command.GetProperty("value").GetInt32() });
         else if (key == "brightness") CommitOpenRgb(config with { Brightness = command.GetProperty("value").GetDouble() });
+        else if (key == "sourceRadius") CommitOpenRgb(config with { SourceRadiusDegrees = command.GetProperty("value").GetDouble() });
+        else if (key == "background") CommitOpenRgb(config with { BackgroundAmount = command.GetProperty("value").GetDouble() });
         else if (key is "position" or "deviceEnabled")
         {
             var id = command.GetProperty("device").GetString();
@@ -102,12 +104,13 @@ public partial class MainWindow
             {
                 var area = new EntertainmentArea("openrgb-preview", "OpenRGB preview", false,
                     entries.Select((p, i) => new EntertainmentChannel((byte)i, p.Position, [], p.Name)).ToArray());
-                var mapped = openRgbPreviewMapper.Map(frame, area, mapping with { Brightness = Math.Min(config.Brightness, mapping.Brightness) }, .1,
+                var mapped = openRgbPreviewMapper.Map(frame, area, config.Mapping(mapping), .1,
                     smoke || DemoCheck.IsChecked == true ? null : ambient.Read(out _));
                 colors = entries.Select((p, i) => (p.DeviceKey, mapped[i].Rgb)).ToDictionary(p => p.DeviceKey, p => p.Rgb);
             }
         }
         return new { available = OpenRgbPreviewBuild || smoke, config.Enabled, config.Port, config.Brightness,
+            config.SourceRadiusDegrees, config.BackgroundAmount,
             status = openRgbDiscoveryStatus, busy = openRgbDiscoveryTask?.IsCompleted == false,
             devices = (config.Devices ?? []).Select(p => {
                 var device = openRgbInventory.FirstOrDefault(d => d.Identity == p.DeviceKey);

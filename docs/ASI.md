@@ -1,6 +1,12 @@
 # CrimsonHue 1.0.4 — mixer hosted by CDT
 
-Private test **1.0.5-openrgb.2** adds a separate OpenRGB tab, device selection and
+Private test **1.0.5-openrgb.3** with **CDT2.2.8-openrgb.2** adds independent OpenRGB
+Light coverage (90deg default) and Background light (25% of shared fill default).
+These keep normal desk placement from losing effects to the narrow Hue footprint
+and neutral fill. Existing positions/output limits are retained. The shared Hue
+profile is unchanged. The HUD shows true calculated RGB without a grey pedestal.
+
+Previous test **1.0.5-openrgb.2** added a separate OpenRGB tab, device selection and
 an interactive 3D room. Pair it with **CDT2.2.8-openrgb.1** for the updated HUD.
 Drag a device across the room, adjust Height for vertical position and right-drag
 to orbit the view. Connection/output limit contains port and brightness. Placements

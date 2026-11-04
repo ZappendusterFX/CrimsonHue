@@ -76,7 +76,7 @@ public sealed class OpenRgbStreamingSession(int port = 6742)
                         {
                             staleSince = null;
                             var mapping = settings();
-                            colors = mapper.Map(frame, OpenRgbLayout.Area(placed), mapping with { Brightness = Math.Min(current.Brightness, mapping.Brightness) },
+                            colors = mapper.Map(frame, OpenRgbLayout.Area(placed), current.Mapping(mapping),
                                 previous == 0 ? .05 : now - previous, ambient.Read(out _));
                         }
                         var deviceColors = placed.Select((t, i) => (t.Device.Identity, colors[i].Rgb)).ToDictionary(p => p.Identity, p => p.Rgb);

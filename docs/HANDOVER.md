@@ -1,4 +1,27 @@
-# Current checkpoint — 2026-11-04, OpenRGB device selection and 3D HUD
+# Current checkpoint — 2026-11-04, OpenRGB color-response correction
+
+Owner reports grey peripheral colors and little lightning response while Hue
+turns blue. The existing passive artifacts/hue-live-state/ CLRMD reader now includes
+openRgb/openRgbRoom; it confirms actual calculated near-grey RGB around24/24/23,
+not just a perceived SDK/color-order issue. Current device Z values around-.2 are
+normal desk placement relative to the viewer; the earlier "below seat" wording
+was corrected. Do not ask the owner to relocate correctly placed desk devices.
+Actual controls differ from old settings.json: use the live immutable UI snapshot.
+
+Old 30s lightning replay with current settings/positions shows narrow30deg coverage
+misses local effects and neutral Ambient washes out color. OpenRGB now gets its
+own SourceRadiusDegrees90 and BackgroundAmount.25 (fraction of common fill), with
+two HUD controls and persisted/migrated defaults. Its preview and physical mapper
+use the same policy. Hue settings, raw RGB, smoothing/lantern and positions remain
+unchanged. HUD nodes no longer add grey to the color; outlines keep black visible.
+161/161 Core tests pass; new ABI checks are included in the package smoke.
+See OPENRGB.md and artifacts/openrgb-color-20261104/ for evidence and replay limits.
+Target paired packages: Hue1.0.5-openrgb.3, CDT2.2.8-openrgb.2. No installation,
+live setting changes, repeated spell/AN-AUS tests, push or merge performed.
+Final package hashes/validation follow after build. Owner appearance acceptance
+of this color correction remains pending installation of the new test package.
+
+# Previous checkpoint — 2026-11-04, OpenRGB device selection and 3D HUD
 
 Owner requests a separate OpenRGB HUD section to place available devices in a
 3D room after accepting the first integrated ZIP. Implemented new OpenRGB tab,

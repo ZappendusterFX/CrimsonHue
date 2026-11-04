@@ -16,7 +16,7 @@ if ($Version -match '-openrgb\.') {
 # CrimsonHue $Version — private OpenRGB test
 
 This test build adds OpenRGB device selection and a 3D room alongside Hue.
-Use the paired CDT 2.2.8-openrgb.1 test ZIP for the new HUD tab, plus the existing
+Use the paired CDT 2.2.8-openrgb.2 test ZIP for the HUD light-response controls, plus the existing
 .NET 8 Desktop Runtime x64. The native menu protocol is unchanged.
 
 1. Close the game and install this ZIP through DMM yourself, replacing the old
@@ -27,11 +27,16 @@ Use the paired CDT 2.2.8-openrgb.1 test ZIP for the new HUD tab, plus the existi
    Read devices, select the ones to include and place them around your seat in
    the 3D room. Drag to move across the room, adjust Height to move up/down,
    and right-drag to rotate the view. Settings save locally, including unavailable
-   devices' positions. Connection and output limit includes SDK port and brightness.
+   devices' positions. Connection and output limit includes port and brightness.
+   Light coverage and Background light are separate OpenRGB controls in the tab.
+   Normal desk height is a valid placement.
 4. Click Start lighting sync to run Hue and OpenRGB together. Your existing Hue
    bridge/area setup is used. Loading the ASI alone sends nothing. Devices start
    in front of the monitor; their saved individual positions determine output.
-   The OpenRGB output limit defaults to 25% and is adjustable. Existing lighting,
+   The OpenRGB output limit defaults to 25% and is adjustable. Its own source
+   coverage defaults to 90 degrees and Background light to 25% of the common
+   background setting. This keeps desk-device colors from being excluded or
+   washed out by the shared narrow Hue footprint and neutral room fill. Shared lighting,
    smoothing and own-lantern controls also affect OpenRGB. A scene
    with no mapped front contribution and unavailable Ambient can correctly be dark.
 5. The shared sync status includes OpenRGB's device count or connection error.

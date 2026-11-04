@@ -29,6 +29,7 @@ internal static class OpenRgbDiagnostic
             var manual = saved.Mapping ?? LightingProfile.Defaults;
             var preferences = saved.Lighting ?? (saved.Mapping is null ? new() : LightingProfile.FromLegacy(manual));
             var mapping = LightingProfile.Resolve(preferences, manual);
+            mapping = (saved.OpenRgb ?? new OpenRgbLayout()).Mapping(mapping);
             mapping = mapping with { Brightness = Math.Min(.25, mapping.Brightness) };
             var endpoint = TelemetryClient.ValidateEndpoint(saved.TelemetryAddress);
             var telemetry = new TelemetryState(); var ambient = new AmbientState();

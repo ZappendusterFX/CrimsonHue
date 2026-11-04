@@ -81,12 +81,21 @@ int wmain(int argc, wchar_t** argv) {
         state = Await([&](const Json& v) { return v.at("openRgbRoom").at("devices")[0].at("position").at("z") == .75; },
             "OpenRGB placement command did not update 3D position");
         const auto rgbPlaced = state.at("openRgbRoom");
+        Require(rgbPlaced.at("sourceRadiusDegrees")==90 && rgbPlaced.at("backgroundAmount")==.25,
+            "Independent OpenRGB response defaults are missing");
+        Command({{"action","openRgb"},{"key","sourceRadius"},{"value",65}});
+        Command({{"action","openRgb"},{"key","background"},{"value",.4}});
+        state = Await([&](const Json& v) { return v.at("openRgbRoom").at("sourceRadiusDegrees")==65 &&
+            v.at("openRgbRoom").at("backgroundAmount")==.4; }, "OpenRGB light response controls failed");
+        Command({{"action","openRgb"},{"key","sourceRadius"},{"value",181}});
+        Command({{"action","openRgb"},{"key","background"},{"value",1.1}});
         Command({{"action","openRgb"},{"key","position"},{"device",rgbKey}, {"position",{{"x",2},{"y",0},{"z",0}}}});
         Command({{"action","openRgb"},{"key","port"},{"value",70000}});
         Command({{"action","openRgbDiscover"}});
         Command({{"action","openRgb"},{"key","brightness"},{"value",.3}});
         state = Await([&](const Json& v) { return v.at("openRgbRoom").at("brightness") == .3; }, "OpenRGB configuration barrier failed");
-        Require(state.at("openRgbRoom").at("port") == rgbPlaced.at("port") &&
+        Require(state.at("openRgbRoom").at("sourceRadiusDegrees")==65 && state.at("openRgbRoom").at("backgroundAmount")==.4 &&
+            state.at("openRgbRoom").at("port") == rgbPlaced.at("port") &&
             state.at("openRgbRoom").at("devices")[0].at("position") == rgbPlaced.at("devices")[0].at("position") &&
             !state.value("openRgbPreview",true) && state.at("openRgb").is_null(), "OpenRGB validation or Demo output isolation failed");
         // Exercise the real native-to-managed command ABI. Profile selection

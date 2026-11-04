@@ -1,5 +1,45 @@
 # OpenRGB development test
 
+## Color-response correction — Hue 1.0.5-openrgb.3 + CDT 2.2.8-openrgb.2
+
+Owner reports mostly grey OpenRGB output, including little response to lightning
+while Hue visibly turns blue. Their devices are normally placed on the desk in
+front of them; slightly negative virtual Z is relative to the viewer reference,
+not evidence of placement below a chair or an incorrect real-world arrangement.
+
+The existing passive CLRMD tool was reused to read only AsiEntry.state, without
+suspension, injected calls or memory writes. Its allowed neutral fields now include
+openRgb/openRgbRoom. Actual running state (PID30512) has four OpenRGB devices,
+25% output, shared Calm500ms, 30deg source radius, background40%, and saturation100%.
+Neutral Ambient fill is around0.111 linear. Calculated device RGB is around
+0.092/0.092/0.092 (about24/24/23 bytes), so the grey is present before SDK encoding.
+Saved settings on disk are old and must not be substituted for these live settings.
+
+Offline replay uses the preserved 30-second CDT2.2.6 lightning recording with the
+current actual UI settings/desk positions. This does not capture today's reported
+flash or establish new CDT visibility acceptance. Increasing coverage to90deg
+and reducing the OpenRGB background share improves blue command contrast: in the
+two previously identified later bursts, B-max(R,G) changes from0.0339 to0.0734 for
+the GPU and0.0533 to0.0780 for the mouse at the same25% cap. Other devices improve
+too. This is encoded output contrast, not radiometric energy or optical delivery.
+The exact new Mapping() production policy matches the offline candidate series.
+Evidence: `artifacts/openrgb-color-20261104/` (live-state-1.json, summary.json,
+production.json, observed-layout-backup.json). The old recording's limits remain.
+
+OpenRGB now has independent **Light coverage** (default90deg) and **Background
+light** (default25% of the common background amount). They are saved with its
+layout; positions and existing output limits are preserved. The shared source
+RGB, Hue settings/mapper, smoothing and lantern handling remain unchanged. No
+artificial saturation or RGB recoloring is added. Neutral sources remain neutral.
+The 3D dot also shows the actual calculated RGB, with its outline providing
+visibility instead of adding a grey pedestal. The viewer marker now says YOU.
+
+161/161 Core tests pass, including the normal desk-height/blue-light case,
+old-settings migration, independent background balance and neutral-color retention.
+The new controls are checked through the native controller ABI. New paired test
+packages will be validated and handed off for owner installation and appearance
+acceptance; the assistant does not install or change current game settings.
+
 ## Current HUD test — Hue 1.0.5-openrgb.2 + CDT 2.2.8-openrgb.1
 
 The owner requests a separate OpenRGB HUD section with devices placed in 3D.
