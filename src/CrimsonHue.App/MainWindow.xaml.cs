@@ -22,6 +22,10 @@ public partial class MainWindow : Window
     private readonly SettingsStore store = new();
     private readonly TelemetryState telemetry = new();
     private readonly AmbientState ambient = new();
+    private readonly ActivityState activity = new();
+    private readonly MenuLightingPolicy previewMenu = new();
+    private MenuLightingSettings menuLighting = new();
+    private bool previewMenuActive;
     private readonly LightMapper previewMapper = new();
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private readonly Stopwatch uptime = Stopwatch.StartNew();
@@ -29,6 +33,7 @@ public partial class MainWindow : Window
     private CancellationTokenSource? telemetryCancel;
     private Task? telemetryTask;
     private Task? ambientTask;
+    private Task? activityTask;
     private CancellationTokenSource? streamCancel;
     private Task? streamTask;
     private StreamingSession? session;
@@ -67,6 +72,11 @@ public partial class MainWindow : Window
                 TelemetryAddress.Text = saved.TelemetryAddress;
                 selectedAreaId = saved.AreaId;
                 LoadOpenRgbSettings(saved.OpenRgb);
+                if (saved.MenuLighting is { } savedMenu)
+                {
+                    try { savedMenu.Validate(); menuLighting = savedMenu; }
+                    catch (CrimsonHueException) { /* Keep bridge/layout when one optional setting is invalid. */ }
+                }
                 // A malformed shortcut must not discard the owner's existing bridge/layout.
                 if (saved.Shortcut is { } savedShortcut && OverlayShortcut.IsAllowedKey(savedShortcut.Key)) shortcut = savedShortcut;
                 var m = saved.Mapping ?? LightingProfile.Defaults; LightMapper.Validate(m);
@@ -93,6 +103,7 @@ public partial class MainWindow : Window
         }
         mapping = LightingProfile.Resolve(lighting, manualMapping);
         InitializeOpenRgb();
+        InitializeMenuLighting();
         StreamStatus.Text = WithOpenRgbStatus(StreamStatus.Text);
         initialized = true;
         SyncTuningValues();
@@ -210,11 +221,13 @@ public partial class MainWindow : Window
             await telemetryCancel.CancelAsync();
             if (telemetryTask != null) await telemetryTask;
             if (ambientTask != null) await ambientTask;
+            if (activityTask != null) await activityTask;
             telemetryCancel.Dispose();
         }
         telemetryCancel = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
         telemetryTask = new TelemetryClient(telemetry).RunAsync(uri, telemetryCancel.Token);
         ambientTask = new AmbientClient(ambient).RunAsync(AmbientClient.FromTelemetryEndpoint(uri), telemetryCancel.Token);
+        activityTask = new ActivityClient(activity).RunAsync(ActivityClient.FromTelemetryEndpoint(uri), telemetryCancel.Token);
     }
     private async void StartClick(object sender, RoutedEventArgs e)
     {
@@ -258,9 +271,22 @@ public partial class MainWindow : Window
         CaptureInfo.Text = frame == null ? "Requires fresh CDT light capture. For all-around lighting, enable upstream lights and source visibility." :
             $"{frame.Feed} · {frame.Lights.Count}/{frame.SourceCount} usable lights · {frame.Lights.Count(l => (l.Position - frame.Player).Length < mapping.FadeEnd)} in range · capture {frame.CaptureSequence} · age {Math.Max(0, (DateTimeOffset.UtcNow - frame.LightCapturedAt).TotalMilliseconds):F0} ms";
         var demo = DemoCheck.IsChecked == true;
-        AmbientStatus.Text = demo ? "Demo preview · ambient not sampled" : ambientMessage;
+        var menuDecision = previewMenu.Evaluate(demo ? null : activity.Read(out _), frame, ambientFrame,
+            demo ? menuLighting with { Enabled = false } : menuLighting);
+        previewMenuActive = !demo && menuDecision.UseMenuLight;
+        if (!demo)
+        {
+            frame = menuDecision.Frame; ambientFrame = menuDecision.Ambient;
+            if (menuDecision.ResetMapper) previewMapper.Reset();
+            if (previewMenuActive)
+            {
+                TelemetryStatus.Text = "Menu lighting";
+                CaptureInfo.Text = "Fixed room light while the game is paused. Waiting for fresh light data when play resumes.";
+            }
+        }
+        AmbientStatus.Text = demo ? "Demo preview · ambient not sampled" : previewMenuActive ? "Fixed menu color" : ambientMessage;
         var outputDiagnostics = !demo && !identifying && session is { Sending: true } ? session.Diagnostics : null;
-        if (outputDiagnostics is { SentFrames: > 0 })
+        if (!previewMenuActive && outputDiagnostics is { SentFrames: > 0 })
             AmbientStatus.Text += !outputDiagnostics.LocalFresh ? " · sync paused: local data unavailable" :
                 outputDiagnostics.AmbientFill > 0 ? " · Ambient included in mix" : " · no Ambient contribution in mix";
         if (FreezeRawCheck.IsChecked != true) UpdateRawInput(frame, ambientFrame);
@@ -275,6 +301,7 @@ public partial class MainWindow : Window
             if (session != null) colors = session.Colors;
             else if (frame != null) colors = previewMapper.Map(frame, area, mapping, 0.1, demo ? null : ambientFrame, wallWash);
             else previewMapper.Reset();
+            if (session == null && !demo) colors = MenuLightingPolicy.Apply(menuDecision, colors, area, mapping, menuLighting);
         }
         Room.Area = area; Room.Colors = colors; Room.Frame = frame; Room.Demo = demo; Room.Settings = mapping;
         Room.WallWash = wallWash; Room.InvalidateVisual();
@@ -341,6 +368,7 @@ public partial class MainWindow : Window
             if (streamTask != null) await streamTask;
             if (telemetryTask != null) await telemetryTask;
             if (ambientTask != null) await ambientTask;
+            if (activityTask != null) await activityTask;
             if (openRgbDiscoveryTask != null) await openRgbDiscoveryTask;
             SaveSettings();
         }

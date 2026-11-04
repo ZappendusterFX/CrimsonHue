@@ -7,7 +7,7 @@ namespace CrimsonHue.Core;
 // Fill is linear strength before local mixing/gamma/brightness, not measured lamp output.
 public sealed record StreamOutputDiagnostics(long SentFrames = 0, long LocalClearedFrames = 0,
     long AmbientMissingFrames = 0, bool LocalFresh = false, bool AmbientFresh = false,
-    double AmbientLevel = 0, double AmbientFill = 0);
+    double AmbientLevel = 0, double AmbientFill = 0, bool MenuLightActive = false, long MenuLightFrames = 0);
 
 public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTransport>? transportFactory = null)
 {
@@ -19,7 +19,8 @@ public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTra
     public StreamOutputDiagnostics Diagnostics => Volatile.Read(ref diagnostics);
     public bool Sending { get; private set; }
     public async Task RunAsync(EntertainmentArea area, TelemetryState telemetry, Func<MappingSettings> settings, CancellationToken token,
-        AmbientState? ambient = null, Func<WallWashLayout>? wallWash = null)
+        AmbientState? ambient = null, Func<WallWashLayout>? wallWash = null,
+        ActivityState? activity = null, Func<MenuLightingSettings>? menuLighting = null)
     {
         if (area.Channels.Count == 0) throw new CrimsonHueException("Choose an Entertainment area with lights.");
         IEntertainmentTransport? transport = null;
@@ -27,6 +28,7 @@ public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTra
         string? owner = null;
         var started = false;
         var mapper = new LightMapper();
+        var menuPolicy = new MenuLightingPolicy();
         byte sequence = 0;
         var invalidSince = 0L;
         var lastCheck = 0L;
@@ -37,15 +39,16 @@ public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTra
         {
             while (!token.IsCancellationRequested)
             {
-                var frame = telemetry.Read(out _);
-                if (frame == null)
+                var decision = ReadDecision();
+                var frame = decision.Frame;
+                if (!decision.CanOutput)
                 {
                     colors = area.Channels.Select(c => new ChannelColor(c.Id, default)).ToArray();
                     mapper.Reset();
                     lastMap = 0;
                     if (transport != null)
                     {
-                        SendColors(false, ambient?.Read(out _));
+                        SendColors(false, ambient?.Read(out _), outputCleared: true);
                         if (invalidSince == 0) invalidSince = Stopwatch.GetTimestamp();
                         if (Stopwatch.GetElapsedTime(invalidSince).TotalSeconds >= 1)
                         {
@@ -98,25 +101,29 @@ public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTra
                     if (stateCheck == null && Stopwatch.GetElapsedTime(lastCheck).TotalSeconds >= 2)
                         stateCheck = bridge.GetAreaStateAsync(area.Id, checkCancel!.Token);
                     // Handshakes/HTTP checks can take seconds. Re-read freshness before every datagram.
-                    frame = telemetry.Read(out _);
-                    var ambientFrame = ambient?.Read(out _);
-                    if (frame == null)
+                    decision = ReadDecision();
+                    frame = decision.Frame;
+                    var ambientFrame = decision.Ambient;
+                    var mapping = settings();
+                    if (!decision.CanOutput)
                     {
                         colors = area.Channels.Select(c => new ChannelColor(c.Id, default)).ToArray();
                         mapper.Reset();
                         lastMap = 0;
                     }
-                    else
+                    else if (frame != null)
                     {
                         // Mapping/network work adds to the nominal 33 ms cadence. Use
                         // elapsed time so a configured transition keeps its duration.
                         var now = Stopwatch.GetTimestamp();
                         var delta = lastMap == 0 ? 1.0 / 30 : Stopwatch.GetElapsedTime(lastMap, now).TotalSeconds;
-                        colors = mapper.Map(frame, area, settings(), delta, ambientFrame, wallWash?.Invoke()).ToArray();
+                        colors = mapper.Map(frame, area, mapping, delta, ambientFrame, wallWash?.Invoke()).ToArray();
                         lastMap = now;
                     }
-                    SendColors(frame != null, ambientFrame);
-                    status = frame == null ? "Stale telemetry · output cleared" : "Streaming · up to 30 updates/s";
+                    colors = MenuLightingPolicy.Apply(decision, colors, area, mapping, menuLighting?.Invoke() ?? new()).ToArray();
+                    SendColors(frame != null, ambientFrame, !decision.CanOutput, decision.UseMenuLight);
+                    status = decision.UseMenuLight ? "Streaming · menu light" :
+                        frame == null ? "Stale telemetry · output cleared" : "Streaming · up to 30 updates/s";
                 }
                 await Task.Delay(33, token);
             }
@@ -128,14 +135,23 @@ public sealed class StreamingSession(BridgeClient bridge, Func<IEntertainmentTra
             colors = [];
         }
 
-        void SendColors(bool localFresh, AmbientFrame? ambientFrame)
+        MenuLightingDecision ReadDecision()
+        {
+            var decision = menuPolicy.Evaluate(activity?.Read(out _), telemetry.Read(out _), ambient?.Read(out _),
+                menuLighting?.Invoke() ?? new());
+            if (decision.ResetMapper) { mapper.Reset(); lastMap = 0; }
+            return decision;
+        }
+
+        void SendColors(bool localFresh, AmbientFrame? ambientFrame, bool outputCleared, bool menuLight = false)
         {
             transport!.Send(EntertainmentPacket.Build(area.Id, sequence++, colors));
             var previous = diagnostics;
             Volatile.Write(ref diagnostics, new(previous.SentFrames + 1,
-                previous.LocalClearedFrames + (localFresh ? 0 : 1),
+                previous.LocalClearedFrames + (outputCleared ? 1 : 0),
                 previous.AmbientMissingFrames + (ambientFrame == null ? 1 : 0),
-                localFresh, ambientFrame != null, ambientFrame?.WorkingLevel ?? 0, mapper.AmbientFill));
+                localFresh, ambientFrame != null, ambientFrame?.WorkingLevel ?? 0, mapper.AmbientFill,
+                menuLight, previous.MenuLightFrames + (menuLight ? 1 : 0)));
         }
 
         async Task ReleaseAsync()

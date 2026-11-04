@@ -71,6 +71,7 @@ LightingProfileTests.Register(Add);
 LocalTransitionTests.Register(Add);
 EntertainmentLayoutTests.Register(Add, Async);
 OpenRgbTests.Register(Add, Async);
+MenuLightingTests.Register(Add, Async);
 void Assert(bool condition, string message = "Assertion failed") { if (!condition) throw new Exception(message); }
 void Reject(Action action) { try { action(); } catch { return; } throw new Exception("Expected rejection"); }
 Add("Saved bridge pairing is reused only for the same address and certificate", () =>

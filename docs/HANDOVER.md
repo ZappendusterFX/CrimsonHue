@@ -1,20 +1,24 @@
-# Current checkpoint — 2026-11-04, tick stops in Skills; return control next
+# Current checkpoint — 2026-11-04, tick ABA confirmed; menu mode implementation
 
-Skills with preview 19:53:42-45 CET: 47 fresh observing/no-tick-500ms samples,
-counter 25475 remains constant while publisher timestamps/sequence advance;
-same PID 32972/start, zero errors. The observer is alive and the candidate tick
-has stopped. Evidence in CDT artifacts/simulation-ticks-skills-20261104-195342-032-fb797840242046b2bccea0cf341eed8e.json.
+Owner-confirmed gameplay -> Skills preview -> gameplay, PID32972/start unchanged:
+47 fresh samples per capture. Counter 22018->22320, then25475 constant while
+observer publications advance, then26707->27001. All error0; return capture
+19:55:26-29 CET proves immediate resumed progress. Evidence in CDT artifacts:
+simulation-ticks-gameplay-20261104-195526-618-02e6f6ae1df54f2ab18907f18ea8cd1a.json.
+This validates the selected tick signal for Skills; it does not yet prove the
+stutter fix, every menu or physical output. Owner confirms menus iff paused.
 
-Owner installed CDT 2.2.9-tick.1 and reports gameplay. New PID 32972; loaded ASI
-and five executable/config companions match package hashes (read-only check).
-Gameplay recording 19:52:07-10 CET: 47 fresh running samples, counter 22018 ->
-22320, no errors. Function-entry progress is not FPS or lighting sampling rate.
-Evidence in CDT artifacts/simulation-ticks-gameplay-20261104-195207-550-5ef478405e6342a695786d43e6fc143d.json.
-Next owner closes Skills, returns to gameplay and replies "Spiel"; FROM CDT run
-& ./scripts/Read-SimulationTickDiagnostic.ps1 -Label gameplay immediately.
-No more installation needed for this comparison; do not wait/poll for owner.
-No automatic menu light or capture pause has been implemented yet.
+Implementation in progress: independent20Hz tick observation; production
+Pause.Enabled=1 gates new native/managed light, sky/GI and physics acquisition;
+epochs discard obsolete results while in-flight GPU work drains. Neutral
+/v1/activity and /v1/activity/stream feed Hue's fixed configurable menu color.
+Fresh post-resume data and a bounded blend restore gameplay. Research remains
+unchanged; old activity endpoints unavailable retain existing safe behavior.
 
+Owner is freely playing. Do not capture labeled states or alter installations.
+Next finish automated/synthetic tests, commit, build fresh paired private menu
+packages and hand them to OWNER for installation with game closed. Never poll
+for that action. No deployed package changes or game test of menu mode yet.
 # Previous checkpoint — 2026-11-04, CDT tick diagnostic ready; owner handoff
 
 CDT source 3f810c0 produced validated private production-profile 2.2.9-tick.1,

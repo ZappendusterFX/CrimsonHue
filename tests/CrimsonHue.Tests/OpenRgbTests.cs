@@ -321,6 +321,28 @@ internal static class OpenRgbTests
             }
             finally { source.Cancel(); stop.Cancel(); await feed; await task; }
         });
+        asyncTest("OpenRGB starts paused, applies menu/master/device limits, holds and restores after activity loss", async () =>
+        {
+            await using var host = new Server(); var original = host.Model.Bytes();
+            var activity = new ActivityState();
+            using var source = new CancellationTokenSource(); using var stop = new CancellationTokenSource(10000);
+            var feed = MenuLightingTests.Publish(activity, source.Token);
+            var session = new OpenRgbStreamingSession(host.Port);
+            var task = session.RunAsync(new(), new(), () => new(Brightness: .4), stop.Token,
+                () => new(Port: host.Port, Brightness: .1), activity, () => new(Brightness: .5));
+            try
+            {
+                await Fixtures.WaitUntil(() => session.State.Sending && session.State.Status.Contains("menu light"));
+                Assert(Math.Abs(session.State.Rgb.X - .05) < 1e-9 && session.State.Rgb.Y > 0);
+                await Task.Delay(1100);
+                Assert(session.State.Sending && session.State.Status.Contains("menu light"));
+                source.Cancel(); await feed; activity.Reset("synthetic disconnect");
+                await Fixtures.WaitUntil(() => session.State.Sending && session.State.Rgb == default);
+                await Fixtures.WaitUntil(() => !session.State.Sending && host.Model.Bytes().SequenceEqual(original));
+            }
+            finally { source.Cancel(); stop.Cancel(); await feed; await task.WaitAsync(TimeSpan.FromSeconds(5)); }
+            Assert(host.Model.Bytes().SequenceEqual(original));
+        });
     }
 
     private static async Task ProduceFront(TelemetryState telemetry, CancellationToken token)

@@ -25,7 +25,7 @@ public partial class MainWindow
             AreaBox.SelectedItem = DemoData.WallWasherArea;
             bridgeConnected = true; bridgePhase = "connected";
             BridgeStatus.Text = "Connected - synthetic bridge (no network or lamp output)";
-            EnableSmokePreview(); VerifyDistanceControls(); VerifyPresetProfilePreservation(); VerifyOverlayCloseKeepsStream();
+            EnableSmokePreview(); VerifyDistanceControls(); VerifyPresetProfilePreservation(); VerifyOverlayCloseKeepsStream(); VerifyMenuControls();
         }
         else _ = GuardAsync(async () => { await ConnectTelemetryAsync(); if (bridge != null) await LoadAreasAsync(); }, bridgeSetup: true);
         PublishOverlay();
@@ -40,12 +40,14 @@ public partial class MainWindow
             ready = true, demo = DemoCheck.IsChecked == true, frozen = FreezeRawCheck.IsChecked == true,
             smoke, windowVisible = IsVisible,
             shortcut,
+            menuLighting = new { menuLighting.Enabled, menuLighting.Brightness, color = menuLighting.EffectiveColor,
+                menuLighting.ResumeBlendMs, active = previewMenuActive },
             lighting = new { lighting.Recommended, lighting.Brightness, lighting.LocalAmount, lighting.BackgroundAmount,
                 response = lighting.Response.ToString(), hasCustom = true, lighting.Revision,
                 mapping.PointLightStrength, mapping.SpotLightStrength, mapping.PlayerLanternStrength,
                 untypedSources = Room.Frame?.Lights.Count(l => l.Metadata?.Kind is not ("point" or "spot")) ?? 0,
                 lanternMatches = Room.Frame is { } lanternFrame ? PlayerLanternSignature.Find(lanternFrame).Count : 0 },
-            assessment = LightingDiagnostics.Assess(Room.Frame, ambient.Read(out _), mapping, Room.Colors,
+            assessment = previewMenuActive ? new LightingAssessment("menu", "Menu lighting", "Fixed room light while paused; fresh gameplay light resumes automatically.", false) : LightingDiagnostics.Assess(Room.Frame, ambient.Read(out _), mapping, Room.Colors,
                 session?.Sending == true, DemoCheck.IsChecked == true),
             telemetry = TelemetryStatus.Text, capture = CaptureInfo.Text, ambient = AmbientStatus.Text,
             stream = StreamStatus.Text, tuning = TuningStatus.Text, bridgeStatus = BridgeStatus.Text,
@@ -98,6 +100,7 @@ public partial class MainWindow
                 case "removeDisconnectedOpenRgbDevices": RemoveDisconnectedOpenRgbDevices(); break;
                 case "profile": SelectLightingProfile(command.GetProperty("recommended").GetBoolean()); break;
                 case "lighting": SetLightingPreference(Text("key"), command.GetProperty("value").GetDouble()); break;
+                case "menuLighting": SetMenuLighting(command); break;
                 case "set":
                     var parameter = parameters.First(p => p.Key == Text("key"));
                     tuningControls[parameter.Key].SetUserValue(command.GetProperty("value").GetDouble()); break;

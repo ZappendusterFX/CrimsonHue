@@ -13,6 +13,7 @@ public partial class MainWindow
     private IReadOnlyList<OpenRgbDevice> openRgbInventory = [];
     private bool openRgbInventoryKnown;
     private readonly LightMapper openRgbPreviewMapper = new();
+    private readonly MenuLightingPolicy openRgbPreviewMenu = new();
     private readonly DispatcherTimer openRgbSaveTimer = new() { Interval = TimeSpan.FromMilliseconds(600) };
     private Task? openRgbDiscoveryTask;
     private string openRgbDiscoveryStatus = "Read devices to connect to OpenRGB";
@@ -135,15 +136,23 @@ public partial class MainWindow
         var colors = openRgbSession?.State.DeviceColors;
         if (colors == null)
         {
-            var frame = smoke || DemoCheck.IsChecked == true ? DemoData.Frame(uptime.Elapsed.TotalSeconds) : telemetry.Read(out _);
+            var demo = smoke || DemoCheck.IsChecked == true;
+            var frame = demo ? DemoData.Frame(uptime.Elapsed.TotalSeconds) : telemetry.Read(out _);
+            var decision = openRgbPreviewMenu.Evaluate(demo ? null : activity.Read(out _), frame,
+                demo ? null : ambient.Read(out _), demo ? menuLighting with { Enabled = false } : menuLighting);
+            if (!demo) frame = decision.Frame;
+            if (decision.ResetMapper) openRgbPreviewMapper.Reset();
             var entries = (config.Devices ?? []).Where(p => p.Enabled).ToArray();
-            if (frame != null && entries.Length > 0)
+            if (entries.Length > 0)
             {
                 var area = new EntertainmentArea("openrgb-preview", "OpenRGB preview", false,
                     entries.Select((p, i) => new EntertainmentChannel((byte)i, p.Position, [], p.Name)).ToArray());
-                var mapped = openRgbPreviewMapper.Map(frame, area, config.Mapping(mapping), .1,
-                    smoke || DemoCheck.IsChecked == true ? null : ambient.Read(out _));
-                colors = entries.Select((p, i) => (p.DeviceKey, mapped[i].Rgb)).ToDictionary(p => p.DeviceKey, p => p.Rgb);
+                IReadOnlyList<ChannelColor> mapped = frame == null ? [] : openRgbPreviewMapper.Map(frame, area, config.Mapping(mapping), .1,
+                    demo ? null : decision.Ambient);
+                if (frame == null) openRgbPreviewMapper.Reset();
+                if (!demo) mapped = MenuLightingPolicy.Apply(decision, mapped, area, config.Mapping(mapping), menuLighting);
+                colors = entries.Select((p, i) => (p.DeviceKey, Rgb: mapped.FirstOrDefault(c => c.Id == i)?.Rgb ?? default))
+                    .ToDictionary(p => p.DeviceKey, p => p.Rgb);
             }
         }
         return new { available = true, config.Enabled, config.Port, config.Brightness,
@@ -167,11 +176,12 @@ public partial class MainWindow
         using var combined = CancellationTokenSource.CreateLinkedTokenSource(token);
         var rgb = openRgbSession;
         var rgbTask = rgb == null ? Task.CompletedTask :
-            rgb.RunAsync(telemetry, ambient, () => Volatile.Read(ref mapping), combined.Token, () => Volatile.Read(ref openRgbLayout));
+            rgb.RunAsync(telemetry, ambient, () => Volatile.Read(ref mapping), combined.Token, () => Volatile.Read(ref openRgbLayout),
+                activity, () => Volatile.Read(ref menuLighting));
         try
         {
             await hue.RunAsync(area, telemetry, () => Volatile.Read(ref mapping), token,
-                ambient, () => Volatile.Read(ref wallWash));
+                ambient, () => Volatile.Read(ref wallWash), activity, () => Volatile.Read(ref menuLighting));
         }
         finally
         {

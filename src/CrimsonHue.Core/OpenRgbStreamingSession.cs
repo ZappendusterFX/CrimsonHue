@@ -16,10 +16,12 @@ public sealed class OpenRgbStreamingSession(int port = 6742)
     public OpenRgbStreamState State => Volatile.Read(ref state);
 
     public async Task RunAsync(TelemetryState telemetry, AmbientState ambient,
-        Func<MappingSettings> settings, CancellationToken token, Func<OpenRgbLayout>? layout = null)
+        Func<MappingSettings> settings, CancellationToken token, Func<OpenRgbLayout>? layout = null,
+        ActivityState? activity = null, Func<MenuLightingSettings>? menuLighting = null)
     {
         if (Interlocked.Exchange(ref running, 1) != 0) throw new InvalidOperationException("OpenRGB session already used.");
         long frames = 0; var acquired = false;
+        var menuPolicy = new MenuLightingPolicy();
         try
         {
             while (!token.IsCancellationRequested)
@@ -29,7 +31,7 @@ public sealed class OpenRgbStreamingSession(int port = 6742)
                 if (!config.Enabled || config.Devices is { Count: 0 } || config.Devices?.All(d => !d.Enabled) == true)
                 { Set("OpenRGB · disabled or no devices selected"); await Task.Delay(100, token); continue; }
                 Set("OpenRGB · waiting for fresh CDT");
-                if (telemetry.Read(out _) == null) { await Task.Delay(50, token); continue; }
+                if (!ReadDecision().CanOutput) { await Task.Delay(50, token); continue; }
                 await using var client = new OpenRgbClient();
                 Set("OpenRGB · connecting to localhost:6742");
                 await client.ConnectAsync(config.Port, token);
@@ -37,7 +39,7 @@ public sealed class OpenRgbStreamingSession(int port = 6742)
                 var targets = config.Targets(devices);
                 if (targets.Count == 0) { Set("OpenRGB · selected devices not available"); await Task.Delay(1000, token); continue; }
                 // Inventory is read-only; recheck freshness before taking control.
-                if (telemetry.Read(out _) == null) continue;
+                if (!ReadDecision().CanOutput) continue;
                 await using var output = new OpenRgbOutputSession(client);
                 string? failure = null;
                 try
@@ -66,23 +68,27 @@ public sealed class OpenRgbStreamingSession(int port = 6742)
                         }
                         token.ThrowIfCancellationRequested();
                         var now = clock.Elapsed.TotalSeconds;
-                        var frame = telemetry.Read(out _);
+                        var decision = ReadDecision();
+                        var frame = decision.Frame;
+                        if (decision.ResetMapper) { mapper.Reset(); previous = 0; }
+                        var mapping = current.Mapping(settings());
                         IReadOnlyList<ChannelColor> colors;
-                        if (frame == null)
+                        if (!decision.CanOutput)
                         {
                             mapper.Reset(); colors = placed.Select((_, i) => new ChannelColor((byte)i, default)).ToArray(); staleSince ??= now;
                         }
                         else
                         {
                             staleSince = null;
-                            var mapping = settings();
-                            colors = mapper.Map(frame, OpenRgbLayout.Area(placed), current.Mapping(mapping),
-                                previous == 0 ? .05 : now - previous, ambient.Read(out _));
+                            colors = frame == null ? [] : mapper.Map(frame, OpenRgbLayout.Area(placed), mapping,
+                                previous == 0 ? .05 : now - previous, decision.Ambient);
                         }
+                        colors = MenuLightingPolicy.Apply(decision, colors, OpenRgbLayout.Area(placed), mapping,
+                            menuLighting?.Invoke() ?? new());
                         var deviceColors = placed.Select((t, i) => (t.Device.Identity, colors[i].Rgb)).ToDictionary(p => p.Identity, p => p.Rgb);
                         await output.WriteDevicesAsync(deviceColors);
                         previous = now; frames++;
-                        Volatile.Write(ref state, new(frame == null ? "OpenRGB · CDT stale, output cleared" :
+                        Volatile.Write(ref state, new(decision.UseMenuLight ? "OpenRGB · menu light" : frame == null ? "OpenRGB · CDT stale, output cleared" :
                             $"OpenRGB · {output.DeviceCount} devices · room layout", true, output.DeviceCount, frames, colors[0].Rgb, deviceColors));
                         if (staleSince is { } since && now - since >= 1) break;
                         await timer.WaitForNextTickAsync(token);
@@ -110,5 +116,7 @@ public sealed class OpenRgbStreamingSession(int port = 6742)
         { Set("OpenRGB stopped · " + ex.Message); }
 
         void Set(string message) => Volatile.Write(ref state, new(message, Frames: frames));
+        MenuLightingDecision ReadDecision() => menuPolicy.Evaluate(activity?.Read(out _), telemetry.Read(out _),
+            ambient.Read(out _), menuLighting?.Invoke() ?? new());
     }
 }

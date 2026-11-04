@@ -1,5 +1,14 @@
 # CrimsonHue
 
+**Private menu-mode preview: 1.0.7-menu.1 with CDT 2.2.9-menu.1.**
+When CDT reports a fresh simulation pause, lighting sync keeps a steady warm
+room light (20%, multiplied by overall brightness). Adjust **Menu lighting**
+in the Lighting tab. CDT suspends new light/ambient/visibility acquisition while
+paused. Fresh gameplay data fades back in over 500 ms after resume.
+This pair is built for owner testing; improvement of the Skills-menu stalls and
+physical lamp output still need acceptance. Install both packages with the game
+closed. Older CDT releases retain normal lighting but provide no menu mode.
+
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment and optional OpenRGB.
 

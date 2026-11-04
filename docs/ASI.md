@@ -1,5 +1,10 @@
 # CrimsonHue 1.0.6 — mixer hosted by CDT
 
+Menu-mode preview **Hue 1.0.7-menu.1 / CDT 2.2.9-menu.1** adds fixed menu
+lighting and independent CDT acquisition pause. Both private packages are needed
+for this test. Menu color/brightness live in the Lighting page; see USER-GUIDE.md.
+Synthetic validation is separate from owner installation and live acceptance.
+
 Optional OpenRGB output is included in the regular release.
 Enable it in its own HUD tab, read devices and place them in the 3D room.
 It runs alongside Hue with the common Start/Stop and still needs the existing

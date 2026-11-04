@@ -128,6 +128,7 @@ public partial class MainWindow
     private void ResetTabClick(object sender, RoutedEventArgs e)
     {
         var group = (MixerTabs.SelectedItem as TabItem)?.Tag as string;
+        if (group == "Menus") { Volatile.Write(ref menuLighting, new()); SyncMenuControls(); return; }
         var next = manualMapping;
         foreach (var p in parameters.Where(p => p.Group == group)) next = p.Set(next, p.Get(defaults));
         foreach (var p in switches.Where(p => p.Group == group)) next = p.Set(next, p.Get(defaults));

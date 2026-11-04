@@ -1,5 +1,21 @@
 # CrimsonHue 1.0.6 — setup and tuning guide
 
+## Private menu-mode preview
+
+Use Hue **1.0.7-menu.1** together with CDT **2.2.9-menu.1** for this test.
+While lighting sync is running, a detected game pause switches to steady room
+lighting. **Lighting → Menu lighting** adjusts its color and brightness; **Reset
+menu lighting** restores warm white at 20%. Overall brightness and the OpenRGB
+limit still apply. Save keeps these settings for the next launch.
+
+CDT detects stopped simulation progress after approximately 500 ms and suspends
+new light, ambient and visibility capture. The pause observer stays alive.
+After returning to play, fresh capture data blends back in over 500 ms. The
+bridge and OpenRGB connections remain open. Stop still restores prior states;
+Demo stays preview-only. Without fresh activity telemetry, ordinary stale-data
+safety applies instead of indefinitely holding a menu color. This preview has
+not yet been accepted in game or on real lamps.
+
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
 existing Hue Entertainment area. Its headless ASI uses CDT's in-game mixer panel. Its
 output is an artistic lighting estimate, not a sample of the displayed pixels
