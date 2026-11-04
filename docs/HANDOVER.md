@@ -1,10 +1,22 @@
-# Current checkpoint — 2026-11-04, Skills-state difference captured in CDT
+# Current checkpoint — 2026-11-04, first menu field rejected; stronger comparison prepared
+
+Gameplay return18:51:08CET leaves SkillTree+BA=1: NOT an open/closed flag. CDT
+observer v2 now captures a different shared getter's root130/131 plus128 and
+its actual owner/index/entry prerequisites, with tested code guards/bounds.
+SamePID16716 latest extended gameplay baseline18:58:47CET has SkillTree130=0,
+MainMenu130=1 (so no global OR), all six indexed entries present/stable. Evidence:
+CDT artifacts/menu-state-gameplay-20261104-185846-409-1f87c270dcbf4ce790435177aac5d5da.json.
+Next owner opens Skills again and replies "Skills"; FROM CDT immediately run
+& ./scripts/Read-MenuStateCandidates.ps1 -Label skills, compare v2 fields, then
+separate owner gameplay return. No installation/output change, no waiting/polling.
+No automatic menu mode or stutter fix yet; see CDT current HANDOVER for evidence.
+
+Earlier samples follow; the BA hypothesis below is superseded/rejected.
 
 Owner's "Skills" produced three stable samples18:49:17CET, samePID16716. Only
 captured change versus gameplay: SkillTree root+BA goes0 ->1, stable throughout.
-All other roots/fields/identities unchanged, no rejected reads. Correlation only;
-next owner returns to gameplay and replies "Spiel", then FROM CDT run
-& ./scripts/Read-MenuStateCandidates.ps1 -Label gameplay to verify return.
+All other roots/fields/identities unchanged, no rejected reads. Gameplay return
+subsequently disproved the BA candidate as recorded above.
 Evidence: CDT artifacts/menu-state-skills-20261104-184916-617-81e54805303046e19fd6270411c39e6a.json.
 No production/menu-output change or installation; no waiting/polling for owner.
 
