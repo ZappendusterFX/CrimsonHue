@@ -1,4 +1,24 @@
-# Current checkpoint — 2026-11-04, public 1.0.6 OpenRGB release ready for publication
+# Current checkpoint — 2026-11-04, public1.0.6 published alongside CDT2.2.8
+
+Main and v1.0.6 pushed; stable Latest published12:02:57UTC. Tag source is
+7c796a84729cd307fb641e45fa93ef828dbe7eb5; only release/handover docs differ from
+payload2d2a300. GitHub asset digest and an independent public download both match
+the immutable3047695-byte ZIP, SHA256
+38B736A6354AE4F768F9DE548A8B7AF9B23844FB3F90E17A172AFB650A5D8C48.
+API latest confirms v1.0.6 with draft=false/prerelease=false. ZIP and SHA256SUMS
+attached; repository About, README, setup docs and changelog updated for OpenRGB.
+URL: https://github.com/ZappendusterFX/CrimsonHue/releases/tag/v1.0.6.
+Receipt: artifacts/github-1.0.6-publication-20261104-130341/receipt.json.
+
+Companion CDT2.2.8 also published stable Latest; main/tag/release workflows all
+passed and public download matched its local SHA. It ships diagnosticblank and
+conditional recovery; currentbuild live acceptance belongs to owner-installed
+recovery.2. Hue161tests, exact controller/package and pairedD3D12OpenRGB checks
+passed. No new physical-output acceptance or assistant installation claimed.
+PriorZIPs remain preserved. Nexus untouched. Next: hand off both release URLs;
+no further owner action, test or installation is required to finish publication.
+
+# Previous checkpoint — 2026-11-04, public 1.0.6 OpenRGB release ready for publication
 
 Owner requests GitHub release/push and updated descriptions after CDT's in-game
 recovery passed. Release 1.0.6 preserves the immutable 1.0.5 candidate: that older
