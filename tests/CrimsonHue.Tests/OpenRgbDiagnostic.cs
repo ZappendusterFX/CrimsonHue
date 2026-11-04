@@ -22,7 +22,19 @@ internal static class OpenRgbDiagnostic
             Console.WriteLine($"OpenRGB protocol {client.ServerVersion}; negotiated {client.ProtocolVersion}; {devices.Count} devices");
             foreach (var d in devices)
                 Console.WriteLine($"  {d.Name}: {d.Colors.Length} logical slots, {d.PreviewLeds().Length} candidate LEDs; mode {d.Modes.ElementAtOrDefault(d.ActiveMode)?.Name ?? "per-zone"}; Direct {d.DirectMode >= 0 && !d.HasZoneModes}");
-            if (!physical) return 0;
+            if (!physical)
+            {
+                if (reportPath != null)
+                {
+                    // SDK cache evidence only: no mode/color writes and no physical measurement.
+                    var report = new { At = DateTimeOffset.UtcNow, Kind = "Read-only SDK state; not optical readback",
+                        client.ServerVersion, client.ProtocolVersion, Devices = devices.Select(d => Inspect(d, client.ProtocolVersion)) };
+                    await using var file = new FileStream(Path.GetFullPath(reportPath), FileMode.CreateNew, FileAccess.Write);
+                    await JsonSerializer.SerializeAsync(file, report, new JsonSerializerOptions { WriteIndented = true }, cancel.Token);
+                    Console.WriteLine("Read-only SDK state report: " + Path.GetFullPath(reportPath));
+                }
+                return 0;
+            }
             if (identify) return await IdentifyAsync(client, devices, cancel.Token, reportPath);
 
             var saved = new SettingsStore().LoadSettings();
@@ -86,6 +98,28 @@ internal static class OpenRgbDiagnostic
             return failure is null && output.Restoration.All(r => r.Restored) ? 0 : 2;
         }
         finally { Console.CancelKeyPress -= handler; }
+    }
+
+    private static object Inspect(OpenRgbDevice device, uint protocol)
+    {
+        var mode = device.Modes.ElementAtOrDefault(device.ActiveMode);
+        object? brightness = null;
+        if (mode != null)
+        {
+            using var reader = new BinaryReader(new MemoryStream(mode.WireData, false));
+            reader.ReadBytes(reader.ReadUInt16()); // Mode name, not hardware identity.
+            if (protocol < 6) reader.ReadUInt32();
+            reader.ReadUInt32(); // Flags; mode data was already bounded/validated by the SDK parser.
+            var fields = Enumerable.Range(0, 9).Select(_ => reader.ReadUInt32()).ToArray();
+            brightness = new { Minimum = fields[2], Maximum = fields[3], Current = fields[7] };
+        }
+        var controlled = device.PreviewLeds();
+        string Hex(uint c) => $"#{(c & 255):X2}{((c >> 8) & 255):X2}{((c >> 16) & 255):X2}";
+        return new { device.Name, device.Identity, Mode = mode?.Name, ModeFlags = mode?.Flags,
+            ModeBrightness = brightness, ControlledLeds = controlled.Length, TotalLeds = device.Colors.Length,
+            ControlledColors = controlled.Select(i => device.Colors[i]).GroupBy(c => c)
+                .Select(g => new { Hex = Hex(g.Key), Count = g.Count() }),
+            Zones = device.Zones.Select(z => new { z.Name, z.LedCount }) };
     }
 
     // Explicit physical identification, separate from both live CDT mapping and

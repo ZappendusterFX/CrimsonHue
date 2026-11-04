@@ -1,4 +1,32 @@
-# Current checkpoint — 2026-11-04, live OpenRGB menu-color comparison
+# Current checkpoint — 2026-11-04, pure magenta confirmed through OpenRGB cache
+
+Owner set pure magenta and still reports pink on keyboard/mouse. Passive UI probe
+20:38:25: menu active, RGB1/0/1, menu/master/OpenRGB limit all100%; all four outgoing
+device colors1/0/1. Evidence artifacts/menu-magenta-check-20261104-203825.jsonl.
+Read-only SDK6 inventory20:40:33 independently confirms Direct mode and #FF00FF
+on all134 selected keyboard LEDs, both mouse LEDs, GPU3 and DualSense Lightbar1.
+Razer mode brightness current255/max255; GPU5/5. Mouse mode declares no brightness
+range (0/0), not evidence of zero output. These are SERVER CACHE values, not
+hardware/optical feedback. No RGB scaling/green addition in CrimsonHue at this point.
+Evidence artifacts/openrgb-magenta-sdk-20261104-204027.json.
+
+Existing --openrgb-inspect previously printed no colors and ignored --report.
+Diagnostic now writes an exclusive CreateNew credential-free report with selected
+LED color histogram, mode/brightness fields and zones; requests only0/1/40, no
+mode/color writes. Compiled and exercised against live SDK with current sync intact.
+No runtime mod or package change. No external app stopped or output/setting changed.
+OpenRGB.json has no gamma/saturation/white-balance entries. Logitech/Razer background
+process presence alone proves no interference. Other OpenRGB source on disk is NOT
+verified to match installed version, so do not assert a specific driver defect.
+
+Next optical comparison requires owner: stop CrimsonHue sync, set #FF00FF directly
+in OpenRGB and compare on the same keyboard/mouse. If appearance is unchanged the
+CrimsonHue mapping path is excluded for this color; hardware/driver rendering or
+per-device color balancing remains to investigate. Do not promise increasing
+saturation will fix mathematically full-saturation magenta. End turn for owner
+input rather than wait/poll or change physical output automatically.
+
+# Previous checkpoint — 2026-11-04, live OpenRGB menu-color comparison
 
 Owner now uses adjustable HUD and reports saturated pink selected but pale pink
 on keyboard/mouse; asks how to adjust directly. PID34860 start20:31:15. One
