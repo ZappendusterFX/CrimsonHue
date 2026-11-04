@@ -1,4 +1,35 @@
-# Current checkpoint — 2026-11-04, companion CDT cold recovery passed in game
+# Current checkpoint — 2026-11-04, public 1.0.6 OpenRGB release ready for publication
+
+Owner requests GitHub release/push and updated descriptions after CDT's in-game
+recovery passed. Release 1.0.6 preserves the immutable 1.0.5 candidate: that older
+ZIP contains private-candidate setup instructions. Product logic is unchanged
+from main1.0.5; version metadata and public README/ASI/setup guides now describe
+optional OpenRGB alongside Hue, per-device 3D placement and independent coverage/
+background controls. Current companion is CDT2.2.8. Conditional update recovery
+belongs to CDT, with changed-layout limits; Hue still accepts neutral API data.
+New public notes: docs/releases/v1.0.6.md. Historical Nexus copy remains labelled
+historical; Nexus publication is the owner's responsibility.
+
+Payload commit2d2a30040bb57935ed7dc9c72bd3061e2ad41820. Maintained publisher created
+dist/CrimsonHue-1.0.6-asi-win-x64.zip,3047695bytes,SHA256
+38B736A6354AE4F768F9DE548A8B7AF9B23844FB3F90E17A172AFB650A5D8C48.
+Fresh Core tests161/161 pass; exact packaged hidden-controller smoke and7-file
+folder/ZIP validators pass. Actual final Hue ASI with CDT's public26423880
+ResearchOFF/ALLOW_RESEARCHOFF renderer passes --openrgb smoke,748802pixels;
+artifacts/release-1.0.6-openrgb.png visually inspected. No physical output.
+Logs: artifacts/release-1.0.6-core-tests.txt, release-1.0.6-package.txt and
+release-1.0.6-overlay.txt. Receipt artifacts/release-1.0.6-receipt.json;
+GitHub body artifacts/release-1.0.6-github-body.md; checksums in dist/.
+
+No installation/game-input or device changes. Earlier owner hardware/parallel
+trial acceptance and color-policy replay are retained, not promoted into a new
+optical test of this exact archive. The owner-installed CDT recovery acceptance
+below is independent; Hue ASI was absent from that session. Stable1.0.4 and all
+older ZIPs remain preserved. No remote push/tag/release performed by this worker.
+Next: root verifies paired release metadata, pushes/tag/releases on GitHub and
+records URLs. Installation remains exclusively the owner's responsibility.
+
+# Previous checkpoint — 2026-11-04, companion CDT cold recovery passed in game
 
 Owner installed CDT recovery.2 and reported a very fast passed check. Read-only
 verification of PID29952 confirms exact package hashes, compatibility=recovered,
