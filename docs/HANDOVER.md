@@ -1,4 +1,31 @@
-# Current checkpoint — 2026-11-04, skill-window recording captured repeated freshness clears
+# Current checkpoint — 2026-11-04, owner isolates skill-menu fault to OpenRGB output
+
+Owner clarifies that the skill menu itself is nearly unusable, stutters and emits
+repeated menu sounds; light freshness clears describe a symptom, not the complete
+problem. Owner then reports everything normal with OpenRGB off. Passive read at
+18:04:17 CET, game PID 34956, confirms Hue still Streaming, OpenRGB enabled=false /
+sending=false, no SDK connection active, fresh CDT Live 14/127. OpenRGB.exe remains
+running, so this specifically disables CrimsonHue's output path. Evidence:
+artifacts/openrgb-menu-off-20261104-180417/probe.jsonl.
+
+After Read devices, inventory has five present devices; the duplicate Razer entry
+is one present keyboard plus an absent saved identity. Targets() selects only
+current inventory identities, so the absent placement is not a second output.
+Owner screenshot shows skill-preview clips; they could contribute game-rendered
+lights if captured, but no proof joins the preview to ManyLights. CrimsonHue does
+not sample screen pixels. The recording's strongest transitions are confirmed
+bridge-stale/black/resume, independent of any preview-color hypothesis.
+
+Code review: SDK I/O is asynchronous on the lighting task, never a deliberate
+render-thread wait. Current flow sends changed colors at up to 20 Hz plus periodic
+ownership reads. Exact installed OpenRGB source commit 81bbe18a shows DualSense
+SetColors emits a whole HID output report, even though Hue edits only the Lightbar
+entry; device/driver contention is a candidate, not a proven phantom-input cause.
+No code/output/settings/deployment changes. First focused owner isolation: keep
+other device selections, deselect Sony DualSense, enable OpenRGB and try skill menu.
+Stop at this handoff; no assistant reenabling, game input or polling for the test.
+
+# Previous checkpoint — 2026-11-04, skill-window recording captured repeated freshness clears
 
 On owner's go, prepared wrapper recorded the requested 30 seconds, 17:52:55-
 17:53:25 CET, game PID 34956. All jobs completed, no job errors: 1,788 raw and

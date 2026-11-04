@@ -1,5 +1,17 @@
 # OpenRGB companion output
 
+## Open skill-menu regression — 2026-11-04
+
+Owner reports severe game skill-menu stalls and repeated menu sounds during
+OpenRGB sync; disabling CrimsonHue's OpenRGB output restores normal behavior while
+Hue continues. Passive live state confirms this output-off condition. The 30s
+trace also contains local capture gaps and black/resume transitions, but those
+do not explain the menu's underlying stall. Cause and affected device remain open.
+The duplicate keyboard in the list is an absent saved identity, not a second
+current output target. Next owner isolation excludes only Sony DualSense while
+retaining other devices; no firmware/driver/package changes or automatic reenabling.
+See HANDOVER and artifacts/openrgb-menu-off-20261104-180417/ for current evidence.
+
 ## Public release 1.0.6 — 2026-11-04
 
 OpenRGB now ships in the regular CrimsonHue release alongside Hue Entertainment.
