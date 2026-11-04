@@ -1,4 +1,17 @@
-# Current checkpoint — 2026-11-04, second menu field rejected; UI control comparison next
+# Current checkpoint — 2026-11-04, menu control transition found; Inventory comparison next
+
+Owner-confirmed gameplay 19:17:12 CET, same PID 16716, yields three stable v3
+samples: SkillTree and MainMenu control byte 27D both clear 03 -> 00 compared
+with Skills 19:07:51. Other controls/identities unchanged; root 130 still unsuitable.
+Evidence in CDT artifacts/menu-state-gameplay-20261104-191711-945-2548b59bdfb745c5bcefc5627904d613.json.
+Owner confirms every in-game menu pauses the game: a reliable pause/menu signal
+is sufficient; per-menu distinction is unnecessary. No generic pause semantics
+proven yet and no menu-mode implementation or installation performed.
+Next owner opens Inventory and replies "Inventar"; FROM CDT immediately run
+& ./scripts/Read-MenuStateCandidates.ps1 -Label inventory. Check whether MainMenu
+also tracks this distinct menu, against current gameplay. No waiting/polling.
+
+# Previous checkpoint — 2026-11-04, second menu field rejected; UI control comparison next
 
 Skills capture 19:03:20 CET is identical to gameplay 18:58 in all observer v2
 fields, same PID 16716. Root 130 therefore also fails to distinguish Skills;
