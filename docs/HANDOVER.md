@@ -1,4 +1,24 @@
-# Current checkpoint — 2026-11-04, controller-only Skills symptom and matching public reports
+# Current checkpoint — 2026-11-04, CDT menu.3 fixes repeated ready notification
+
+Owner reports "Telemetry is ready" after every menu pause. CDT NoticeTracker
+mistook intentional pause for scene loading. Fixed in CDT98b8859: fresh explicit
+pause/resume markers retain ready state; startup, real reload and error recovery
+still announce readiness. Regression fails before fix, passes afterward; targeted
+production overlay-model CTest1/1 and independent source review pass.
+
+CDT-only update, compatible with existing Hue1.0.7-menu.2:
+C:/DEV/CrimsonDesertTelemetry/artifacts/mod-manager/CrimsonDesertTelemetry-v2.2.9-menu.3-ModManagers.zip
+SHA256 A1AD6449411E261D3FA299FBF4D4D3C869CF99F261AE85602F0D5FD81CF17AA2
+Production/Research OFF, native26423880, Pause1/Diagnostics0. Maintained package
+builder, self-tests, folder and ZIP validation pass. CDT artifacts contain
+menu3-package-receipt-20261104.json and menu3-package-20261104.log.
+No Hue runtime change/new Hue ZIP, no installation or game acceptance. This is
+only the notification fix; original controller-specific Skills bug remains open.
+
+Next OWNER ONLY: Stop sync, close game, install CDTmenu.3 through DMM, restart.
+End turn after handoff; no polling or assistant changes to deployed files.
+
+# Previous checkpoint — 2026-11-04, controller-only Skills symptom and matching public reports
 
 Owner clarifies Skills bug occurs ONLY WITH CONTROLLER, then suggests a game bug.
 Do not interpret the initial "ja" as confirmation of the requested Stop comparison;
