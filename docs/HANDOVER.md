@@ -1,4 +1,27 @@
-# Current checkpoint — 2026-11-04, independent Hue/OpenRGB/Tuya candidate complete
+# Current checkpoint — 2026-11-04, owner installed candidates; three Tuya keys imported
+
+Owner reported being in game after installing the independent-output pair.
+Read-only loaded-module checks matched BOTH ASIs to the exact packaged candidates
+Hue1.0.8-outputs.1 and CDT2.2.10-outputs.1; local API health was playing,
+schema1.6, gameRunning/supportedBuild true. No assistant installation performed.
+
+Tuya config has no supported reload while running. After owner explicitly closed
+the game ("zu"), verified zero CrimsonDesert processes and imported the three
+existing lamps/credentials from the skill's canonical private local config into
+SettingsStore.SaveTuyaConfiguration (current-user DPAPI tuya.secrets).
+Validated all three complete device profiles and keys by protected-store readback.
+Tuya enabled and existing25% output cap preserved; names LEDVANCE1–3, new positions
+default front(0,1,0), no real room locations inferred. Original private source and
+Hue/general settings hashes unchanged; previous encrypted store backed up beside
+tuya.secrets. No plaintext credential artifact/log, no physical/network lamp
+commands, no code/package change. Keys' live validity remains untested.
+
+Next OWNER ONLY: restart game, confirm three lamps in Tuya LAN and place them.
+No reinstall required. Do not wait/poll for restart or send lamp commands merely
+because credentials are configured. Real individual/combined output acceptance
+and controller Skills issue remain open.
+
+# Previous checkpoint — 2026-11-04, independent Hue/OpenRGB/Tuya candidate complete
 
 Owner requested removing the implicit Hue requirement and adding Tuya as a third
 output; confirmed all three should also run concurrently. Implemented independent
