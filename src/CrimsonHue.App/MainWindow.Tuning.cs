@@ -141,7 +141,8 @@ public partial class MainWindow
     private void SaveTuningClick(object sender, RoutedEventArgs e)
     {
         try { SaveSettings(); TuningStatus.Text = "Settings saved for the next launch"; }
-        catch (IOException) { TuningStatus.Text = "Could not save settings in your user profile"; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
+        { TuningStatus.Text = "Could not save lighting settings securely in your user profile"; }
     }
 
     internal void VerifyDistanceControls()

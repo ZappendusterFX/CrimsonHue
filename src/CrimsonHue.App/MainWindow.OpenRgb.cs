@@ -1,5 +1,6 @@
 using CrimsonHue.Core;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Windows.Threading;
 
@@ -41,8 +42,8 @@ public partial class MainWindow
         openRgbSaveTimer.Tick += (_, _) =>
         {
             openRgbSaveTimer.Stop();
-            try { SaveSettings(); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            { openRgbDiscoveryStatus = "Could not save OpenRGB placement"; }
+            try { SaveSettings(); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or CryptographicException)
+            { openRgbDiscoveryStatus = "Could not save lighting settings securely"; }
         };
     }
 

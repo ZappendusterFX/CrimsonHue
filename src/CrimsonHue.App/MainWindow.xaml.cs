@@ -151,7 +151,7 @@ public partial class MainWindow : Window
         CrimsonHueException => ex.Message,
         HttpRequestException => "Cannot reach the bridge securely. Check its IP and HTTPS service; use Find bridge again if its certificate changed.",
         OperationCanceledException => "The bridge did not respond in time. Check its address and try again.",
-        CryptographicException => "Windows could not save or unlock the bridge credentials for this account.",
+        CryptographicException => "Windows could not save or unlock the lighting credentials for this account.",
         _ => "The operation failed. Check the bridge connection and configuration, then try again."
     };
     private async void ProbeClick(object sender, RoutedEventArgs e) => await GuardAsync(FindBridgeAsync, bridgeSetup: true);
@@ -414,7 +414,8 @@ public partial class MainWindow : Window
     internal void HideSettings()
     {
         try { SaveSettings(); HideOrMinimize(); }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { StreamStatus.Text = FriendlyError(ex); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or CryptographicException)
+        { StreamStatus.Text = "Could not save lighting settings securely."; }
     }
     private void HideOrMinimize()
     {
