@@ -1,4 +1,21 @@
-# Current checkpoint — 2026-11-04, first menu field rejected; stronger comparison prepared
+# Current checkpoint — 2026-11-04, second menu field rejected; UI control comparison next
+
+Skills capture 19:03:20 CET is identical to gameplay 18:58 in all observer v2
+fields, same PID 16716. Root 130 therefore also fails to distinguish Skills;
+owner agrees a redundant return check of that field is unnecessary.
+CDT observer v3 now additionally reads guarded indexed UI control bytes 27C/27D
+and backlink 120. Synthetic/offline checks and peer review pass. Skills sample
+19:07:51 is stable; SkillTree control bytes=0103. Earlier gameplay captures do
+not contain these NEW fields, so their gameplay comparison remains necessary.
+Evidence: CDT artifacts/menu-state-skills-20261104-190750-303-bbcf916a91664aa1ba7b9272ed4a9e10.json.
+World Builder repository-wide targeted search (120 text files, relevant code
+read) found no ready-made game-menu detector; see CDT menu research and
+artifacts/worldbuilder-menu-coverage-20261104-1930/FINDINGS.md for scope/limits.
+Next owner closes Skills and replies "Spiel"; FROM CDT immediately run
+& ./scripts/Read-MenuStateCandidates.ps1 -Label gameplay. See CDT HANDOVER/research.
+No automatic menu light, capture pause, installation or live output change yet.
+
+# Previous checkpoint — 2026-11-04, first menu field rejected; stronger comparison prepared
 
 Gameplay return18:51:08CET leaves SkillTree+BA=1: NOT an open/closed flag. CDT
 observer v2 now captures a different shared getter's root130/131 plus128 and
