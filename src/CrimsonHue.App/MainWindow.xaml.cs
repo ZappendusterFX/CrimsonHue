@@ -90,7 +90,11 @@ public partial class MainWindow : Window
                     try { savedWallWash.Validate(); wallWash = savedWallWash; }
                     catch (CrimsonHueException) { TuningStatus.Text = "Invalid saved wall calibration ignored. Bridge setup is preserved."; }
                 }
-                var credentials = store.LoadCredentials();
+                BridgeCredentials? credentials = null;
+                try { credentials = store.LoadCredentials(); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or CryptographicException or JsonException)
+                { BridgeStatus.Text = "Saved Hue pairing could not be unlocked. Other outputs remain available."; }
+                hueEnabled = OutputSelection.MigrateHue(saved.HueEnabled, credentials != null);
                 if (credentials != null)
                 {
                     bridge = new(credentials); BridgeAddress.Text = new Uri(credentials.Address).Host;
@@ -98,13 +102,14 @@ public partial class MainWindow : Window
                     bridgePhase = "connecting";
                 }
             }
-            catch (Exception ex) when (ex is IOException or JsonException or CryptographicException or CrimsonHueException or ArgumentException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or CryptographicException or CrimsonHueException or ArgumentException)
             { BridgeStatus.Text = "Saved setup could not be loaded. Find and pair your bridge again."; }
         }
         mapping = LightingProfile.Resolve(lighting, manualMapping);
         InitializeOpenRgb();
+        InitializeTuya();
         InitializeMenuLighting();
-        StreamStatus.Text = WithOpenRgbStatus(StreamStatus.Text);
+        StreamStatus.Text = OutputStatus();
         initialized = true;
         SyncTuningValues();
         timer.Tick += (_, _) => RefreshPreview();
@@ -112,7 +117,8 @@ public partial class MainWindow : Window
         Loaded += async (_, _) =>
         {
             if (smoke) return;
-            await GuardAsync(async () => { await ConnectTelemetryAsync(); if (bridge != null) await LoadAreasAsync(); }, bridgeSetup: true);
+            await GuardAsync(ConnectTelemetryAsync);
+            if (hueEnabled && bridge != null) await GuardAsync(LoadAreasAsync, bridgeSetup: true);
         };
     }
     private async Task GuardAsync(Func<Task> action, bool bridgeSetup = false)
@@ -177,6 +183,7 @@ public partial class MainWindow : Window
         var credentials = await BridgeClient.PairAsync(probe, lifetime.Token);
         store.SaveCredentials(credentials);
         bridge?.Dispose(); bridge = new(credentials);
+        hueEnabled = true;
         PairPanel.Visibility = Visibility.Collapsed;
         SaveSettings();
         await LoadAreasAsync();
@@ -231,22 +238,28 @@ public partial class MainWindow : Window
     }
     private async void StartClick(object sender, RoutedEventArgs e)
     {
-        if (streamTask != null || bridge == null || SelectedArea == null || DemoCheck.IsChecked == true) return;
+        if (!CanStartOutputs) return;
         try { SaveSettings(); }
-        catch (IOException) { StreamStatus.Text = "Could not save settings. Check your profile's write permissions."; return; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or CryptographicException)
+        { StreamStatus.Text = "Could not save settings securely. Check your profile's write permissions."; return; }
         streamCancel = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
-        session = new StreamingSession(bridge);
-        var activeSession = session;
+        var selected = ReadyOutputs;
+        outputFailures.Clear();
+        session = selected.Hue ? new StreamingSession(bridge!) : null;
         var area = SelectedArea;
-        openRgbSession = OpenRgbOutputAllowed ? new OpenRgbStreamingSession() : null;
+        openRgbSession = selected.OpenRgb ? new OpenRgbStreamingSession() : null;
+        tuyaSession = selected.Tuya ? new TuyaStreamingSession() : null;
         var token = streamCancel.Token;
-        streamTask = Task.Run(() => RunLightingAsync(activeSession, area, token));
+        streamTask = Task.Run(() => RunLightingAsync(area, token));
         UpdateButtons();
-        try { await streamTask; StreamStatus.Text = WithOpenRgbStatus("Stopped · previous light states restored when still owned"); }
-        catch (Exception ex) { StreamStatus.Text = WithOpenRgbStatus(FriendlyError(ex)); }
+        try { await streamTask; StreamStatus.Text = OutputStatus(); }
+        catch (Exception) { StreamStatus.Text = "Lighting stopped. Check each output's connection and settings."; }
         finally
         {
-            streamTask = null; session = null; streamCancel.Dispose(); streamCancel = null;
+            RememberTuyaDiagnosticState();
+            streamTask = null; session = null; openRgbSession = null; tuyaSession = null;
+            openRgbPreviewMapper.Reset(); tuyaPreviewMapper.Reset();
+            streamCancel.Dispose(); streamCancel = null;
             previewMapper.Reset(); UpdateButtons();
         }
     }
@@ -313,14 +326,14 @@ public partial class MainWindow : Window
             Output = FormatOutput(colors.FirstOrDefault(v => v.Id == c.Id)?.Rgb ?? default),
             Color = new SolidColorBrush(RoomView.ColorFrom(colors.FirstOrDefault(v => v.Id == c.Id)?.Rgb ?? default))
         }).ToArray();
-        if (session != null && streamCancel?.IsCancellationRequested != true) StreamStatus.Text = WithOpenRgbStatus(session.Status);
+        if (streamTask != null && streamCancel?.IsCancellationRequested != true) StreamStatus.Text = OutputStatus();
         PublishOverlay();
     }
     private void UpdateButtons()
     {
         if (!initialized) return;
         var running = streamTask != null;
-        StartButton.IsEnabled = !busy && !running && bridgeConnected && bridge != null && SelectedArea?.Channels.Count > 0 && DemoCheck.IsChecked != true;
+        StartButton.IsEnabled = CanStartOutputs;
         StopButton.IsEnabled = running;
         FindButton.IsEnabled = PairButton.IsEnabled = !busy && !running;
         RefreshButton.IsEnabled = !busy && !running && bridge != null;
@@ -338,6 +351,7 @@ public partial class MainWindow : Window
     }
     private void SaveSettings()
     {
+        FlushTuyaSettings();
         if (!smoke) store.SaveSettings(CurrentSettings());
     }
     private async void OnClosing(object? sender, CancelEventArgs e)
@@ -362,6 +376,7 @@ public partial class MainWindow : Window
         if (closing) return;
         closing = true; timer.Stop();
         openRgbSaveTimer.Stop();
+        tuyaSaveTimer.Stop();
         try
         {
             await lifetime.CancelAsync();
@@ -370,6 +385,7 @@ public partial class MainWindow : Window
             if (ambientTask != null) await ambientTask;
             if (activityTask != null) await activityTask;
             if (openRgbDiscoveryTask != null) await openRgbDiscoveryTask;
+            if (tuyaProbeTask != null) await tuyaProbeTask;
             SaveSettings();
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)

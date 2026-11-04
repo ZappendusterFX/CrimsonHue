@@ -72,6 +72,10 @@ LocalTransitionTests.Register(Add);
 EntertainmentLayoutTests.Register(Add, Async);
 OpenRgbTests.Register(Add, Async);
 MenuLightingTests.Register(Add, Async);
+TuyaProtocolTests.Register(Add, Async);
+TuyaStreamingTests.Register(Add, Async);
+IndependentOutputTests.Register(Add, Async);
+TuyaSecretStoreTests.Register(Add);
 void Assert(bool condition, string message = "Assertion failed") { if (!condition) throw new Exception(message); }
 void Reject(Action action) { try { action(); } catch { return; } throw new Exception("Expected rejection"); }
 Add("Saved bridge pairing is reused only for the same address and certificate", () =>

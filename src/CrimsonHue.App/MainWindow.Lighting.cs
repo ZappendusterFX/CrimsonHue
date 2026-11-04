@@ -9,7 +9,8 @@ public partial class MainWindow
     private AppSettings CurrentSettings(MappingSettings? custom = null, LightingPreferences? preferences = null,
         OverlayShortcut? binding = null) => new(BridgeAddress.Text.Trim(), TelemetryAddress.Text.Trim(),
             SelectedArea?.Id ?? selectedAreaId, custom ?? manualMapping, Shortcut: binding ?? shortcut,
-            WallWash: wallWash, Lighting: preferences ?? lighting, OpenRgb: openRgbLayout, MenuLighting: menuLighting);
+            WallWash: wallWash, Lighting: preferences ?? lighting, OpenRgb: openRgbLayout, MenuLighting: menuLighting,
+            HueEnabled: hueEnabled);
 
     private void CommitCustomMapping(MappingSettings next)
     {

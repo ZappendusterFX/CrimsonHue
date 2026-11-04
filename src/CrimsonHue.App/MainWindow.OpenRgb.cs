@@ -14,6 +14,7 @@ public partial class MainWindow
     private bool openRgbInventoryKnown;
     private readonly LightMapper openRgbPreviewMapper = new();
     private readonly MenuLightingPolicy openRgbPreviewMenu = new();
+    private IReadOnlyDictionary<string, Vec3>? openRgbPreviewColors;
     private readonly DispatcherTimer openRgbSaveTimer = new() { Interval = TimeSpan.FromMilliseconds(600) };
     private Task? openRgbDiscoveryTask;
     private string openRgbDiscoveryStatus = "Read devices to connect to OpenRGB";
@@ -78,13 +79,21 @@ public partial class MainWindow
         next.Validate(); Volatile.Write(ref openRgbLayout, next);
         openRgbPreviewMapper.Reset();
         openRgbSaveTimer.Stop(); openRgbSaveTimer.Start();
+        UpdateButtons();
     }
 
     private void SetOpenRgb(JsonElement command)
     {
         var config = openRgbLayout;
         var key = command.GetProperty("key").GetString();
-        if (key == "enabled") CommitOpenRgb(config with { Enabled = command.GetProperty("value").GetBoolean() });
+        if (key is "enabled" or "port" or "deviceEnabled" && !CanConfigureOutputs)
+            throw new CrimsonHueException("Stop lighting sync before changing output connections or selected devices.");
+        if (key == "enabled")
+        {
+            if (!CanConfigureOutputs) throw new CrimsonHueException("Stop lighting sync before changing selected outputs.");
+            CommitOpenRgb(config with { Enabled = command.GetProperty("value").GetBoolean() });
+            UpdateButtons();
+        }
         else if (key == "port")
         {
             var next = config with { Port = command.GetProperty("value").GetInt32() };
@@ -155,6 +164,7 @@ public partial class MainWindow
                     .ToDictionary(p => p.DeviceKey, p => p.Rgb);
             }
         }
+        openRgbPreviewColors = colors;
         return new { available = true, config.Enabled, config.Port, config.Brightness,
             config.SourceRadiusDegrees, config.BackgroundAmount,
             canReset = CanResetOpenRgb, canRemoveDisconnected = CanRemoveDisconnectedOpenRgb,
@@ -168,25 +178,4 @@ public partial class MainWindow
     }
     private bool OpenRgbOutputAllowed => !smoke && DemoCheck.IsChecked != true;
 
-    private string WithOpenRgbStatus(string hueStatus) => !OpenRgbOutputAllowed || !openRgbLayout.Enabled ? hueStatus :
-        hueStatus + " | " + (openRgbSession?.State.Status ?? "OpenRGB · open the OpenRGB tab to place devices");
-
-    private async Task RunLightingAsync(StreamingSession hue, EntertainmentArea area, CancellationToken token)
-    {
-        using var combined = CancellationTokenSource.CreateLinkedTokenSource(token);
-        var rgb = openRgbSession;
-        var rgbTask = rgb == null ? Task.CompletedTask :
-            rgb.RunAsync(telemetry, ambient, () => Volatile.Read(ref mapping), combined.Token, () => Volatile.Read(ref openRgbLayout),
-                activity, () => Volatile.Read(ref menuLighting));
-        try
-        {
-            await hue.RunAsync(area, telemetry, () => Volatile.Read(ref mapping), token,
-                ambient, () => Volatile.Read(ref wallWash), activity, () => Volatile.Read(ref menuLighting));
-        }
-        finally
-        {
-            await combined.CancelAsync();
-            await rgbTask;
-        }
-    }
 }

@@ -38,7 +38,7 @@ int wmain(int argc, wchar_t** argv) {
         Require(status && stop && toggle && read && send && frames && graphics, "Missing ASI exports");
         const auto start = GetTickCount64();
         while (status() == 0 && GetTickCount64() - start < 20000) Sleep(20);
-        Require(status() == 1, "Managed engine not ready");
+        if (status() != 1) throw std::runtime_error("Managed engine not ready; status " + std::to_string(status()));
 
         auto State = [&] { std::vector<char> bytes(256 * 1024); const int size = read(bytes.data(), static_cast<int>(bytes.size()));
             Require(size > 0, "No UI snapshot"); return Json::parse(bytes.data(), bytes.data() + size); };

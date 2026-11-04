@@ -24,6 +24,8 @@ public partial class App : Application
         {
             e.Handled = true;
             Failed = true;
+            if (smokePath != null)
+                try { File.WriteAllText(smokePath + ".error", e.Exception.GetType().FullName + "\n" + e.Exception.StackTrace); } catch { }
             if (MainWindow is MainWindow window) window.ReportHostFailure();
             RequestStop();
         };
@@ -73,6 +75,17 @@ public partial class App : Application
                 window.SelectSmokePanel("Ambient", raw: true);
                 await Dispatcher.InvokeAsync(window.UpdateLayout, System.Windows.Threading.DispatcherPriority.ContextIdle);
                 Capture(Path.Combine(Path.GetDirectoryName(path)!, Path.GetFileNameWithoutExtension(path) + "-raw.png"));
+                // Render the new secure setup without opening a dialog or
+                // reading credentials; it never enters the native HUD snapshot.
+                var tuyaSetup = new TuyaSetupWindow(null, null);
+                var setupContent = (FrameworkElement)tuyaSetup.Content;
+                setupContent.Measure(new Size(560, 770)); setupContent.Arrange(new Rect(0, 0, 560, 770)); setupContent.UpdateLayout();
+                var setupBitmap = new RenderTargetBitmap(560, 770, 96, 96, PixelFormats.Pbgra32);
+                setupBitmap.Render(setupContent);
+                var setupEncoder = new PngBitmapEncoder(); setupEncoder.Frames.Add(BitmapFrame.Create(setupBitmap));
+                using (var setupFile = File.Create(Path.Combine(Path.GetDirectoryName(path)!, Path.GetFileNameWithoutExtension(path) + "-tuya-setup.png")))
+                    setupEncoder.Save(setupFile);
+                tuyaSetup.Close();
                 // Verify ASI-specific hide/reopen and close behaviour without
                 // credentials, network access or a physical stream.
                 ToggleWindow();

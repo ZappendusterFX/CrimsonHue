@@ -21,13 +21,15 @@ public partial class MainWindow
         BeginOpenRgbDiscovery();
         if (smoke)
         {
+            hueEnabled = true;
             AreaBox.ItemsSource = new[] { DemoData.WallWasherArea };
             AreaBox.SelectedItem = DemoData.WallWasherArea;
             bridgeConnected = true; bridgePhase = "connected";
             BridgeStatus.Text = "Connected - synthetic bridge (no network or lamp output)";
             EnableSmokePreview(); VerifyDistanceControls(); VerifyPresetProfilePreservation(); VerifyOverlayCloseKeepsStream(); VerifyMenuControls();
+            VerifyIndependentOutputControls();
         }
-        else _ = GuardAsync(async () => { await ConnectTelemetryAsync(); if (bridge != null) await LoadAreasAsync(); }, bridgeSetup: true);
+        else _ = ConnectSelectedOutputsAsync();
         PublishOverlay();
     }
 
@@ -35,6 +37,8 @@ public partial class MainWindow
     {
         if (!overlayController || closing) return;
         var area = Room.Area;
+        var openRgbView = OpenRgbSnapshot();
+        var tuyaView = TuyaSnapshot();
         var snapshot = new
         {
             ready = true, demo = DemoCheck.IsChecked == true, frozen = FreezeRawCheck.IsChecked == true,
@@ -47,12 +51,15 @@ public partial class MainWindow
                 mapping.PointLightStrength, mapping.SpotLightStrength, mapping.PlayerLanternStrength,
                 untypedSources = Room.Frame?.Lights.Count(l => l.Metadata?.Kind is not ("point" or "spot")) ?? 0,
                 lanternMatches = Room.Frame is { } lanternFrame ? PlayerLanternSignature.Find(lanternFrame).Count : 0 },
-            assessment = previewMenuActive ? new LightingAssessment("menu", "Menu lighting", "Fixed room light while paused; fresh gameplay light resumes automatically.", false) : LightingDiagnostics.Assess(Room.Frame, ambient.Read(out _), mapping, Room.Colors,
-                session?.Sending == true, DemoCheck.IsChecked == true),
+            assessment = previewMenuActive ? new LightingAssessment("menu", "Menu lighting", "Fixed room light while paused; fresh gameplay light resumes automatically.", false) : LightingDiagnostics.Assess(Room.Frame, ambient.Read(out _), mapping, SelectedOutputColors(),
+                AnyOutputSending, DemoCheck.IsChecked == true),
             telemetry = TelemetryStatus.Text, capture = CaptureInfo.Text, ambient = AmbientStatus.Text,
             stream = StreamStatus.Text, tuning = TuningStatus.Text, bridgeStatus = BridgeStatus.Text,
             openRgbAvailable = true, openRgbOutputAllowed = OpenRgbOutputAllowed, openRgb = openRgbSession?.State,
-            openRgbRoom = OpenRgbSnapshot(),
+            openRgbRoom = openRgbView,
+            outputs = new { hueEnabled, openRgbEnabled = openRgbLayout.Enabled, tuyaEnabled = tuyaLayout.Enabled,
+                canConfigure = CanConfigureOutputs, status = OutputStatus() },
+            tuyaRoom = tuyaView, tuya = tuyaSession?.State,
             bridgeConnected, bridgePhase, bridgeError, bridgeDiagnostic,
             certificate = CertificateLabel.Text, pairing = PairPanel.Visibility == Visibility.Visible,
             layout = LayoutInfo.Text, boundary = SpatialBoundaryStatus.Text,
@@ -62,7 +69,7 @@ public partial class MainWindow
             curve = Enumerable.Range(0, 101).Select(i => LightMapper.DistanceWeight(mapping.FadeEnd * i / 100, mapping)),
             bridgeAddress = BridgeAddress.Text, telemetryAddress = TelemetryAddress.Text,
             canStart = StartButton.IsEnabled, canStop = StopButton.IsEnabled,
-            canSetup = !busy && streamTask == null, canRefresh = RefreshButton.IsEnabled,
+            canSetup = CanConfigureOutputs, canRefresh = RefreshButton.IsEnabled,
             canIdentify = !smoke && !busy && streamTask == null && bridgeConnected && bridge != null && SelectedArea != null && DemoCheck.IsChecked != true,
             identifying, wallWashers = WallWasherSnapshot(area),
             wallPreview, previewYaw = wallPreviewYaw, previewElevation = wallPreviewElevation,
@@ -94,6 +101,11 @@ public partial class MainWindow
             string Text(string key) => command.GetProperty(key).GetString() ?? "";
             switch (action)
             {
+                case "output": SetOutput(command); break;
+                case "tuya": SetTuya(command); break;
+                case "tuyaConfigure": ConfigureTuya(command.TryGetProperty("device", out var editDevice) ? editDevice.GetString() ?? "" : ""); break;
+                case "tuyaRemove": RemoveTuya(Text("device")); break;
+                case "tuyaProbe": ProbeTuya(Text("device")); break;
                 case "openRgbDiscover": BeginOpenRgbDiscovery(); break;
                 case "openRgb": SetOpenRgb(command); break;
                 case "resetOpenRgbSettings": ResetOpenRgbSettings(); break;
@@ -226,8 +238,11 @@ public partial class MainWindow
 
     private void ApplyOverlayAddresses(string address, string endpoint)
     {
-        var normalizedAddress = BridgeClient.NormalizeAddress(address);
         _ = TelemetryClient.ValidateEndpoint(endpoint);
+        // A bridge address is irrelevant when Hue output is not selected.
+        // Preserve the saved pairing while allowing telemetry-only setup.
+        if (!hueEnabled) { TelemetryAddress.Text = endpoint; return; }
+        var normalizedAddress = BridgeClient.NormalizeAddress(address);
         if (bridge == null || !string.Equals(normalizedAddress, bridge.Credentials.Address, StringComparison.OrdinalIgnoreCase))
         {
             bridgeConnected = false; bridgePhase = "disconnected"; probe = null;

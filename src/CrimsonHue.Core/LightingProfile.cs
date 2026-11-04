@@ -105,10 +105,10 @@ public static class LightingDiagnostics
         }
         if (colors.Count == 0)
             return Result("no-output", "No calculated channel output",
-                "Select an Entertainment area and check the stream status.", true);
+                "Configure and enable at least one lighting output, then check its device selection and status.", true);
         if (colors.Any(c => !c.Rgb.IsFinite))
             return Result("invalid-output", "Calculated channel output is invalid",
-                "A non-finite color cannot be sent to the bridge.", true);
+                "A non-finite color cannot be sent to a lighting device.", true);
         var peaks = colors.Select(c => Math.Max(c.Rgb.X, Math.Max(c.Rgb.Y, c.Rgb.Z))).ToArray();
         var range = string.Format(CultureInfo.InvariantCulture, "Calculated channel peaks: {0:0.0}% to {1:0.0}% of command range. ",
             peaks.Min() * 100, peaks.Max() * 100);
