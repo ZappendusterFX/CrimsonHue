@@ -69,8 +69,10 @@ Stop cancels all selected outputs and waits for bounded cleanup. Tuya attempts
 to restore a supported state read before takeover only after a new query confirms
 the lamp still matches the last command. If that prior state is unavailable, the
 lamp was changed elsewhere, or cleanup cannot be confirmed, the last state may
-remain. Read the per-device status; do not assume Stop always turns a lamp off or
-restores an unknown scene. Crashes and process termination can prevent cleanup.
+remain. Select a lamp in **Tuya LAN** to read its status. After Stop, **Last sync
+result** keeps the cleanup result visible while the color preview recalculates
+from current data. Do not assume Stop always turns a lamp off or restores an
+unknown scene. Crashes and process termination can prevent cleanup.
 
 The Skills-menu controller stutter remains unresolved. Independent output and
 menu lighting are not a fix for the repeated hover sounds. No physical Tuya
