@@ -1,4 +1,25 @@
-# Current checkpoint — 2026-11-04, companion CDT automatic recovery candidate
+# Current checkpoint — 2026-11-04, companion CDT one-time recovery diagnostic
+
+Owner requested a real recovery-path test without deleting correct game values.
+CDT now offers an explicit one-time cold search after valid, advancing world data;
+all native/live validation remains active and the known game profile is unchanged.
+Token `4B0FEA8E34CA412191D7F28D8B776B24` is consumed before the full search, including
+failed attempts. Quitting at the menu before world readiness leaves it armed; later
+starts after consumption use normal compatibility checks. See CDT
+docs/RUNTIME_RECOVERY.md and its current HANDOVER for the marker and test details.
+
+New companion ZIP:
+`C:/DEV/CrimsonDesertTelemetry/artifacts/mod-manager/CrimsonDesertTelemetry-v2.2.8-recovery.2-ModManagers.zip`
+is 1138473 bytes, payload `9f3df60`, SHA256
+`B747771D5C887E72546D61ABF563D5047B7100033DD0C7C343A31EB7C3208593`.
+It supersedes recovery.1 for this test. CDT validation: 86 managed tests, focused
+native 3/3 plus legacy 1/1, builder/self-tests and folder/ZIP checks passed.
+Hue code and `dist/CrimsonHue-1.0.5-asi-win-x64.zip` remain unchanged.
+The new CDT package is not installed; live acceptance remains pending. No new
+publication. Owner alone installs with the game closed. End the handoff and resume
+only after their installation/restart report; do not poll or install anything.
+
+# Previous checkpoint — 2026-11-04, companion CDT automatic recovery candidate
 
 Owner requested in-plugin conditional post-update discovery with game-readiness
 and HUD progress. Implemented entirely in C:/DEV/CrimsonDesertTelemetry; Hue code,
