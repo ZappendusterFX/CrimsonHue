@@ -1,4 +1,20 @@
-# Current checkpoint — 2026-11-04, menu control transition found; Inventory comparison next
+# Current checkpoint — 2026-11-04, tick-based pause selected; CDT diagnostic preparation
+
+Inventory confirms shared MainMenu control 27D sequence 03/00/03 across
+Skills/gameplay/Inventory; all three captures stable. Owner confirms menus iff
+paused and explicitly prefers World Builder's simulation tick approach. Its
+signature automatically relocates in three preserved builds; its counter needs
+a new lightweight CDT hook. Owner is freely playing; no more labeled captures
+or requested UI toggles now. No installations or live hooks performed.
+
+CDT has prepared an optional monitor-only tick probe, independent of rendering,
+with synthetic policy/scan/thunk and read-only MMF decoder/reader checks passing.
+Fresh CDT 2.2.9-tick.1 package build/validation and owner handoff are next.
+See CDT docs/SIMULATION_TICK_DIAGNOSTIC.md and HANDOVER. Hue production output
+has not changed; fixed menu light/acquisition bypass still requires integration
+after the tick behavior is measured. Do not present a diagnostic as the fix.
+
+# Previous checkpoint — 2026-11-04, menu control transition found; Inventory comparison next
 
 Owner-confirmed gameplay 19:17:12 CET, same PID 16716, yields three stable v3
 samples: SkillTree and MainMenu control byte 27D both clear 03 -> 00 compared
