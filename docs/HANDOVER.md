@@ -1,4 +1,34 @@
-# Current checkpoint — 2026-11-04, pure magenta confirmed through OpenRGB cache
+# Current checkpoint — 2026-11-04, owner confirms Skills stall persists with menu.2
+
+Owner reports the original Skills-menu stutter/rapid hover sounds remain. Menu
+lighting is NOT a fix for that bug. Earlier OpenRGB/Razer attribution stays withdrawn.
+Owner accepted the magenta appearance limitation; no further color changes requested.
+
+Passive observations 20:51-20:55 CET, same PID34860/start20:31:15: exact seven
+deployed payload hashes match both menu.2 packages. CDT activity paused, epoch4,
+acquisitionPaused=true; Hue MenuLighting.active=true, fixed gold RGB1/.65/.08,
+both outputs streaming. Artifact artifacts/skills-persist-state-20261104-205148.jsonl.
+These observations were not a controlled hover reproduction or FPS measurement.
+CDT artifacts/menu2-deployed-check-20261104.json records payload match.
+
+Exact native code/hash-guarded passive reads show hidden panel, capture/draining/
+waitingForRelease all false and all press/release masks empty in three immediate
+samples. No stuck HUD input ownership at that instant. Evidence in CDT
+artifacts/menu2-input-review-20261104/live-input-195523-322.json. Modulator MMF
+overrideCount=0,lastUpdateTick=0: no active GPU override writer. Source review found
+no synthetic game clicks or unbounded Hue loop. Remaining per-submission native
+render/spatial locks and Present/HUD work continue during acquisition pause; their
+wait times are NOT measured. Hidden controller/UI JSON refresh continues10/20Hz.
+Do not blame those costs without timing evidence or package a speculative fix.
+
+Existing30s capture proves capture gaps/black clears, not the hover/stall cause.
+Next single owner action: while the Skills bug is present, Stop lighting sync,
+hide the Hue HUD again, then hover the same skill. Report whether the repeating
+click/stutter remains. Stop ends lamp-output tasks but leaves CDT hooks installed;
+this separates the active output-session dependency before a targeted CPU/wait
+trace. End turn for that action; no waiting/polling, no new package or installation.
+
+# Previous checkpoint — 2026-11-04, pure magenta confirmed through OpenRGB cache
 
 Owner set pure magenta and still reports pink on keyboard/mouse. Passive UI probe
 20:38:25: menu active, RGB1/0/1, menu/master/OpenRGB limit all100%; all four outgoing
