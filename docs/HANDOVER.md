@@ -11,12 +11,32 @@ CDT has no validated generic menu signal; playing/loading describes available
 world/camera data, and all 1,788 skill-recording frames said playing. True pause
 must gate new native ManyLights, Ambient/GI and physics work in CDT while draining
 existing GPU work, then resume only with fresh data. A constant Hue output alone
-does not implement that pause. World Builder source review is in progress at the
-owner's request; its own editor-open flag must not be mistaken for a game menu.
+does not implement that pause. World Builder source review at commit6ad72dcb found
+real Skills/Pause/Inventory/WorldMap UI class names. CDT offline-relocated all seven
+selected RTTI/vtables uniquely against preserved26423880; no live instance or
+opened/closed state is established. Its editor-open flag is not a game-menu flag.
+Details: C:/DEV/CrimsonDesertTelemetry/docs/MENU_LIGHTING_RESEARCH.md.
 
-Owner also reports missing reset controls in the OpenRGB tab. Scoped reset and
-disconnected-placement cleanup are being implemented in the Hue controller and
-authoritative native panel; current installed files/settings remain untouched.
+OpenRGB reset controls are implemented and locally committed (sourcef04a94b),
+with the authoritative panel synchronized to CDT097961a. Reset disables OpenRGB,
+restores25% output/90deg coverage/25% background and default front placements for
+current devices; removes saved absent identities and preserves SDK port/Hue setup.
+Separate removal preserves current positions/settings, requires a successful
+inventory for the current port. Both refuse running sync/discovery; reset never
+starts output. Existing Reset view remains camera-only.
+
+163Core tests pass. Fresh private candidate1.0.7-reset.1 passes exact controller
+ABI/reset commands, active-stream rejection, Demo isolation, folder/ZIP validation.
+Paired CDT2.2.9-reset.1 builds production ResearchOFF for26423880; exact Hue ASI
+passes CDT --openrgb D3D12 smoke (748802pixels), screenshot visually inspected.
+Evidence: artifacts/reset-1-package.log, reset-1-overlay.log/png and receipt/checksums.
+ZIP: dist/CrimsonHue-1.0.7-reset.1-asi-win-x64.zip (3050393bytes), SHA256
+6363F6422C0BA56338F9FB9BCDBAB4D3BF0EA60DAF6AF5B557FDC3065D76DCED.
+
+These are reset-only candidates, NOT a skill-menu fix or automatic menu light.
+No installation, live output/settings changes, publication or in-game acceptance.
+Owner alone installs both paired packages if wanted; do not poll for installation.
+Next: hand off World Builder findings and reset packages, with menu signal unresolved.
 
 # Previous checkpoint — 2026-11-04, apparent Razer workaround (WITHDRAWN by owner)
 
