@@ -43,7 +43,7 @@ public partial class MainWindow
         {
             tuyaLayout = new(Enabled: true, Devices: [
                 new("synthetic-left", "Tuya lamp · left", "127.0.0.1", "synthetic-left", new(-.8, .7, .1)),
-                new("synthetic-right", "Tuya lamp · right", "127.0.0.1", "synthetic-right", new(.8, .7, .1))]);
+                new("synthetic-right", "Tuya lamp · right", "127.0.0.2", "synthetic-right", new(.8, .7, .1))]);
             tuyaStatus = "Synthetic Tuya preview · no network or lamp output";
             return;
         }
