@@ -402,6 +402,29 @@ and resize. These harnesses never load saved credentials or connect to devices
 and are excluded from releases. The publish script checks the exact controller candidate, rejects EXEs,
 settings and secrets, and creates an ASI ZIP in `dist/` without overwriting versions.
 
+### Bounded LightSync diagnostics
+
+Prepare the standalone diagnostic tools before requesting the owner's start signal:
+
+```powershell
+dotnet build tools/HueStateRecorder -c Release -o artifacts/tools/hue-state-recorder
+dotnet build C:/DEV/CrimsonDesertTelemetry/tools/VisibilityRecorder -c Release -o C:/DEV/CrimsonDesertTelemetry/artifacts/tools/visibility-recorder
+./scripts/Record-LightSyncDiagnostic.ps1 -Seconds 30 -ValidateOnly
+```
+
+On the owner's `go`, run `./scripts/Record-LightSyncDiagnostic.ps1 -Seconds 30`.
+It records CDT local RGB/visibility and Ambient WebSockets, passive credential-free
+Hue/OpenRGB UI snapshots at up to 5 Hz, process CPU/GPU counters at up to 1 Hz, and
+before/after CDT logs into a fresh `artifacts/skill-window-*` directory. Counters
+include collection timing and are not a Present/display-FPS trace or physical lamp
+measurement. No process suspension, game calls, output commands, protected settings
+or installation changes. Both readers are standalone tools excluded from packages.
+The recorder stops automatically; partial failures retain their evidence.
+
+For a skill-menu comparison, use 0-5 seconds normal gameplay, 5-25 seconds in the
+skill window, then return to gameplay for the last 5 seconds. Menu timing is supplied
+by the owner; the neutral API does not identify the skill window.
+
 ## Distribution
 
 Intended Nexus category: Crimson Desert / Utilities, as an independent ASI

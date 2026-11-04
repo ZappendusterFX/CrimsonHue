@@ -1,4 +1,24 @@
-# Current checkpoint — 2026-11-04, owner restart restored live lighting
+# Current checkpoint — 2026-11-04, 30-second skill-window recording prepared
+
+Owner reports erratic behavior when opening the skill window during LightSync and
+asks to PREPARE a 30-second recording. No reproduction recording has started.
+Built standalone tools/HueStateRecorder (passive non-suspending immutable UI reads,
+up to 5 Hz) and CDT's extended VisibilityRecorder (--lighting: local RGB plus Ambient).
+Both Release builds pass with zero warnings/errors. Wrapper
+scripts/Record-LightSyncDiagnostic.ps1 -Seconds 30 -ValidateOnly passes; one passive
+readiness probe of game PID 34956 captured one valid UI snapshot, no rejected read.
+CDT synthetic tests pass concurrent feeds/duration/unavailable states, preservation,
+disconnect/partial failure and offline replay. No game/output/settings/package writes.
+
+Ready command, run FROM THIS REPOSITORY only after owner's go:
+& ./scripts/Record-LightSyncDiagnostic.ps1 -Seconds 30
+No build or manual preflight on go. Fresh artifacts/skill-window-* contains compressed
+CDT feeds, Hue/OpenRGB UI timeline, sampled CPU/GPU and original before/after logs.
+Suggested owner timeline: 0-5s gameplay, 5-25s skill window, 25-30s gameplay.
+No automatic skill-window detection, video, Present/FPS or new optical measurement.
+Next: short ready handoff; stop and resume on owner's go, never poll for it.
+
+# Previous checkpoint — 2026-11-04, owner restart restored live lighting
 
 Owner reports about 60 FPS / 100% GPU after restarting; prior session remained
 around 30 FPS with lower GPU utilization. New game PID 34956 / CDT host 35112.
