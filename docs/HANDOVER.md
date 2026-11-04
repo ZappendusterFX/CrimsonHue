@@ -1,4 +1,20 @@
-# Current checkpoint — 2026-11-04, companion CDT one-time recovery diagnostic
+# Current checkpoint — 2026-11-04, companion CDT cold recovery passed in game
+
+Owner installed CDT recovery.2 and reported a very fast passed check. Read-only
+verification of PID29952 confirms exact package hashes, compatibility=recovered,
+Recovery test passed/100 and no health error. Logs prove cold discovery after
+world readiness: all30 anchors written after1.943s, native capture ready by3.926s
+(filesystem timing bounds). Fresh raw/upstream/smoothed/Ambient/visibility and
+HTTP/WebSocket checks pass. Token4B0FEA8E34CA412191D7F28D8B776B24 is consumed.
+See CDT HANDOVER and artifacts/runtime-recovery-live-logs-20261104-123251-697-pid29952.
+
+Hue code and immutable1.0.5 ZIP remain unchanged. CrimsonHue ASI is absent from
+the current module list; this verifies CDT recovery, not combined Hue/OpenRGB
+output. No assistant installation, game actions or new publication. No further
+test requested: report success; later launches use normal checks without editing
+the INI. Second live launch and arbitrary future-layout compatibility not claimed.
+
+# Previous checkpoint — 2026-11-04, companion CDT one-time recovery diagnostic
 
 Owner requested a real recovery-path test without deleting correct game values.
 CDT now offers an explicit one-time cold search after valid, advancing world data;
