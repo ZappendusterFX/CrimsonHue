@@ -3,6 +3,25 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment and optional OpenRGB.
 
+**Unpublished candidate: independent Hue, OpenRGB and Tuya outputs.** The next
+test pair is **CrimsonHue 1.0.8-outputs.1 / CDT 2.2.10-outputs.1**. Its package
+validation is still pending; no live Tuya lamp acceptance is claimed. This is
+separate from the published **1.0.7 / 2.2.9** pair described below.
+
+In the candidate, **Setup → Lighting outputs** selects Hue, OpenRGB and Tuya LAN
+independently. OpenRGB-only and Tuya-only need no Hue bridge. Fresh setups select
+no output; existing saved Hue pairing keeps Hue enabled. Common Start/Stop controls
+the configured selections, and a failed output does not cancel healthy outputs.
+The new **Tuya LAN** tab supports compatible Wi-Fi **3.5** RGB devices, individual
+room positions, shared tuning and menu lighting. Add/Edit opens a separate Windows
+credential dialog; connection data and keys are saved together in a current-user
+DPAPI-protected file and never enter the shared game HUD. Its connection check
+tests TCP reachability only. Tuya starts with a 25% output cap, sends changed
+colors no faster than every 300 ms per lamp and retains only the latest desired
+color. Stop restores a queried prior state only when current ownership can be
+confirmed; otherwise the last lamp state can remain. See the
+[candidate setup and limits](docs/USER-GUIDE.md#independent-output-candidate-unpublished).
+
 **CrimsonHue 1.0.7** adds configurable **Menu lighting** and OpenRGB reset controls.
 Use **CrimsonDesertTelemetry 2.2.9** for menu-pause detection, capture suspension
 and the current shared panel. [1.0.7 release notes](docs/releases/v1.0.7.md).
@@ -43,7 +62,7 @@ segments, including horizontal arrangements. Recommended spatial defaults use a
 The title-bar **X**, **Hide settings** and **Ctrl+Shift+H** hide the mixer while
 sync continues. Physical output starts only when explicitly requested.
 
-OpenRGB has its own tab in the mixer. Start its SDK server on localhost port 6742,
+In stable **1.0.7**, OpenRGB has its own tab in the mixer. Start its SDK server on localhost port 6742,
 enable OpenRGB, read devices, select them and place each device around your seat.
 The common **Start lighting sync** runs Hue and OpenRGB together; the existing
 Hue bridge and Entertainment area are still required. OpenRGB starts disabled
@@ -88,6 +107,9 @@ physical lamp brightness.
 
 ## Start
 
+These steps describe stable **1.0.7 / CDT 2.2.9**. The unpublished candidate's
+independent-output setup is linked above.
+
 1. Install **CrimsonDesertTelemetry 2.2.9** with its server, rendered and upstream
    ManyLights capture, and source visibility enabled.
 2. Install [**.NET 8 Desktop Runtime x64**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
@@ -96,8 +118,8 @@ physical lamp brightness.
    Only the ASI needs deploying. Start the game; the in-game mixer opens.
    The ZIP contains no runtime installer or ASI loader.
 3. In **Setup**, enter your bridge's local IPv4 address and click **Find bridge**.
-   The button applies the address directly. The preset
-   `192.168.2.109` is the development setup; change it to your own address.
+   The button applies the address directly. Replace any prefilled example with
+   your own bridge address.
 4. Check the displayed bridge identity. Press the bridge's link button (for diyHue,
    in its web UI), then click **Trust bridge & pair** within 30 seconds. Repeat the
    link-button press if the pairing window expires. Both the application key and
@@ -147,6 +169,8 @@ automatically. See [wall-washer setup](docs/USER-GUIDE.md#wall-washer-room-calib
 Streaming never starts automatically when the ASI loads.
 
 ## Requirements and scope
+
+The following requirements describe the published **1.0.7** package.
 
 - Windows 10/11 x64.
 - .NET 8 **Desktop Runtime x64**, including its WindowsDesktop/WPF framework.

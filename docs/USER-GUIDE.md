@@ -1,5 +1,81 @@
 # CrimsonHue 1.0.7 — setup and tuning guide
 
+## Independent-output candidate (unpublished)
+
+This section describes **CrimsonHue 1.0.8-outputs.1** paired with
+**CrimsonDesertTelemetry 2.2.10-outputs.1**. Package validation is pending and
+no live Tuya lamp test is claimed. The published pair remains **1.0.7 / 2.2.9**:
+that stable version requires Hue setup for OpenRGB and has no Tuya backend.
+The stable setup guide continues at [Menu lighting](#menu-lighting).
+
+### Choose outputs
+
+In the candidate's **Setup → Lighting outputs**, select any combination of
+**Philips Hue Entertainment**, **OpenRGB** and **Tuya LAN (3.5)**. Hue is optional
+for the other two. A fresh installation selects none. An existing saved Hue
+pairing keeps Hue enabled; saved OpenRGB choices are preserved.
+
+Configure each selected output in its own tab. Hue alone requires bridge pairing
+and an Entertainment area. OpenRGB needs its local SDK server and selected
+compatible devices; **Read devices** reads the server inventory. Tuya needs a
+compatible lamp and its own connection settings. **Start lighting sync** starts
+configured selected outputs; an unconfigured Hue output cannot prevent another
+configured output from starting. A failed output reports its own status while
+healthy outputs continue. Stop and Start retries an output that has stopped.
+
+Stop sync before changing output selections, connection details or enabled-device
+lists. Brightness, response and room positions remain adjustable while running.
+The shared menu color and stale-telemetry behavior also apply to Tuya. Demo remains
+preview-only, and loading the mod never starts physical output.
+
+### Add a Tuya lamp
+
+1. Open **Tuya LAN → Add device**. A separate Windows dialog accepts the lamp
+   name, local host/IP, Tuya device ID and local key. **Edit device** updates an
+   existing entry; leaving its key blank retains the saved key. Obtain these
+   values through the device's setup. CrimsonHue does not request a cloud login.
+2. Use the **3.5** profile for a compatible Wi-Fi RGB lamp. The optional profile
+   fields default to TCP port **6668**, power DPS **20**, mode **21**, HSV color
+   **24**, white brightness **22**, color temperature **23** and scene **25**.
+   These defaults cover the implemented LEDVANCE/compatible Tuya profile, not
+   every Tuya product. Other protocol versions, including **3.3/3.4**, and
+   Zigbee/Bluetooth devices are not supported by this backend.
+3. Save the lamp. The connection data, room layout and keys are stored together
+   in a Windows current-user DPAPI-protected file. No local keys are sent to
+   CDT's HUD, logs or mixer presets. Saving does not change the lamp.
+4. **Check connection** opens a bounded TCP connection only. A reachable result
+   does not authenticate the key, read the lamp state or prove RGB compatibility.
+5. Select the device, drag it in the 3D room and adjust **Height**. Each lamp has
+   one room position. **Output limit** starts at **25%**, **Light coverage** at
+   **90°** and **Background light** at **25%** of the shared background amount.
+   The lower of the shared brightness limit and Tuya output limit applies.
+6. Enable Tuya in Setup and use **Start lighting sync**. Close other applications
+   controlling the same lamps. Use **Remove device** only with sync stopped.
+
+The color profile uses a 12-hex-digit HSV value: hue, saturation and brightness
+are each four hex digits. RGB output selects color mode; it does not mix in white
+brightness DPS. The sliders describe calculated commands, not calibrated physical
+brightness or proof of device delivery.
+
+### Tuya pacing and Stop behavior
+
+Each lamp has its own worker and a single replaceable desired color. Changed
+colors are sent no faster than once every **300 ms** per lamp; unchanged colors
+are deduplicated. Slow responses do not create a growing queue or delay Hue,
+OpenRGB or other lamps. Failed lamps back off for **2.5 seconds** before retrying.
+This is an implementation limit, not a measured refresh-rate or latency claim.
+
+Stop cancels all selected outputs and waits for bounded cleanup. Tuya attempts
+to restore a supported state read before takeover only after a new query confirms
+the lamp still matches the last command. If that prior state is unavailable, the
+lamp was changed elsewhere, or cleanup cannot be confirmed, the last state may
+remain. Read the per-device status; do not assume Stop always turns a lamp off or
+restores an unknown scene. Crashes and process termination can prevent cleanup.
+
+The Skills-menu controller stutter remains unresolved. Independent output and
+menu lighting are not a fix for the repeated hover sounds. No physical Tuya
+performance, current-game acceptance or additional protocol support is implied.
+
 ## Menu lighting
 
 Use Hue **1.0.7** together with CDT **2.2.9** for menu lighting.

@@ -1,5 +1,38 @@
 # CrimsonHue 1.0.7 — mixer hosted by CDT
 
+## Unpublished independent-output candidate
+
+The next private pair is **Hue 1.0.8-outputs.1 / CDT 2.2.10-outputs.1**.
+Package validation is pending. The stable **1.0.7 / 2.2.9** behavior below remains
+the published baseline; it still requires Hue setup for OpenRGB and has no Tuya
+output. Do not use the new controls with the old shared panel.
+
+The candidate keeps one headless `CrimsonHue.asi` and CDT's existing renderer.
+Setup selects Hue, OpenRGB and Tuya independently; no Hue bridge is required for
+OpenRGB-only or Tuya-only. New setups start with no outputs selected. Existing Hue
+pairing migrates to Hue enabled; saved optional-output choices remain local.
+Start creates separate output tasks and Stop cancels and awaits their cleanup.
+One output's connection/configuration failure does not stop healthy outputs.
+
+The Tuya page exposes only opaque device identifiers, names, placement, calculated
+RGB and status. Add/Edit opens a separate Windows dialog for the host, device ID,
+local key and DPS profile. Keys use a password input. The layout and keys are
+validated and atomically saved in one current-user DPAPI-protected `tuya.secrets`
+bundle. They do not cross the shared HUD API or enter shareable presets. No cloud
+account or cloud discovery is used. The TCP check sends no lamp-control command;
+it does not verify the key or device capabilities.
+
+Only compatible Wi-Fi protocol **3.5** RGB devices are implemented. Each lamp has
+a bounded worker, one replaceable desired color, at least 300 ms between changed
+color writes and a 2.5-second failure backoff. These limits are not measured lamp
+refresh rates. Cleanup queries the current state and restores a supported prior
+state only if the output still matches its own commands. Unconfirmed prior state,
+ownership changes or unreachable devices can leave the last state in place.
+Demo and synthetic smoke stay dry. No live Tuya acceptance is established by the
+implementation or package tests. [Candidate setup](USER-GUIDE.md#independent-output-candidate-unpublished).
+
+## Published 1.0.7 behavior
+
 **Hue 1.0.7 / CDT 2.2.9** adds configurable menu lighting and independent CDT
 acquisition pause. Menu color/hex, brightness, Save and an optional Gold preset
 are directly in the HUD's Lighting page; see [the setup guide](USER-GUIDE.md#menu-lighting).
