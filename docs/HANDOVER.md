@@ -1,4 +1,21 @@
-# Current checkpoint — 2026-11-04, tick-based pause selected; CDT diagnostic preparation
+# Current checkpoint — 2026-11-04, CDT tick diagnostic ready; owner handoff
+
+CDT source 3f810c0 produced validated private production-profile 2.2.9-tick.1,
+Research OFF, optional monitor ON. ZIP:
+C:/DEV/CrimsonDesertTelemetry/artifacts/mod-manager/CrimsonDesertTelemetry-v2.2.9-tick.1-ModManagers.zip.
+SHA256 7A7819427F468A307918D5F4BCB7699B858DA0B4ACF8B3347EA81FC950053487.
+Native policy/scan/thunk (80000 synthetic entries), decoder/own-process reader,
+and package folder/ZIP validation pass. No installation or in-game acceptance.
+This is ONLY a tick monitor; no automatic menu light/acquisition pause yet.
+
+Owner is freely playing. Next owner installs CDT when convenient with game
+closed, then reports restart; no Hue replacement needed for this diagnostic.
+Never install/poll/wait on owner's behalf. After that report, CDT checks deployed
+hashes read-only and records owner-confirmed gameplay via
+scripts/Read-SimulationTickDiagnostic.ps1 -Label gameplay, then Skills separately.
+See CDT docs/SIMULATION_TICK_DIAGNOSTIC.md and current HANDOVER for evidence.
+
+# Previous checkpoint — 2026-11-04, tick-based pause selected; CDT diagnostic preparation
 
 Inventory confirms shared MainMenu control 27D sequence 03/00/03 across
 Skills/gameplay/Inventory; all three captures stable. Owner confirms menus iff
