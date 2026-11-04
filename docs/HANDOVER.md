@@ -8,6 +8,11 @@ upstream source is unknown/physics-stopped-restart-required. Its native log says
 continuous visibility stopped until restart: unknown-fan-time-budget. See CDT's
 current HANDOVER for the latched timing guard and preserved original logs.
 
+Owner subsequently identifies the "Deminiss Civil War" scene as the onset context.
+This is owner-reported context, not an independently captured reproduction or
+proof of a common cause for the visibility stop, FPS loss and OpenRGB disconnect.
+No restart reported; no further live acceptance check performed.
+
 OpenRGB is also stopped, sending=false, restoration incomplete/connection
 unavailable for mouse/DualSense/GPU/keyboard; underlying disconnect cause is not
 retained in this status. Actual current response=Calm, brightness1/background.4.
