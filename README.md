@@ -1,10 +1,12 @@
 # CrimsonHue
 
 A Windows ASI plugin that turns Crimson Desert's live local-light
-telemetry into spatial room lighting through Hue Entertainment.
+telemetry into spatial room lighting through Hue Entertainment and optional OpenRGB.
 
-**CrimsonHue 1.0.4** is the in-game ASI package. Install it together with
-**CrimsonDesertTelemetry 2.2.7**. CDT draws the optional interactive Hue mixer in
+**CrimsonHue 1.0.5** is the current source/package candidate. Game build26423880
+uses **CrimsonDesertTelemetry 2.2.8-build26423880-integrated.1**; live acquisition
+acceptance awaits owner installation. Published stable1.0.4/CDT2.2.7 target the
+previous game build. CDT draws the optional interactive Hue mixer in
 its existing D3D12 renderer; `CrimsonHue.asi` is the headless lamp controller and
 installs no graphics hooks. There is no separate settings window or process.
 The ZIP contains one ASI and documentation. Application dependencies are
@@ -335,10 +337,13 @@ automatically and reset sequence tracking. Additive schema 1.x fields are tolera
 
 ## Build and verify
 
-The private `1.0.5-openrgb.3` test profile is documented in [docs/OPENRGB.md](docs/OPENRGB.md).
-With CDT `2.2.8-openrgb.2`, it adds an OpenRGB tab for device selection, 3D room
-placement and independent light coverage/background balance alongside Hue Start/Stop.
-Public 1.0.4 remains Hue-only.
+Version 1.0.5 includes optional OpenRGB output alongside Hue. Its separate tab
+provides device selection, a 3D room and independent light coverage/background
+balance. Enable OpenRGB explicitly; existing private-test selections are retained.
+Start/Stop controls both outputs, using the existing Hue bridge/area setup.
+See [OpenRGB setup and evidence](docs/OPENRGB.md). The published 1.0.4 remains Hue-only.
+Game build26423880 needs the paired CDT `2.2.8-build26423880-integrated.1` candidate;
+its installed acquisition checks are pending. Main source is ahead of public releases.
 
 Use a .NET 8 SDK (or newer with the .NET 8 x64 host pack) and Visual Studio 2022
 with Desktop development with C++ and CMake tools on Windows:

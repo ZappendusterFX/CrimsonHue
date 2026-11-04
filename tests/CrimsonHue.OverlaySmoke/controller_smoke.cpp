@@ -21,7 +21,6 @@ int wmain(int argc, wchar_t** argv) {
     try {
         const auto asi = std::filesystem::absolute(argv[1]);
         const auto png = std::filesystem::absolute(argv[2]);
-        const bool expectOpenRgb = argc == 4 && std::wstring(argv[3]) == L"--openrgb-preview";
         std::filesystem::create_directories(png.parent_path());
         SetEnvironmentVariableW(L"CRIMSONHUE_ASI_SMOKE_PATH", png.c_str());
         SetEnvironmentVariableW(L"CRIMSONHUE_ASI_OVERLAY_SMOKE", L"1");
@@ -72,8 +71,8 @@ int wmain(int argc, wchar_t** argv) {
             sphereDefault = value.at("value") == 30.0 && value.at("initial") == 30.0 && value.at("min") == 1.0 && value.at("max") == 180.0 && value.at("group") == "Space";
         Require(sphereDefault, "Spherical radius default or range missing from controller snapshot");
 
-        Require(state.value("openRgbPreviewBuild", false) == expectOpenRgb &&
-            state.value("openRgbPreview", true) == false && state.at("openRgb").is_null(),
+        Require(state.value("openRgbAvailable", false) &&
+            state.value("openRgbOutputAllowed", true) == false && state.at("openRgb").is_null(),
             "OpenRGB build selection is wrong or synthetic smoke could enable physical output");
         const auto rgbKey = state.at("openRgbRoom").at("devices")[0].at("key");
         Command({{"action","openRgb"},{"key","position"},{"device",rgbKey},
@@ -97,7 +96,7 @@ int wmain(int argc, wchar_t** argv) {
         Require(state.at("openRgbRoom").at("sourceRadiusDegrees")==65 && state.at("openRgbRoom").at("backgroundAmount")==.4 &&
             state.at("openRgbRoom").at("port") == rgbPlaced.at("port") &&
             state.at("openRgbRoom").at("devices")[0].at("position") == rgbPlaced.at("devices")[0].at("position") &&
-            !state.value("openRgbPreview",true) && state.at("openRgb").is_null(), "OpenRGB validation or Demo output isolation failed");
+            !state.value("openRgbOutputAllowed",true) && state.at("openRgb").is_null(), "OpenRGB validation or Demo output isolation failed");
         // Exercise the real native-to-managed command ABI. Profile selection
         // must alter effective mapping while retaining the entire custom setup.
         Require(state.at("lighting").at("recommended") == true && state.at("lighting").at("revision") == 1 &&

@@ -1,10 +1,17 @@
-# CrimsonHue 1.0.4 — mixer hosted by CDT
+# CrimsonHue 1.0.5 — mixer hosted by CDT
 
-Private test **1.0.5-openrgb.3** with **CDT2.2.8-openrgb.2** adds independent OpenRGB
-Light coverage (90deg default) and Background light (25% of shared fill default).
-These keep normal desk placement from losing effects to the narrow Hue footprint
-and neutral fill. Existing positions/output limits are retained. The shared Hue
-profile is unchanged. The HUD shows true calculated RGB without a grey pedestal.
+Main now includes the OpenRGB implementation previously tested on a separate
+branch. Enable it in its own HUD tab, read devices and place them in the 3D room.
+It runs alongside Hue with the common Start/Stop and still needs the existing
+Hue bridge/area setup. New users start with OpenRGB disabled; saved private-test
+enable state, selections and positions are retained. Coverage defaults to90deg,
+background to25% of shared fill and output limit to25%. Source RGB and the shared
+Hue profile are unchanged. Demo/smoke never send physical output.
+
+For game build26423880 use the paired CDT2.2.8-build26423880-integrated.1 candidate.
+That candidate's installed capture/physics checks are pending; this source merge
+does not establish new-game or OpenRGB optical acceptance. Historical test records
+and their limits are in OPENRGB.md.
 
 Previous test **1.0.5-openrgb.2** added a separate OpenRGB tab, device selection and
 an interactive 3D room. Pair it with **CDT2.2.8-openrgb.1** for the updated HUD.
@@ -15,8 +22,8 @@ areas and shareable lighting presets. New devices default to front, output25%.
 The existing bridge/area is still needed for the common Start button.
 
 The previous test **1.0.5-openrgb.1** added continuous OpenRGB output to the existing
-Start/Stop lighting sync. Its `-openrgb.` build profile enables the front-position
-trial only in explicitly named private packages. SDK server: localhost:6742;
+Start/Stop lighting sync, then limited to explicitly named private packages.
+SDK server: localhost:6742;
 eligible RGB zones share `(0,1,0)` with a 25% master cap. The existing CDT2.2.7
 panel displays OpenRGB status through the shared stream-status text. No new CDT
 package or native UI protocol is needed. Hue setup/area is still required for

@@ -1,4 +1,22 @@
-# Current checkpoint — 2026-11-04, OpenRGB color-response correction
+# Current checkpoint — 2026-11-04, OpenRGB merged to main with current-game recovery
+
+Owner requests merging both OpenRGB branches on main while recovering overnight
+game update26423880. Local main fast-forwarded; native telemetry recovery belongs
+to CDT and is documented there. Hue1.0.5 now includes optional OpenRGB without a
+private-version compile gate. New users opt in (Enabled=false in the app); saved
+private-test enable state, device selection/positions and90deg/25% response policy
+are retained. Existing Hue bridge/area/common Start/Stop remain required. Demo and
+smoke cannot create output. UI snapshot uses openRgbAvailable/openRgbOutputAllowed.
+
+161/161 Core tests pass. Pair with CDT2.2.8-build26423880-integrated.1 exact research
+candidate, production code with all features ON. Packaging/final native controller
+and shared HUD validation receipt follows. No installation, repeated lamp/spell or
+new physical acceptance. Latest OpenRGB color correction's optical response and
+CDT's current-build installed acquisition remain pending. Owner alone installs;
+after handoff end the turn, resume only after owner reports installation/restart.
+No release tag or public asset publication. Stable1.0.4 remains preserved.
+
+# Previous checkpoint — 2026-11-04, OpenRGB color-response correction
 
 Owner reports grey peripheral colors and little lightning response while Hue
 turns blue. The existing passive artifacts/hue-live-state/ CLRMD reader now includes

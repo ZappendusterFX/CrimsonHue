@@ -7,9 +7,5 @@
     <UseAppHost>false</UseAppHost>
     <AssemblyName>CrimsonHue</AssemblyName>
   </PropertyGroup>
-  <!-- Only the explicitly named private test package joins OpenRGB to Start/Stop. -->
-  <PropertyGroup Condition="$([System.String]::Copy('$(Version)').Contains('-openrgb.'))">
-    <DefineConstants>$(DefineConstants);OPENRGB_PREVIEW</DefineConstants>
-  </PropertyGroup>
   <ItemGroup><ProjectReference Include="../CrimsonHue.Core/CrimsonHue.Core.csproj" /></ItemGroup>
 </Project>

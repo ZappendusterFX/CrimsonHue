@@ -1,9 +1,21 @@
-# CrimsonHue 1.0.4 — setup and tuning guide
+# CrimsonHue 1.0.5 — setup and tuning guide
 
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
 existing Hue Entertainment area. Its headless ASI uses CDT's in-game mixer panel. Its
 output is an artistic lighting estimate, not a sample of the displayed pixels
 or a measurement of the physical lamps.
+
+Optional **OpenRGB** runs alongside Hue through its local SDK server. In the
+OpenRGB tab, enable it, read devices, select them and place them in the 3D room.
+Drag changes floor position; Height changes vertical position; right-drag rotates
+the view. Coverage90deg/background25% are independent of Hue's room settings.
+Output starts at25%. Common Start/Stop controls both; Hue bridge/area setup is
+still required. Exit other apps controlling the same RGB devices. See OPENRGB.md
+for supported zones, ownership restoration and the limits of SDK readback.
+
+Game build26423880 requires the paired CDT2.2.8-build26423880-integrated.1 candidate.
+Its live acquisition checks await owner installation. The stable release below
+documents the previously validated game build.
 
 ## What to install
 

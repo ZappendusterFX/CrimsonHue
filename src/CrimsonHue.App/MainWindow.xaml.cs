@@ -225,7 +225,7 @@ public partial class MainWindow : Window
         session = new StreamingSession(bridge);
         var activeSession = session;
         var area = SelectedArea;
-        openRgbSession = OpenRgbPreviewEnabled ? new OpenRgbStreamingSession() : null;
+        openRgbSession = OpenRgbOutputAllowed ? new OpenRgbStreamingSession() : null;
         var token = streamCancel.Token;
         streamTask = Task.Run(() => RunLightingAsync(activeSession, area, token));
         UpdateButtons();

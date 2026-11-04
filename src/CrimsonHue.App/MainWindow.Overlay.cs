@@ -49,7 +49,7 @@ public partial class MainWindow
                 session?.Sending == true, DemoCheck.IsChecked == true),
             telemetry = TelemetryStatus.Text, capture = CaptureInfo.Text, ambient = AmbientStatus.Text,
             stream = StreamStatus.Text, tuning = TuningStatus.Text, bridgeStatus = BridgeStatus.Text,
-            openRgbPreviewBuild = OpenRgbPreviewBuild, openRgbPreview = OpenRgbPreviewEnabled, openRgb = openRgbSession?.State,
+            openRgbAvailable = true, openRgbOutputAllowed = OpenRgbOutputAllowed, openRgb = openRgbSession?.State,
             openRgbRoom = OpenRgbSnapshot(),
             bridgeConnected, bridgePhase, bridgeError, bridgeDiagnostic,
             certificate = CertificateLabel.Text, pairing = PairPanel.Visibility == Visibility.Visible,

@@ -1,4 +1,21 @@
-# OpenRGB development test
+# OpenRGB companion output
+
+## Main integration — 2026-11-04
+
+Owner authorizes merging the OpenRGB branch together with the shared CDT panel
+while recovering game build26423880. Main1.0.5 now includes the feature without a
+private-version compile gate. OpenRGB starts disabled for new users, preserving
+saved private-test enable state and placements. Loading either ASI still sends
+nothing; common Start/Stop requires the existing Hue bridge/area setup. Demo and
+synthetic smoke remain output-free. The independently balanced90deg/25% color
+correction is retained; its installed appearance remains pending owner feedback.
+
+Use OpenRGB's SDK server on localhost6742, enable the OpenRGB tab, read devices,
+select/place them in the 3D room and start lighting sync. Close other apps writing
+the same hardware. Prior modes/colors restore only while ownership is retained
+and the server is reachable. Readback is SDK state, not optical confirmation.
+Pair this candidate with CDT2.2.8-build26423880-integrated.1 for the current game
+and HUD. Neither the merge nor synthetic checks validate newly installed hooks.
 
 ## Color-response correction — Hue 1.0.5-openrgb.3 + CDT 2.2.8-openrgb.2
 

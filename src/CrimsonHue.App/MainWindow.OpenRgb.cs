@@ -8,7 +8,8 @@ namespace CrimsonHue.App;
 public partial class MainWindow
 {
     private OpenRgbStreamingSession? openRgbSession;
-    private OpenRgbLayout openRgbLayout = new(Enabled: OpenRgbPreviewBuild, Devices: []);
+    // New users opt in; existing private-test selections and enable state survive.
+    private OpenRgbLayout openRgbLayout = new(Enabled: false, Devices: []);
     private IReadOnlyList<OpenRgbDevice> openRgbInventory = [];
     private readonly LightMapper openRgbPreviewMapper = new();
     private readonly DispatcherTimer openRgbSaveTimer = new() { Interval = TimeSpan.FromMilliseconds(600) };
@@ -39,7 +40,7 @@ public partial class MainWindow
 
     private void BeginOpenRgbDiscovery()
     {
-        if (smoke || !OpenRgbPreviewBuild || closing || openRgbDiscoveryTask?.IsCompleted == false) return;
+        if (smoke || closing || openRgbDiscoveryTask?.IsCompleted == false) return;
         openRgbDiscoveryTask = DiscoverOpenRgbAsync();
     }
 
@@ -72,7 +73,6 @@ public partial class MainWindow
 
     private void SetOpenRgb(JsonElement command)
     {
-        if (!OpenRgbPreviewBuild && !smoke) return;
         var config = openRgbLayout;
         var key = command.GetProperty("key").GetString();
         if (key == "enabled") CommitOpenRgb(config with { Enabled = command.GetProperty("value").GetBoolean() });
@@ -109,7 +109,7 @@ public partial class MainWindow
                 colors = entries.Select((p, i) => (p.DeviceKey, mapped[i].Rgb)).ToDictionary(p => p.DeviceKey, p => p.Rgb);
             }
         }
-        return new { available = OpenRgbPreviewBuild || smoke, config.Enabled, config.Port, config.Brightness,
+        return new { available = true, config.Enabled, config.Port, config.Brightness,
             config.SourceRadiusDegrees, config.BackgroundAmount,
             status = openRgbDiscoveryStatus, busy = openRgbDiscoveryTask?.IsCompleted == false,
             devices = (config.Devices ?? []).Select(p => {
@@ -119,20 +119,9 @@ public partial class MainWindow
                     leds = device?.PreviewLeds().Length ?? (smoke ? 3 : 0), rgb = colors?.GetValueOrDefault(p.DeviceKey) ?? default };
             }) };
     }
-    private static bool OpenRgbPreviewBuild
-    {
-        get
-        {
-#if OPENRGB_PREVIEW
-            return true;
-#else
-            return false;
-#endif
-        }
-    }
-    private bool OpenRgbPreviewEnabled => OpenRgbPreviewBuild && !smoke;
+    private bool OpenRgbOutputAllowed => !smoke && DemoCheck.IsChecked != true;
 
-    private string WithOpenRgbStatus(string hueStatus) => !OpenRgbPreviewEnabled ? hueStatus :
+    private string WithOpenRgbStatus(string hueStatus) => !OpenRgbOutputAllowed || !openRgbLayout.Enabled ? hueStatus :
         hueStatus + " | " + (openRgbSession?.State.Status ?? "OpenRGB · open the OpenRGB tab to place devices");
 
     private async Task RunLightingAsync(StreamingSession hue, EntertainmentArea area, CancellationToken token)
