@@ -1,4 +1,23 @@
-# Current checkpoint — 2026-11-04, OpenRGB diagnosis withdrawn; menu bypass and reset requested
+# Current checkpoint — 2026-11-04, menu-state comparison preparation in CDT
+
+Owner asks how to implement menu lighting. CDT has prepared a bounded read-only
+observer for real UI root instances, following offline CommonRoot registration
+and state-field evidence. No generic active-menu signal is proven yet. B9 isTRUE
+by construction and changes child tags, so it cannot simply mean menu-open.
+See C:/DEV/CrimsonDesertTelemetry/docs/MENU_LIGHTING_RESEARCH.md and HANDOVER.
+
+Intended behavior: verified menu pauses new native light/Ambient/physics acquisition
+in CDT; Hue holds configurable fixed menu light with its stream still owned.
+Verified exit requires fresh data before blending back. Never treat unknown/stale
+menu state as proof or call a constant color alone an acquisition/stutter fix.
+Observer passes exact-EXE offline and synthetic bounds/race/identity checks; no
+live process read yet. Next: owner in normal gameplay replies "Spiel", then run
+FROM CDT & ./scripts/Read-MenuStateCandidates.ps1 -Label gameplay. Later Skills
+and gameplay-return reads require separate owner handoffs. LightSync may remain
+off; no new installation or output changes needed. No confirmation of previous reset
+packages being installed has been received; do not run their acceptance checks.
+
+# Previous checkpoint — 2026-11-04, OpenRGB diagnosis withdrawn; menu bypass and reset requested
 
 Owner explicitly retracts BOTH apparent OpenRGB-off and Razer-disabled fixes:
 the skill menu still hangs with Hue alone. Normal skill-hover sound repeats
