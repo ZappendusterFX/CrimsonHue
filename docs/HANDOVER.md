@@ -18,8 +18,18 @@ unchanged. HUD nodes no longer add grey to the color; outlines keep black visibl
 See OPENRGB.md and artifacts/openrgb-color-20261104/ for evidence and replay limits.
 Target paired packages: Hue1.0.5-openrgb.3, CDT2.2.8-openrgb.2. No installation,
 live setting changes, repeated spell/AN-AUS tests, push or merge performed.
-Final package hashes/validation follow after build. Owner appearance acceptance
-of this color correction remains pending installation of the new test package.
+Both exact package validators, controller ABI (new controls/defaults/rejection),
+CDT D3D12 --openrgb and hue-input-ownership tests pass. The final screenshot
+`C:/DEV/CrimsonDesertTelemetry/artifacts/openrgb-color-response.png` was inspected.
+Hue ZIP `dist/CrimsonHue-1.0.5-openrgb.3-asi-win-x64.zip` is3047406bytes, SHA256
+`E8E1BA4DD215152370F6D1B5A6356F0F055971A70BA68EE716C0EE034A7884AB`.
+CDT ZIP `C:/DEV/CrimsonDesertTelemetry/artifacts/mod-manager/CrimsonDesertTelemetry-v2.2.8-openrgb.2-ModManagers.zip`
+is1076362bytes, SHA256 `56B7ABDDF571583CBFE5BB8A9F92B69732AA5AD9FD29F1BF59F6B22C9AB78058`.
+Payload commits Hue13d61ae / CDT5f45cdb. Receipt is
+`artifacts/openrgb-color-20261104/package-receipt.json`; paired checksum file is
+`dist/CrimsonHue-1.0.5-openrgb.3-paired-SHA256SUMS.txt`. Earlier packages preserved.
+Hand off both ZIPs for owner installation with game closed. Appearance acceptance
+of this color correction remains pending; do not install or poll for owner action.
 
 # Previous checkpoint — 2026-11-04, OpenRGB device selection and 3D HUD
 

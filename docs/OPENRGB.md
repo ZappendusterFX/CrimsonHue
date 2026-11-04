@@ -36,9 +36,20 @@ visibility instead of adding a grey pedestal. The viewer marker now says YOU.
 
 161/161 Core tests pass, including the normal desk-height/blue-light case,
 old-settings migration, independent background balance and neutral-color retention.
-The new controls are checked through the native controller ABI. New paired test
-packages will be validated and handed off for owner installation and appearance
-acceptance; the assistant does not install or change current game settings.
+The new controls are checked through the native controller ABI. Both exact package
+validators, D3D12 OpenRGB panel smoke (visually inspected) and CDT input test pass.
+Paired immutable packages for owner installation with game closed:
+
+- `dist/CrimsonHue-1.0.5-openrgb.3-asi-win-x64.zip`, SHA256
+  `E8E1BA4DD215152370F6D1B5A6356F0F055971A70BA68EE716C0EE034A7884AB`.
+- `C:/DEV/CrimsonDesertTelemetry/artifacts/mod-manager/CrimsonDesertTelemetry-v2.2.8-openrgb.2-ModManagers.zip`, SHA256
+  `56B7ABDDF571583CBFE5BB8A9F92B69732AA5AD9FD29F1BF59F6B22C9AB78058`.
+
+Payload commits Hue13d61ae / CDT5f45cdb. Receipt:
+`artifacts/openrgb-color-20261104/package-receipt.json`. Final synthetic screenshot:
+`C:/DEV/CrimsonDesertTelemetry/artifacts/openrgb-color-response.png`.
+Installed optical acceptance is pending; the assistant does not install or change
+current game settings. The source policy retains device positions/output caps.
 
 ## Current HUD test — Hue 1.0.5-openrgb.2 + CDT 2.2.8-openrgb.1
 
