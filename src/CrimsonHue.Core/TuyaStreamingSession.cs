@@ -18,7 +18,7 @@ public sealed class TuyaStreamingSession
 {
     public static readonly TimeSpan MinimumInterval = TimeSpan.FromMilliseconds(300);
     public static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds(2500);
-    private readonly Func<TuyaLamp, string, TuyaColorCommand, CancellationToken, Task<TuyaWriteResult>> send;
+    private readonly Func<TuyaLamp, string, Func<TuyaColorCommand?>, CancellationToken, Task<TuyaSendResult>> send;
     private readonly Func<TuyaLamp, string, CancellationToken, Task<TuyaDeviceState>> read;
     private readonly Func<TuyaLamp, string, TuyaDeviceState, CancellationToken, Task<TuyaWriteResult>> restore;
     private TuyaStreamState state = new("Tuya · stopped");
@@ -28,13 +28,13 @@ public sealed class TuyaStreamingSession
     public TuyaStreamingSession()
     {
         var client = new TuyaClient();
-        send = client.SendAsync; read = client.ReadStateAsync; restore = client.RestoreAsync;
+        send = client.SendLatestAsync; read = client.ReadStateAsync; restore = client.RestoreAsync;
     }
 
     // All three operations must be supplied together; fake writes must never cause
     // an accidental real-network state query or restoration in synthetic tests.
     public TuyaStreamingSession(
-        Func<TuyaLamp, string, TuyaColorCommand, CancellationToken, Task<TuyaWriteResult>> send,
+        Func<TuyaLamp, string, Func<TuyaColorCommand?>, CancellationToken, Task<TuyaSendResult>> send,
         Func<TuyaLamp, string, CancellationToken, Task<TuyaDeviceState>> read,
         Func<TuyaLamp, string, TuyaDeviceState, CancellationToken, Task<TuyaWriteResult>> restore)
     { this.send = send; this.read = read; this.restore = restore; }
@@ -69,11 +69,12 @@ public sealed class TuyaStreamingSession
                     if (!workers.ContainsKey(lamp.Id) && workers.Count < TuyaLayout.MaximumDevices &&
                         !workers.Values.Any(w => w.Lamp.DeviceId == lamp.DeviceId ||
                             (w.Lamp.Port == lamp.Port && string.Equals(w.Lamp.Host, lamp.Host, StringComparison.OrdinalIgnoreCase))))
-                        workers.Add(lamp.Id, new(lamp, localKey, send, read, restore, token));
+                        workers.Add(lamp.Id, new(lamp, localKey, send, read, restore, StillAuthorized, token));
 
                 var now = Stopwatch.GetTimestamp();
                 var menu = menuLighting?.Invoke() ?? new();
-                var decision = menuPolicy.Evaluate(activity?.Read(out _), telemetry.Read(out _), ambient.Read(out _), menu);
+                var observedActivity = activity?.Read(out _);
+                var decision = menuPolicy.Evaluate(observedActivity, telemetry.Read(out _), ambient.Read(out _), menu);
                 // A changed set/order/position must not inherit another channel's history.
                 var layoutKey = string.Join("|", targets.Select(l => $"{l.Id}:{l.Position}"));
                 if (decision.ResetMapper || previousLayout != layoutKey) mapper.Reset();
@@ -85,7 +86,8 @@ public sealed class TuyaStreamingSession
                 colors = MenuLightingPolicy.Apply(decision, colors, area, mapping, menu);
                 for (var i = 0; i < targets.Count; i++)
                     if (workers.TryGetValue(targets[i].Id, out var worker) && worker.Lamp.SameConnection(targets[i]))
-                        worker.Publish(new(FromOutput(colors[i].Rgb), decision.CanOutput, now));
+                        worker.Publish(new(FromOutput(colors[i].Rgb), decision.CanOutput, now,
+                            observedActivity, decision.Frame, decision.UseMenuLight));
                 lastMap = now;
                 PublishState(!config.Enabled ? "Tuya · disabled" : targets.Count == 0 ? "Tuya · no lamps selected" :
                     decision.UseMenuLight ? "Tuya · menu light" : decision.CanOutput ? "Tuya · room lighting" :
@@ -103,6 +105,25 @@ public sealed class TuyaStreamingSession
             PublishState(retained > 0 ? $"Tuya stopped · {retained} lamp state(s) retained; see device status" :
                 "Tuya stopped · prior states restored when still owned", workers.Values, lastTargets);
             foreach (var worker in workers.Values) worker.Dispose();
+        }
+
+        // The transport invokes this again after connecting/authenticating. A
+        // pause/resume/session transition revokes the old mapped color even if the
+        // 50 ms producer has not yet processed that activity publication.
+        bool StillAuthorized(Desired value)
+        {
+            var currentActivity = activity?.Read(out _);
+            if (value.Activity is { } original)
+            {
+                if (currentActivity == null || currentActivity.SessionId != original.SessionId ||
+                    currentActivity.Epoch != original.Epoch || currentActivity.State != original.State ||
+                    currentActivity.AcquisitionPaused != original.AcquisitionPaused) return false;
+            }
+            else if (currentActivity != null) return false;
+            if (value.Menu) return currentActivity != null;
+            if (value.Frame is not { } frame || telemetry.Read(out _) == null) return false;
+            var age = (DateTimeOffset.UtcNow - frame.LightCapturedAt).TotalMilliseconds;
+            return age is >= -1000 and <= 500 && frame.ProducerAgeMs + Stopwatch.GetElapsedTime(value.At).TotalMilliseconds <= 500;
         }
     }
 
@@ -132,13 +153,15 @@ public sealed class TuyaStreamingSession
             values.ToDictionary(w => w.Id, w => w.State.Status, StringComparer.Ordinal)));
     }
 
-    private sealed record Desired(TuyaColorCommand Color, bool Authorized, long At);
+    private sealed record Desired(TuyaColorCommand Color, bool Authorized, long At,
+        ActivityFrame? Activity, TelemetryFrame? Frame, bool Menu);
     private sealed record LampState(string Status, bool Sending = false, Vec3 Color = default,
         long Acknowledged = 0, long Unacknowledged = 0, long Failures = 0, bool Retained = false);
 
     private sealed class LampWorker : IDisposable
     {
         private readonly CancellationTokenSource stop;
+        private readonly Func<Desired, bool> stillAuthorized;
         private Desired? desired;
         private LampState state = new("Tuya · waiting for fresh CDT");
         public TuyaLamp Lamp { get; }
@@ -149,24 +172,24 @@ public sealed class TuyaStreamingSession
         public void Dispose() => stop.Dispose();
 
         public LampWorker(TuyaLamp lamp, Func<string, string?> localKey,
-            Func<TuyaLamp, string, TuyaColorCommand, CancellationToken, Task<TuyaWriteResult>> send,
+            Func<TuyaLamp, string, Func<TuyaColorCommand?>, CancellationToken, Task<TuyaSendResult>> send,
             Func<TuyaLamp, string, CancellationToken, Task<TuyaDeviceState>> read,
             Func<TuyaLamp, string, TuyaDeviceState, CancellationToken, Task<TuyaWriteResult>> restore,
-            CancellationToken token)
+            Func<Desired, bool> stillAuthorized, CancellationToken token)
         {
-            Lamp = lamp; stop = CancellationTokenSource.CreateLinkedTokenSource(token);
+            Lamp = lamp; this.stillAuthorized = stillAuthorized; stop = CancellationTokenSource.CreateLinkedTokenSource(token);
             Task = System.Threading.Tasks.Task.Run(() => RunAsync(localKey, send, read, restore));
         }
 
         private Desired? Current()
         {
             var next = Volatile.Read(ref desired);
-            return next != null && Stopwatch.GetElapsedTime(next.At).TotalMilliseconds > 500 ?
+            return next != null && (Stopwatch.GetElapsedTime(next.At).TotalMilliseconds > 500 || !stillAuthorized(next)) ?
                 next with { Color = new(false, default, 0), Authorized = false } : next;
         }
 
         private async Task RunAsync(Func<string, string?> localKey,
-            Func<TuyaLamp, string, TuyaColorCommand, CancellationToken, Task<TuyaWriteResult>> send,
+            Func<TuyaLamp, string, Func<TuyaColorCommand?>, CancellationToken, Task<TuyaSendResult>> send,
             Func<TuyaLamp, string, CancellationToken, Task<TuyaDeviceState>> read,
             Func<TuyaLamp, string, TuyaDeviceState, CancellationToken, Task<TuyaWriteResult>> restore)
         {
@@ -218,16 +241,27 @@ public sealed class TuyaStreamingSession
                         // never the one captured before waiting on a socket.
                         next = Current(); token.ThrowIfCancellationRequested();
                         if (next == null || (!next.Authorized && !wrote) || !SignificantChange(previous, next.Color)) continue;
-                        var dps = TuyaProtocol.BuildDps(Lamp, next.Color);
                         lastAttempt = Stopwatch.GetTimestamp();
-                        var result = await send(Lamp, key, next.Color, token);
-                        wrote = true; lastKey = key; previous = next.Color;
+                        Desired? selected = null;
+                        var sent = await send(Lamp, key, () =>
+                        {
+                            token.ThrowIfCancellationRequested();
+                            selected = Current();
+                            return selected == null || (!selected.Authorized && !wrote) ||
+                                !SignificantChange(previous, selected.Color) ? null : selected.Color;
+                        }, token);
+                        if (sent.SentCommand == null || sent.Result == null) continue;
+                        // Completion is conservative pacing: an arbitrarily slow
+                        // handshake/ACK cannot compress the next physical write.
+                        lastAttempt = Stopwatch.GetTimestamp();
+                        wrote = true; lastKey = key; previous = sent.SentCommand;
+                        var dps = TuyaProtocol.BuildDps(Lamp, sent.SentCommand);
                         if (expected != null) foreach (var value in dps) expected[value.Key] = value.Value;
-                        var ambiguous = result == TuyaWriteResult.Unacknowledged;
+                        var ambiguous = sent.Result == TuyaWriteResult.Unacknowledged;
                         Set(Snapshot with { Status = ambiguous ? "Tuya · command sent; acknowledgement unavailable" :
-                            !next.Authorized ? "Tuya · stale output cleared" : prior == null ?
+                            selected?.Authorized != true ? "Tuya · stale output cleared" : prior == null ?
                             "Tuya · streaming; prior state unavailable" : "Tuya · streaming",
-                            Sending = next.Authorized, Color = next.Color.Rgb * next.Color.Brightness,
+                            Sending = selected?.Authorized == true, Color = sent.SentCommand.Rgb * sent.SentCommand.Brightness,
                             Acknowledged = Snapshot.Acknowledged + (ambiguous ? 0 : 1),
                             Unacknowledged = Snapshot.Unacknowledged + (ambiguous ? 1 : 0) });
                         if (ambiguous) retryAfter = After(RetryDelay);

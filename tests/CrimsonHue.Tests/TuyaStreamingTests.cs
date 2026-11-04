@@ -6,7 +6,7 @@ using CrimsonHue.Core;
 
 internal static class TuyaStreamingTests
 {
-    private const string Key = "synthetic-key-123";
+    private const string Key = "synthetic-key123";
     private static TuyaLamp Lamp(string id = "lamp-a", string host = "127.0.0.1") =>
         new(id, "Synthetic lamp", host, "device-" + id, new(0, 1, 0));
     private static void Assert(bool value, string message = "Tuya streaming assertion failed")
@@ -134,7 +134,9 @@ internal static class TuyaStreamingTests
         });
         asyncTest("Tuya replaces intermediate colors and spaces writes at least 300 ms apart", async () =>
         {
-            var fake = new Fake(); var session = fake.Session(); var activity = new ActivityState();
+            var fake = new Fake { BeforeWrite = async (_, _, token) =>
+            { await Task.Delay(400, token); return TuyaWriteResult.Acknowledged; } };
+            var session = fake.Session(); var activity = new ActivityState();
             var menu = new MenuLightingSettings(Color: new(1, 0, 0));
             using var stop = new CancellationTokenSource(8000); using var publish = new CancellationTokenSource();
             var feed = MenuLightingTests.Publish(activity, publish.Token);
@@ -148,7 +150,9 @@ internal static class TuyaStreamingTests
                 await Until(() => fake.Writes.Count == 2);
                 var commands = fake.Writes.ToArray();
                 Assert(commands[1].Color.Rgb == new Vec3(0, 0, 1), "Queued an obsolete intermediate color.");
-                Assert(Stopwatch.GetElapsedTime(commands[0].At, commands[1].At).TotalMilliseconds >= 295);
+                Assert(Stopwatch.GetElapsedTime(commands[0].At, commands[1].At).TotalMilliseconds >= 695,
+                    "A slow acknowledgement compressed the next write's minimum interval.");
+                await Until(() => session.State.Frames >= 2);
             }
             finally { stop.Cancel(); publish.Cancel(); await feed; await run; }
         });
@@ -236,6 +240,44 @@ internal static class TuyaStreamingTests
             Assert(fake.Restores == 1 && session.State.Unacknowledged == 1);
             Assert(Stopwatch.GetElapsedTime(fake.Writes.Single().At, fake.RestoredAt).TotalMilliseconds >= 295);
         });
+        asyncTest("Tuya rechecks expired menu authorization after a slow handshake before its first control packet", async () =>
+        {
+            var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var fake = new Fake { BeforeHandshake = (_, token) => release.Task.WaitAsync(token) };
+            var session = fake.Session(); var activity = new ActivityState(); activity.Accept(MenuLightingTests.Activity());
+            using var stop = new CancellationTokenSource(8000);
+            var run = session.RunAsync(new(), new(), () => new(), stop.Token,
+                () => new(true, Devices: [Lamp()]), _ => Key, activity);
+            try
+            {
+                await Until(() => fake.Handshakes == 1); await Task.Delay(600); release.SetResult();
+                await Until(() => fake.Skipped == 1);
+                Assert(fake.Writes.IsEmpty, "A color whose pause authorization expired during handshake was sent.");
+            }
+            finally { stop.Cancel(); release.TrySetResult(); await run; }
+            Assert(fake.Restores == 0);
+        });
+        asyncTest("Tuya resamples a new menu epoch after handshake and records the exact sent color for restoration", async () =>
+        {
+            var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var fake = new Fake { BeforeHandshake = (_, token) => release.Task.WaitAsync(token) };
+            var session = fake.Session(); var activity = new ActivityState(); activity.Accept(MenuLightingTests.Activity());
+            var menu = new MenuLightingSettings(Color: new(1, 0, 0));
+            using var stop = new CancellationTokenSource(8000);
+            var run = session.RunAsync(new(), new(), () => new(), stop.Token,
+                () => new(true, Devices: [Lamp()]), _ => Key, activity, () => Volatile.Read(ref menu));
+            try
+            {
+                await Until(() => fake.Handshakes == 1); await Task.Delay(600);
+                Volatile.Write(ref menu, menu with { Color = new(0, 0, 1) });
+                activity.Accept(MenuLightingTests.Activity(2, epoch: 2)); await Task.Delay(100);
+                release.SetResult(); await Until(() => fake.Writes.Count == 1);
+                Assert(fake.Writes.Single().Color.Rgb == new Vec3(0, 0, 1), "Sent the pre-handshake menu color.");
+            }
+            finally { stop.Cancel(); release.TrySetResult(); await run; }
+            Assert(fake.Restores == 1 && session.State.DeviceStatuses!["lamp-a"].Contains("prior state restored"),
+                "Ownership bookkeeping used the old proposed command instead of the command actually sent.");
+        });
     }
 
     private sealed record Write(string Id, TuyaColorCommand Color, long At);
@@ -244,9 +286,10 @@ internal static class TuyaStreamingTests
         private readonly object gate = new();
         private readonly Dictionary<string, Dictionary<int, JsonElement>> current = [];
         public readonly ConcurrentQueue<Write> Writes = new();
-        public int Reads, Restores;
+        public int Reads, Restores, Handshakes, Skipped;
         public long RestoredAt;
         public bool ReadUnavailable;
+        public Func<TuyaLamp, CancellationToken, Task>? BeforeHandshake;
         public Func<TuyaLamp, TuyaColorCommand, CancellationToken, Task<TuyaWriteResult>>? BeforeWrite;
         public TuyaStreamingSession Session() => new(Send, Read, Restore);
         private Dictionary<int, JsonElement> Get(TuyaLamp lamp)
@@ -261,11 +304,15 @@ internal static class TuyaStreamingTests
         }
         public void ExternalEdit(TuyaLamp lamp, TuyaColorCommand command)
         { lock (gate) foreach (var pair in TuyaProtocol.BuildDps(lamp, command)) Get(lamp)[pair.Key] = pair.Value; }
-        private async Task<TuyaWriteResult> Send(TuyaLamp lamp, string key, TuyaColorCommand color, CancellationToken token)
+        private async Task<TuyaSendResult> Send(TuyaLamp lamp, string key, Func<TuyaColorCommand?> latest, CancellationToken token)
         {
-            Assert(key == Key); Writes.Enqueue(new(lamp.Id, color, Stopwatch.GetTimestamp()));
+            Assert(key == Key); Interlocked.Increment(ref Handshakes);
+            if (BeforeHandshake != null) await BeforeHandshake(lamp, token);
+            var color = latest();
+            if (color == null) { Interlocked.Increment(ref Skipped); return new(null, null); }
+            Writes.Enqueue(new(lamp.Id, color, Stopwatch.GetTimestamp()));
             var result = BeforeWrite == null ? TuyaWriteResult.Acknowledged : await BeforeWrite(lamp, color, token);
-            ExternalEdit(lamp, color); return result;
+            ExternalEdit(lamp, color); return new(result, color);
         }
         private Task<TuyaDeviceState> Read(TuyaLamp lamp, string key, CancellationToken token)
         {
