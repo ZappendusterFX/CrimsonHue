@@ -2,11 +2,15 @@
 
 ## Private menu-mode preview
 
-Use Hue **1.0.7-menu.1** together with CDT **2.2.9-menu.1** for this test.
+Use Hue **1.0.7-menu.2** together with CDT **2.2.9-menu.2** for this test.
 While lighting sync is running, a detected game pause switches to steady room
-lighting. **Lighting → Menu lighting** adjusts its color and brightness; **Reset
-menu lighting** restores warm white at 20%. Overall brightness and the OpenRGB
-limit still apply. Save keeps these settings for the next launch.
+lighting. **Lighting → Menu lighting** exposes brightness, a color swatch/picker
+and editable hex color. **Gold preset** selects vivid gold at 80% (RGB 1, 0.65,
+0.08); choose it only if desired. **Reset menu lighting** restores the original
+warm white at 20%. Overall brightness and the OpenRGB limit still apply.
+**Save menu lighting** keeps the selected values for the next launch. Existing
+settings are never automatically recolored. The updated CDT suppresses false light-error
+notifications for intentional menu pauses while retaining genuine errors.
 
 CDT detects stopped simulation progress after approximately 500 ms and suspends
 new light, ambient and visibility capture. The pause observer stays alive.

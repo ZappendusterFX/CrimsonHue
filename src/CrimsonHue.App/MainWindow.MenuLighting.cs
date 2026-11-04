@@ -22,6 +22,8 @@ public partial class MainWindow
             control.ValueCommitted += (_, value) => ChangeMenuLighting(key, value / 100);
             menuControls.Add(key, control); panel.Children.Add(control);
         }
+        var gold = new Button { Content = "Gold preset", Margin = new Thickness(0, 10, 0, 0) };
+        gold.Click += (_, _) => SelectGoldMenuLighting(); panel.Children.Add(gold);
         var reset = new Button { Content = "Reset menu lighting", Margin = new Thickness(0, 10, 0, 0) };
         reset.Click += (_, _) => { Volatile.Write(ref menuLighting, new()); SyncMenuControls(); };
         panel.Children.Add(reset);
@@ -53,6 +55,11 @@ public partial class MainWindow
 
     private void SetMenuLighting(JsonElement command)
     {
+        if (command.TryGetProperty("preset", out var preset))
+        {
+            if (preset.GetString() != "gold") throw new CrimsonHueException("Unknown menu lighting preset.");
+            SelectGoldMenuLighting(); return;
+        }
         if (command.TryGetProperty("reset", out var reset) && reset.GetBoolean())
         { Volatile.Write(ref menuLighting, new()); SyncMenuControls(); return; }
         if (command.TryGetProperty("color", out var color))
@@ -64,6 +71,13 @@ public partial class MainWindow
             return;
         }
         ChangeMenuLighting("Brightness", command.GetProperty("brightness").GetDouble());
+    }
+
+    private void SelectGoldMenuLighting()
+    {
+        Volatile.Write(ref menuLighting, menuLighting with { Enabled = true, Color = new(1, .65, .08), Brightness = .8 });
+        SyncMenuControls();
+        TuningStatus.Text = "Gold menu preset selected · Save keeps it for the next launch";
     }
 
     private void VerifyMenuControls()
@@ -82,6 +96,12 @@ public partial class MainWindow
             Send(new { action = "menuLighting", color = new { r = 2, g = .6, b = .8 } });
             if (menuLighting != valid) throw new InvalidOperationException("Invalid menu color was accepted.");
             if (CurrentSettings().MenuLighting != valid) throw new InvalidOperationException("Menu settings were not preserved.");
+            Send(new { action = "menuLighting", preset = "gold" });
+            if (menuLighting.Brightness != .8 || menuLighting.EffectiveColor != new Vec3(1, .65, .08) || mapping != originalMapping)
+                throw new InvalidOperationException("Gold menu preset changed gameplay tuning or failed to apply.");
+            var gold = menuLighting;
+            Send(new { action = "menuLighting", preset = "invalid" });
+            if (menuLighting != gold) throw new InvalidOperationException("Unknown menu preset changed settings.");
             Send(new { action = "menuLighting", reset = true });
             if (menuLighting != new MenuLightingSettings()) throw new InvalidOperationException("Menu reset failed.");
         }
