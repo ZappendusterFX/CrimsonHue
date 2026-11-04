@@ -1,33 +1,27 @@
-# CrimsonHue 1.0.5 — mixer hosted by CDT
+# CrimsonHue 1.0.6 — mixer hosted by CDT
 
-Main now includes the OpenRGB implementation previously tested on a separate
-branch. Enable it in its own HUD tab, read devices and place them in the 3D room.
+Optional OpenRGB output is included in the regular release.
+Enable it in its own HUD tab, read devices and place them in the 3D room.
 It runs alongside Hue with the common Start/Stop and still needs the existing
 Hue bridge/area setup. New users start with OpenRGB disabled; saved private-test
-enable state, selections and positions are retained. Coverage defaults to90deg,
-background to25% of shared fill and output limit to25%. Source RGB and the shared
+enable state, selections and positions are retained. Coverage defaults to 90°,
+background to 25% of shared fill and output limit to 25%. Source RGB and the shared
 Hue profile are unchanged. Demo/smoke never send physical output.
 
-For game build26423880 use the paired CDT2.2.8-build26423880-integrated.1 candidate.
-That candidate's installed capture/physics checks are pending; this source merge
-does not establish new-game or OpenRGB optical acceptance. Historical test records
-and their limits are in OPENRGB.md.
+Use **CrimsonDesertTelemetry 2.2.8** for the current game and shared OpenRGB HUD.
+Its update recovery runs only when needed, after valid game-world data is present,
+with progress in the shared HUD. This can handle compatible address shifts;
+changed engine layouts can still require a CDT update. Hue consumes only the
+neutral API and does not gate output on the game's build label.
 
-Previous test **1.0.5-openrgb.2** added a separate OpenRGB tab, device selection and
-an interactive 3D room. Pair it with **CDT2.2.8-openrgb.1** for the updated HUD.
 Drag a device across the room, adjust Height for vertical position and right-drag
 to orbit the view. Connection/output limit contains port and brightness. Placements
 are stored by hashed hardware identity, independently of transient SDK IDs, Hue
-areas and shareable lighting presets. New devices default to front, output25%.
+areas and shareable lighting presets. New devices default to front, output 25%.
 The existing bridge/area is still needed for the common Start button.
 
-The previous test **1.0.5-openrgb.1** added continuous OpenRGB output to the existing
-Start/Stop lighting sync, then limited to explicitly named private packages.
-SDK server: localhost:6742;
-eligible RGB zones share `(0,1,0)` with a 25% master cap. The existing CDT2.2.7
-panel displays OpenRGB status through the shared stream-status text. No new CDT
-package or native UI protocol is needed. Hue setup/area is still required for
-Start in this first test, and individual OpenRGB selection/placement is pending.
+SDK server: localhost:6742. Each selected device receives one mapped color for
+its own configured position. See [OpenRGB setup](USER-GUIDE.md#openrgb-alongside-hue).
 Hide/close keeps both outputs running; Stop cancels both and awaits cleanup.
 The app's Demo and the packaged synthetic smoke never create OpenRGB output.
 
@@ -43,14 +37,11 @@ No separate EXE, process or visible WPF settings window is used.
    documented .NET 8 ASP.NET Core Runtime x64. Newer runtimes alone do not meet
    these .NET 8 requirements.
 2. Close Crimson Desert and stop any old desktop CrimsonHue sync. Use
-   **CrimsonDesertTelemetry 2.2.5 or later**; game patch2.04.05 needs CDT2.2.6. Earlier releases
-   do not host the Hue panel. Install both packages with the game closed.
-   CrimsonHue 1.0.0 includes sharper Recommended spatial defaults and
-   separate point/spot/own-lantern weights. CDT 2.2.5 supplies the optional shared
-   panel, held-input handoff and duplicate-cursor corrections.
+   **CrimsonDesertTelemetry 2.2.8** for this release's current-game support and
+   shared OpenRGB panel. Install both packages with the game closed.
 3. For a new installation, import both ZIPs through DMM using the existing x64
-   ASI loader. For the complete movement/effect update, use Hue 1.0.4 and CDT 2.2.7;
-   CDT also corrects cache admission for rapidly changing light positions. CrimsonHue's
+   ASI loader. Use Hue 1.0.6 and CDT 2.2.8; both retain the previous movement,
+   lantern and changing-effect improvements. CrimsonHue's
    package contains one `CrimsonHue/CrimsonHue.asi` plus documentation/notices;
    it embeds its five application/dependency files. No loose DLL, JSON, CFG, EXE,
    runtime installer or loader is shipped in the Hue ZIP. Keep all CDT companions
@@ -106,9 +97,8 @@ Point lights range from 0–200%, Spotlights from 0–1000%, and Own lantern fro
 to a conservative complete-pair signature in CDT metadata, independent of its
 game-build label, with ordinary spotlight behavior on incomplete or ambiguous input. Room calibration can assign
 horizontal as well as vertical segment regions; imported Hue identities stay intact.
-Version 1.0.4 supports the observed old/current lantern cone profiles and swinging
-motion. CDT 2.2.7 remains the matching companion; an existing 2.2.7 installation
-does not need another CDT update for this lantern correction.
+The included lantern recognition supports the observed cone profiles and swinging
+motion. The complete current release pair is Hue 1.0.6 with CDT 2.2.8.
 
 CDT's physics rays measure collision, not optical visibility. Glass or a closed
 collision shell around a visible cage lamp can exclude it before mapping. The
@@ -177,5 +167,6 @@ reproduction tools, not acceptance tests for this architecture. HookRaceTests
 proved that interleaved independent MinHook installation can lose one overlay.
 The shared renderer removes that mechanism. Synthetic success is separate from
 real game/input, DMM import and physical-lamp acceptance. The owner has used
-private builds in-game with physical lamps; the exact public 1.0.0 ZIP has not
-been installed or game-tested as part of release verification. See HANDOVER.md.
+private builds in-game with physical lamps, including the first parallel OpenRGB
+trial. The exact public 1.0.6 ZIP has not been installed or game-tested as part
+of release verification. See HANDOVER.md and the repository's OPENRGB.md.

@@ -1,4 +1,4 @@
-# CrimsonHue 1.0.5 — setup and tuning guide
+# CrimsonHue 1.0.6 — setup and tuning guide
 
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
 existing Hue Entertainment area. Its headless ASI uses CDT's in-game mixer panel. Its
@@ -8,19 +8,20 @@ or a measurement of the physical lamps.
 Optional **OpenRGB** runs alongside Hue through its local SDK server. In the
 OpenRGB tab, enable it, read devices, select them and place them in the 3D room.
 Drag changes floor position; Height changes vertical position; right-drag rotates
-the view. Coverage90deg/background25% are independent of Hue's room settings.
-Output starts at25%. Common Start/Stop controls both; Hue bridge/area setup is
-still required. Exit other apps controlling the same RGB devices. See OPENRGB.md
-for supported zones, ownership restoration and the limits of SDK readback.
+the view. Light coverage starts at 90° and Background light at 25% of the shared
+background amount. Output starts at 25%. Common Start/Stop controls both; Hue
+bridge/area setup is still required. Exit other apps controlling the same RGB
+devices. [OpenRGB setup and limits](#openrgb-alongside-hue) are below.
 
-Game build26423880 requires the paired CDT2.2.8-build26423880-integrated.1 candidate.
-Its live acquisition checks await owner installation. The stable release below
-documents the previously validated game build.
+Use **CrimsonDesertTelemetry 2.2.8** for the current game and shared panel. CDT's
+automatic update recovery starts only when needed and when valid game-world data
+is present. It shows progress and refuses incompatible data. Changed engine
+layouts can still require a CDT update; Hue itself does not gate game versions.
 
 ## What to install
 
-1. Install **CrimsonDesertTelemetry 2.2.7** separately in the game for patch2.04.05.
-   CDT releases before 2.2.5 do not include the Hue panel. Download the required ZIPs
+1. Install **CrimsonDesertTelemetry 2.2.8** separately in the game.
+   This supplies the current shared Hue/OpenRGB panel. Download the required ZIPs
    from their GitHub releases. Enable CDT's server, rendered and upstream ManyLights
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
    For all-around light sources, CrimsonHue needs CDT's fresh confirmed-clear
@@ -33,10 +34,8 @@ documents the previously validated game build.
    installed separately. Start the game; the in-game mixer opens automatically.
    **CDT, an ASI loader, the game, bridge firmware and
    saved credentials are not in this ZIP.** See [ASI guide](ASI.md).
-   For the complete motion/effect update, close the game and upgrade to Hue 1.0.4
-   and CDT 2.2.7. Hue improves local output smoothing; CDT prevents retired light
-   positions from crowding out new visibility queries. Saved response values and
-   room calibration stay intact.
+   Upgrade to Hue 1.0.6 and CDT 2.2.8 together. Existing response values, room
+   calibration, bridge pairing and saved OpenRGB placements stay intact.
 3. Use Windows 10/11 x64 and a Hue-compatible bridge with HTTPS API v2,
    Entertainment DTLS 1.2/PSK, color lamps and an existing Entertainment area.
    Set the area and channel positions in the Hue app first. diyHue is the
@@ -79,6 +78,44 @@ Press **Stop** and wait for the stopped status before quitting the game.
 Process termination can prevent restoration; the ASI cannot keep running after
 the game exits. Synthetic verification does not establish real-game input,
 physical brightness, HDR-display or mod-manager behavior for the exact release ZIP.
+
+## OpenRGB alongside Hue
+
+OpenRGB is optional and starts disabled on a new installation. It uses its local
+SDK server, normally `127.0.0.1:6742`; no cloud service or extra CrimsonHue process
+is needed. Hue's bridge and Entertainment area are still required by the common
+Start action. OpenRGB-only use without Hue setup is not offered by this release.
+
+1. Start OpenRGB's SDK server and exit other software writing the same RGB devices,
+   such as an active Synapse/Chroma lighting session.
+2. Open CrimsonHue with **Ctrl+Shift+H**, select **OpenRGB**, enable it and choose
+   **Read devices**. This reads the SDK inventory; it does not rescan hardware.
+   Select the devices to include.
+3. Place each device around **YOU** in the 3D room. Drag changes its floor position;
+   **Height** changes its vertical position. Right-drag rotates the view. Coordinates
+   are normalized room positions: left/right, back/front and down/up, not metres.
+   Normal desk height can be below the viewer's eye level. New devices start in
+   front of the viewer. Each device receives one color for its assigned point;
+   individual keys or LEDs do not have separate room positions.
+4. Leave **Light coverage** at 90° and **Background light** at 25% initially. These
+   controls affect OpenRGB separately: broader coverage catches more nearby
+   effects, while lower background preserves their color against neutral fill.
+   The **Output limit** starts at 25%. Shared brightness, smoothing, source weights
+   and own-lantern controls still apply. Hue's room mapping is unchanged.
+5. Use the common **Start lighting sync** to run both outputs. **Stop** stops both;
+   hiding the panel keeps them running. Stop before leaving the game.
+
+Selections, placements and OpenRGB controls save locally, including disconnected
+devices. Stable hardware identity is used rather than the SDK's temporary list
+index; layouts stay outside shareable mixer presets. Eligible RGB zones are used,
+keyboard matrix holes are skipped, gamepads use their Lightbar, and empty RGB
+headers are not resized. Unsupported devices/zones may be unavailable.
+
+On Stop, previous modes and colors are restored while the connection and ownership
+checks allow it. A crash, inaccessible SDK server or another app controlling the
+hardware can prevent restoration. SDK state is not a measurement of emitted light.
+An OpenRGB failure leaves a healthy Hue stream running; use Stop, resolve the
+server/conflicting app, then Start to retry. Demo never drives either backend.
 
 ## Everyday lighting
 

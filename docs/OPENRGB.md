@@ -1,6 +1,24 @@
 # OpenRGB companion output
 
-## Main integration — 2026-11-04
+## Public release 1.0.6 — 2026-11-04
+
+OpenRGB now ships in the regular CrimsonHue release alongside Hue Entertainment.
+Use CDT 2.2.8 for the current game and shared panel, with .NET 8 Desktop Runtime x64
+for Hue. The [setup guide](USER-GUIDE.md#openrgb-alongside-hue) covers device
+selection, 3D placement, independent coverage/background controls and cleanup.
+OpenRGB is opt-in for new installations; saved selections and positions remain.
+The common Start/Stop still needs a Hue bridge and Entertainment area. Each device
+receives one spatially mapped color; this is not a per-key/per-LED room editor.
+
+The public package uses the existing main 1.0.5 implementation with updated release
+metadata and guides. It retains the 90° coverage/25% background policy and 25% output
+limit. Prior Core/controller/render and replay evidence remains below. The owner
+accepted hardware identification and the first parallel in-game trial; the newest
+color policy has offline replay evidence without a separate optical acceptance.
+CDT's current-build forced recovery separately passed in-game on 2026-11-04. That
+does not establish simultaneous physical Hue/OpenRGB acceptance for this exact ZIP.
+
+## Historical main integration — 2026-11-04
 
 Owner authorizes merging the OpenRGB branch together with the shared CDT panel
 while recovering game build26423880. Main1.0.5 now includes the feature without a
@@ -264,7 +282,7 @@ The synthetic suite covers fragmented SDK 4/5/6 replies, opaque non-index IDs,
 mode/color restoration, status LEDs, external edits, invalidated device lists,
 rejected ACKs, bounds/timeouts, cancellation and front-axis mapping.
 
-## Owner verification and next step
+## Historical owner verification and next step
 
 Owner subsequently closed the Razer applications. App processes disappeared;
 Razer Experience/elevation services remained running. The 23:41 live rerun mapped

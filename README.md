@@ -3,10 +3,12 @@
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment and optional OpenRGB.
 
-**CrimsonHue 1.0.5** is the current source/package candidate. Game build26423880
-uses **CrimsonDesertTelemetry 2.2.8-build26423880-integrated.1**; live acquisition
-acceptance awaits owner installation. Published stable1.0.4/CDT2.2.7 target the
-previous game build. CDT draws the optional interactive Hue mixer in
+**CrimsonHue 1.0.6** adds optional **OpenRGB output alongside Hue**, with device
+selection, individual 3D placement and independent light coverage/background
+controls. Use **CrimsonDesertTelemetry 2.2.8** for the current game and shared
+panel. [1.0.6 release notes](docs/releases/v1.0.6.md).
+
+CDT draws the optional interactive Hue mixer in
 its existing D3D12 renderer; `CrimsonHue.asi` is the headless lamp controller and
 installs no graphics hooks. There is no separate settings window or process.
 The ZIP contains one ASI and documentation. Application dependencies are
@@ -28,12 +30,16 @@ segments, including horizontal arrangements. Recommended spatial defaults use a
 The title-bar **X**, **Hide settings** and **Ctrl+Shift+H** hide the mixer while
 sync continues. Physical output starts only when explicitly requested.
 
-Read the [setup guide](docs/USER-GUIDE.md), [ASI guide](docs/ASI.md) and
-[1.0.4 change notes](docs/releases/v1.0.4.md). This update combines stronger
-suppression of rapid local-light fluctuations with own-lantern recognition during
-swinging motion. The owner reports very good in-game results with the update.
-That feedback is separate from the 133 Core tests, packaged-controller checks
-and offline replay measurements recorded in [HANDOVER.md](docs/HANDOVER.md).
+OpenRGB has its own tab in the mixer. Start its SDK server on localhost port 6742,
+enable OpenRGB, read devices, select them and place each device around your seat.
+The common **Start lighting sync** runs Hue and OpenRGB together; the existing
+Hue bridge and Entertainment area are still required. OpenRGB starts disabled
+for new installations. See the [OpenRGB setup guide](docs/USER-GUIDE.md#openrgb-alongside-hue).
+
+The local smoothing and swinging-lantern improvements from
+[1.0.4](docs/releases/v1.0.4.md) remain included. Read the
+[complete setup guide](docs/USER-GUIDE.md) and [ASI guide](docs/ASI.md) for controls,
+requirements and cleanup behavior.
 
 **Downloads and guides:** [CrimsonHue releases](https://github.com/ZappendusterFX/CrimsonHue/releases) ·
 [complete setup and tuning guide](docs/USER-GUIDE.md) ·
@@ -69,7 +75,7 @@ physical lamp brightness.
 
 ## Start
 
-1. Install **CrimsonDesertTelemetry 2.2.7** with its server, rendered and upstream
+1. Install **CrimsonDesertTelemetry 2.2.8** with its server, rendered and upstream
    ManyLights capture, and source visibility enabled.
 2. Install [**.NET 8 Desktop Runtime x64**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
    With the game closed, import this ZIP through DMM, or put its
@@ -133,12 +139,15 @@ Streaming never starts automatically when the ASI loads.
 - .NET 8 **Desktop Runtime x64**, including its WindowsDesktop/WPF framework.
   The plain .NET Runtime or ASP.NET Runtime alone does not supply WPF. .NET 9/10
   alone does not fulfill the .NET 8 requirement.
-- CrimsonDesertTelemetry 2.2.5 or later (use 2.2.7 for game patch 2.04.05),
+- CrimsonDesertTelemetry **2.2.8** for the current game and OpenRGB panel,
   schema 1.6, on the same PC for all-around,
   confirmed-visible lights. Older schema 1.4/1.5 installations still use the
   original rendered-only feed without physics visibility filtering.
 - A Hue-compatible bridge with HTTPS API v2, Entertainment DTLS 1.2/PSK on UDP 2100,
   color lights and an existing Entertainment area.
+- Optional OpenRGB: its local SDK server and compatible RGB devices. Each selected
+  device receives the color calculated for its configured room position. This is
+  one position per device, not separate room positions for individual keys or LEDs.
 - Development hardware includes diyHue/LEDVANCE and a physical Hue Bridge BSB002
   with Hue Play bars and wall washers. The owner reports positive in-game results
   with 1.0.4 on the development setup. Other hardware remains separate from
@@ -152,6 +161,11 @@ bundled game files. CDT owns the shared graphics/input hooks; the Hue controller
 installs none. Users need the running CDT service, not its source repository.
 An ASI depends on the game's process lifetime: process termination can prevent
 bridge cleanup. See [ASI limits](docs/ASI.md#graphics-and-lifetime).
+
+Game compatibility and update recovery belong to CDT. CDT 2.2.8 can find changed
+addresses when necessary, after valid game-world data is available, and shows
+progress in the shared HUD. Changed engine layouts can still need a CDT update.
+CrimsonHue consumes the neutral API; it does not block lighting on a game-build label.
 
 ## Mapping and availability
 
@@ -337,13 +351,11 @@ automatically and reset sequence tracking. Additive schema 1.x fields are tolera
 
 ## Build and verify
 
-Version 1.0.5 includes optional OpenRGB output alongside Hue. Its separate tab
-provides device selection, a 3D room and independent light coverage/background
-balance. Enable OpenRGB explicitly; existing private-test selections are retained.
-Start/Stop controls both outputs, using the existing Hue bridge/area setup.
-See [OpenRGB setup and evidence](docs/OPENRGB.md). The published 1.0.4 remains Hue-only.
-Game build26423880 needs the paired CDT `2.2.8-build26423880-integrated.1` candidate;
-its installed acquisition checks are pending. Main source is ahead of public releases.
+The OpenRGB implementation is covered by 161 Core tests, synthetic controller
+and shared-renderer checks, SDK output/restoration tests and the owner's earlier
+parallel in-game trial. The latest color-response policy also has offline replay
+evidence; it has not received a separate optical measurement. See
+[OpenRGB evidence](docs/OPENRGB.md) and [HANDOVER.md](docs/HANDOVER.md).
 
 Use a .NET 8 SDK (or newer with the .NET 8 x64 host pack) and Visual Studio 2022
 with Desktop development with C++ and CMake tools on Windows:
@@ -397,8 +409,8 @@ requiring CrimsonDesertTelemetry and .NET 8 Desktop Runtime x64. The single
 `CrimsonHue/` archive root contains one ASI plus guides and notices. The extracted
 application cache lives in the current user's LocalAppData, outside DMM/game
 directories. An EXE-free archive does not establish Nexus moderation or antivirus
-acceptance. [Nexus copy](docs/NEXUS.md) provides the current listing and update
-text; [ASI guide](docs/ASI.md) covers installation and lifecycle, and
+acceptance. [Historical Nexus copy](docs/NEXUS.md) preserves the 1.0.0 listing;
+[ASI guide](docs/ASI.md) covers installation and lifecycle, and
 [HANDOVER.md](docs/HANDOVER.md) records verification.
 
 Independent project, not affiliated with Signify or Philips Hue. Third-party
