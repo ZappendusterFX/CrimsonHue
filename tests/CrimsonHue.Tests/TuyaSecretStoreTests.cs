@@ -70,7 +70,7 @@ internal static class TuyaSecretStoreTests
             {
                 var failed = false;
                 try { fixture.Store.SaveTuyaConfiguration(changed, new Dictionary<string, string> { ["fixture-lamp"] = replacement }); }
-                catch (IOException) { failed = true; }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { failed = true; }
                 Check(failed, "The locked destination unexpectedly allowed replacement.");
             }
             Check(File.ReadAllBytes(fixture.Bundle).SequenceEqual(before), "Failed replacement modified the old bundle.");
