@@ -1,4 +1,23 @@
-# Current checkpoint — 2026-11-04, owner isolates skill-menu fault to OpenRGB output
+# Current checkpoint — 2026-11-04, owner recovers menu by disabling connected Razer output
+
+Owner reports disabling the "second Razer Blackwidow" restores normal behavior.
+Passive snapshot at 18:07:46 CET, same game PID 34956, resolves the identities:
+OpenRGB enabled/sending with THREE actual targets = RTX 3080, DualSense and G502.
+Connected Razer key D80E1625... has enabled=false, present=true, 134 LEDs; absent
+saved Razer key 3E8E05BD... remains enabled=true, present=false and is not a target.
+Thus the successful workaround excludes the connected keyboard's RGB output,
+not a demonstrated duplicate physical write. DualSense remains active during the
+owner-reported recovery, superseding the proposed DualSense-first isolation.
+Hue continues streaming; CDT Live 14/127, capture 22777 age 62ms. Evidence:
+artifacts/openrgb-razer-disabled-20261104-180746/probe.jsonl.
+
+Razer RGB device/driver interaction is now the concrete suspect; the precise
+report/timing/SDK cause remains unproven. No output/settings/game actions, source
+fix, installation or reenabling performed by assistant. Current working owner
+selection is preserved. No further reproduction needed for this check; report
+the verified target identities and leave keyboard RGB disabled pending a scoped fix.
+
+# Previous checkpoint — 2026-11-04, owner isolates skill-menu fault to OpenRGB output
 
 Owner clarifies that the skill menu itself is nearly unusable, stutters and emits
 repeated menu sounds; light freshness clears describe a symptom, not the complete
