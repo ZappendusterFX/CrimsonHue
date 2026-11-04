@@ -83,6 +83,38 @@ internal static class OpenRgbTests
             }
             Assert((layout with { Devices = [entry with { Enabled = false }] }).Targets([device]).Count == 0);
         });
+        add("OpenRGB reset preserves connection and Hue settings while rebuilding only current devices with safe defaults", () =>
+        {
+            var device = OpenRgbProtocol.ParseDevice(42, new Device().Bytes());
+            var unsupported = device with { Identity = new string('B', 64), Name = "Unsupported", HasZoneModes = true };
+            var previous = new OpenRgbLayout(Enabled: true, Port: 12345, Brightness: .9, SourceRadiusDegrees: 165,
+                BackgroundAmount: .8, Devices: [new(device.Identity, device.Name, new(-.8, -.3, .5), false),
+                    new(new string('A', 64), "Old disconnected keyboard", new(1, 0, 0))]);
+            var settings = new AppSettings(BridgeAddress: "192.0.2.1", AreaId: "kept-area",
+                Mapping: LightingProfile.Defaults with { Brightness = .63 }, Shortcut: new(), OpenRgb: previous);
+            var reset = previous.Reset([device, unsupported]);
+            var after = settings with { OpenRgb = reset };
+            Assert(!reset.Enabled && reset.Port == 12345 && reset.Brightness == .25 &&
+                reset.SourceRadiusDegrees == 90 && reset.BackgroundAmount == .25);
+            Assert(reset.Devices!.Count == 2 && reset.Devices.All(d => d.Position == new Vec3(0, 1, 0)) &&
+                reset.Devices[0].Enabled && !reset.Devices[1].Enabled && reset.Devices.All(d => d.Name != "Old disconnected keyboard"));
+            Assert(after with { OpenRgb = previous } == settings && previous.Enabled && previous.Devices!.Count == 2);
+            var unknownInventory = previous.Reset([]);
+            Assert(!unknownInventory.Enabled && unknownInventory.Devices!.Count == 0 && unknownInventory.Targets([device]).Count == 0);
+        });
+        add("OpenRGB removal preserves connected disabled placements and all response settings despite SDK IDs changing", () =>
+        {
+            var device = OpenRgbProtocol.ParseDevice(42, new Device().Bytes());
+            var kept = new OpenRgbPlacement(device.Identity, device.Name, new(-.7, .4, -.3), false);
+            var previous = new OpenRgbLayout(Port: 12345, Brightness: .7, SourceRadiusDegrees: 65, BackgroundAmount: .8,
+                Devices: [kept, new(new string('A', 64), device.Name, new(.5, .3, 0))]);
+            var next = previous.RemoveDisconnected([device with { Id = 999 }]);
+            Assert(next.Devices!.Single() == kept && next with { Devices = previous.Devices } == previous);
+            Assert(previous.Devices!.Count == 2 && next.Targets([device]).Count == 0);
+            Assert(next.RemoveDisconnected([]).Devices!.Count == 0);
+            var unconfigured = new OpenRgbLayout();
+            Assert(unconfigured.RemoveDisconnected([]) == unconfigured);
+        });
         asyncTest("OpenRGB spatial sync sends distinct device colors and applies live 3D position edits", async () =>
         {
             await using var host = new Server { SecondModel = new Device { Name = "Second RGB" } };

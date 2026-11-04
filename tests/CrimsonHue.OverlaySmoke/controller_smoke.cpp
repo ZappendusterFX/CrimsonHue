@@ -97,6 +97,33 @@ int wmain(int argc, wchar_t** argv) {
             state.at("openRgbRoom").at("port") == rgbPlaced.at("port") &&
             state.at("openRgbRoom").at("devices")[0].at("position") == rgbPlaced.at("devices")[0].at("position") &&
             !state.value("openRgbOutputAllowed",true) && state.at("openRgb").is_null(), "OpenRGB validation or Demo output isolation failed");
+        const auto hueBeforeRgbReset = state.at("controls");
+        const auto bridgeBeforeRgbReset = state.at("bridgeAddress");
+        const auto areaBeforeRgbReset = state.at("selectedArea");
+        Require(state.at("openRgbRoom").value("canReset", false), "Stopped synthetic controller cannot reset OpenRGB settings");
+        Command({{"action","resetOpenRgbSettings"}});
+        state = Await([](const Json& v) { return v.at("openRgbRoom").at("enabled") == false &&
+            v.at("openRgbRoom").at("sourceRadiusDegrees") == 90 && v.at("openRgbRoom").at("backgroundAmount") == .25 &&
+            v.at("openRgbRoom").at("brightness") == .25; }, "OpenRGB reset command did not restore response defaults");
+        Require(state.at("openRgbRoom").at("port") == rgbPlaced.at("port") &&
+            state.at("openRgbRoom").at("devices").size() == rgbPlaced.at("devices").size() &&
+            state.at("controls") == hueBeforeRgbReset && state.at("bridgeAddress") == bridgeBeforeRgbReset &&
+            state.at("selectedArea") == areaBeforeRgbReset && !state.value("openRgbOutputAllowed",true) && state.at("openRgb").is_null(),
+            "OpenRGB reset changed Hue configuration, connection or synthetic output isolation");
+        for (const auto& device : state.at("openRgbRoom").at("devices"))
+            Require(device.at("position") == Json({{"x",0},{"y",1},{"z",0}}) && device.at("enabled") == true,
+                "OpenRGB reset did not rebuild default current-device placements");
+        const auto resetDevices = state.at("openRgbRoom").at("devices");
+        Command({{"action","removeDisconnectedOpenRgbDevices"}});
+        state = Await([](const Json& v) { return v.at("openRgbRoom").at("status").get<std::string>().find("Removed 0") == 0; },
+            "OpenRGB removal command did not reach controller");
+        Require(state.at("openRgbRoom").at("devices").size() == resetDevices.size() && state.at("controls") == hueBeforeRgbReset &&
+            !state.at("openRgbRoom").value("canRemoveDisconnected", true), "OpenRGB removal changed present devices or Hue settings");
+        for (size_t i = 0; i < resetDevices.size(); ++i) {
+            const auto& device = state.at("openRgbRoom").at("devices")[i];
+            Require(device.at("key") == resetDevices[i].at("key") && device.at("position") == resetDevices[i].at("position") &&
+                device.at("enabled") == resetDevices[i].at("enabled"), "OpenRGB removal modified a connected placement");
+        }
         // Exercise the real native-to-managed command ABI. Profile selection
         // must alter effective mapping while retaining the entire custom setup.
         Require(state.at("lighting").at("recommended") == true && state.at("lighting").at("revision") == 1 &&

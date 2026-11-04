@@ -2,18 +2,19 @@
 
 ## Open skill-menu regression — 2026-11-04
 
-Owner reports severe game skill-menu stalls and repeated menu sounds during
-OpenRGB sync. Disabling the connected Razer Blackwidow V4's RGB output restores
-normal behavior, with Hue and OpenRGB output to GPU, DualSense and mouse continuing.
-A passive snapshot confirms exactly three active targets, the connected 134-LED
-Razer disabled, and its older absent saved identity still enabled but not targeted.
-This supersedes the earlier proposed DualSense isolation; duplicate labels alone
-were not proof of two physical outputs. Keep this working selection until a scoped
-fix is available; the device/driver/report-level cause is not yet established.
+Owner retracts the apparent OpenRGB/Razer isolation: the skill menu still stalls
+with Hue alone, and the normal skill-hover sound repeats rapidly while the preview
+scene loads. Neither disabling OpenRGB nor excluding the connected keyboard is a
+confirmed fix. Earlier passive device snapshots remain valid inventory evidence,
+but do not establish the cause or a working configuration. Do not treat the absent
+saved Razer placement as a second physical output.
+
 The 30s trace contains local capture gaps and black/resume transitions, which
-describe symptoms rather than prove the source of the menu stall. No assistant
-firmware/driver/package changes or automatic reenabling. See HANDOVER and
-artifacts/openrgb-razer-disabled-20261104-180746/ for current evidence.
+describe symptoms rather than prove the source of the menu stall. Owner requests
+fixed menu lighting with acquisition bypass. CDT has no validated generic menu
+signal yet; its playing/loading status describes telemetry availability. A fixed
+Hue color alone would not pause native GPU capture or physics queries. No current
+game-menu fix or automatic output/settings change is claimed.
 
 ## Public release 1.0.6 — 2026-11-04
 

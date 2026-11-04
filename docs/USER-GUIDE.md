@@ -111,6 +111,18 @@ index; layouts stay outside shareable mixer presets. Eligible RGB zones are used
 keyboard matrix holes are skipped, gamepads use their Lightbar, and empty RGB
 headers are not resized. Unsupported devices/zones may be unavailable.
 
+Development candidate 1.0.7-reset.1, with CDT 2.2.9-reset.1, adds two controls
+above the device list. **Reset OpenRGB settings** switches this output off, restores
+25% output, 90° coverage and 25% background, and rebuilds current devices at the
+default front position. Saved disconnected entries are removed. The SDK port,
+Hue pairing, Hue room and common lighting profile are preserved. **Remove
+disconnected devices** only removes saved entries absent from the last successful
+**Read devices** result, preserving connected-device positions and response values.
+Both require stopped lighting; cleanup additionally requires a successful device
+read on the current port. **Reset view** still resets only the viewing angle.
+These candidates add reset controls; they do not fix the reported skill-menu stall
+or implement automatic menu lighting.
+
 On Stop, previous modes and colors are restored while the connection and ownership
 checks allow it. A crash, inaccessible SDK server or another app controlling the
 hardware can prevent restoration. SDK state is not a measurement of emitted light.

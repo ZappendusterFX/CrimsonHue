@@ -1,4 +1,24 @@
-# Current checkpoint — 2026-11-04, owner recovers menu by disabling connected Razer output
+# Current checkpoint — 2026-11-04, OpenRGB diagnosis withdrawn; menu bypass and reset requested
+
+Owner explicitly retracts BOTH apparent OpenRGB-off and Razer-disabled fixes:
+the skill menu still hangs with Hue alone. Normal skill-hover sound repeats
+rapidly when the example scene loads. Earlier snapshots prove device selection
+only, not a working workaround or an OpenRGB-specific cause. The old conclusions
+below are superseded. No cause or fix has been established.
+
+Owner requests fixed lighting in game menus and bypassing normal acquisition.
+CDT has no validated generic menu signal; playing/loading describes available
+world/camera data, and all 1,788 skill-recording frames said playing. True pause
+must gate new native ManyLights, Ambient/GI and physics work in CDT while draining
+existing GPU work, then resume only with fresh data. A constant Hue output alone
+does not implement that pause. World Builder source review is in progress at the
+owner's request; its own editor-open flag must not be mistaken for a game menu.
+
+Owner also reports missing reset controls in the OpenRGB tab. Scoped reset and
+disconnected-placement cleanup are being implemented in the Hue controller and
+authoritative native panel; current installed files/settings remain untouched.
+
+# Previous checkpoint — 2026-11-04, apparent Razer workaround (WITHDRAWN by owner)
 
 Owner reports disabling the "second Razer Blackwidow" restores normal behavior.
 Passive snapshot at 18:07:46 CET, same game PID 34956, resolves the identities:
@@ -17,7 +37,7 @@ fix, installation or reenabling performed by assistant. Current working owner
 selection is preserved. No further reproduction needed for this check; report
 the verified target identities and leave keyboard RGB disabled pending a scoped fix.
 
-# Previous checkpoint — 2026-11-04, owner isolates skill-menu fault to OpenRGB output
+# Previous checkpoint — 2026-11-04, apparent OpenRGB isolation (WITHDRAWN by owner)
 
 Owner clarifies that the skill menu itself is nearly unusable, stutters and emits
 repeated menu sounds; light freshness clears describe a symptom, not the complete

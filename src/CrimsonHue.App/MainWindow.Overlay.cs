@@ -94,6 +94,8 @@ public partial class MainWindow
             {
                 case "openRgbDiscover": BeginOpenRgbDiscovery(); break;
                 case "openRgb": SetOpenRgb(command); break;
+                case "resetOpenRgbSettings": ResetOpenRgbSettings(); break;
+                case "removeDisconnectedOpenRgbDevices": RemoveDisconnectedOpenRgbDevices(); break;
                 case "profile": SelectLightingProfile(command.GetProperty("recommended").GetBoolean()); break;
                 case "lighting": SetLightingPreference(Text("key"), command.GetProperty("value").GetDouble()); break;
                 case "set":
@@ -183,6 +185,7 @@ public partial class MainWindow
         if (!smoke || streamTask != null || streamCancel != null)
             throw new InvalidOperationException("HUD close regression requires isolated smoke mode.");
         var originalStatus = StreamStatus.Text;
+        var originalTuningStatus = TuningStatus.Text;
         using var syntheticCancel = new CancellationTokenSource();
         var pending = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var cancellation = syntheticCancel.Token.Register(() => pending.TrySetCanceled(syntheticCancel.Token));
@@ -193,6 +196,11 @@ public partial class MainWindow
             streamCancel = syntheticCancel;
             streamTask = pending.Task;
             UpdateButtons();
+            var beforeReset = openRgbLayout;
+            OverlayCommand(JsonSerializer.SerializeToUtf8Bytes(new { action = "resetOpenRgbSettings" }));
+            OverlayCommand(JsonSerializer.SerializeToUtf8Bytes(new { action = "removeDisconnectedOpenRgbDevices" }));
+            if (!ReferenceEquals(beforeReset, openRgbLayout) || CanResetOpenRgb || CanRemoveDisconnectedOpenRgb)
+                throw new InvalidOperationException("OpenRGB reset or removal modified an active lighting session.");
             OverlayCommand(JsonSerializer.SerializeToUtf8Bytes(new { action = "close" }));
             if (syntheticCancel.IsCancellationRequested || pending.Task.IsCompleted ||
                 streamTask != pending.Task || streamCancel != syntheticCancel || !StopButton.IsEnabled)
@@ -207,6 +215,7 @@ public partial class MainWindow
             streamTask = null;
             streamCancel = null;
             StreamStatus.Text = originalStatus;
+            TuningStatus.Text = originalTuningStatus;
             UpdateButtons();
             RefreshPreview();
         }

@@ -47,6 +47,23 @@ public sealed record OpenRgbLayout(bool Enabled = true, int Port = 6742, double 
         var next = this with { Devices = entries.ToArray() }; next.Validate(); return next;
     }
 
+    // Reset only this backend. Keep its connection, require explicit opt-in again,
+    // and rebuild placements from the caller's last successful device inventory.
+    public OpenRgbLayout Reset(IReadOnlyList<OpenRgbDevice> inventory)
+    {
+        Validate();
+        return new OpenRgbLayout(Enabled: false, Port: Port, Devices: []).Discover(inventory);
+    }
+
+    public OpenRgbLayout RemoveDisconnected(IReadOnlyList<OpenRgbDevice> inventory)
+    {
+        Validate();
+        if (Devices == null) return this;
+        var present = inventory.Select(d => d.Identity).ToHashSet(StringComparer.Ordinal);
+        var next = this with { Devices = (Devices ?? []).Where(d => present.Contains(d.DeviceKey)).ToArray() };
+        next.Validate(); return next;
+    }
+
     public IReadOnlyList<OpenRgbTarget> Targets(IReadOnlyList<OpenRgbDevice> inventory)
     {
         Validate();

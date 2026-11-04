@@ -11,6 +11,7 @@ public partial class MainWindow
     // New users opt in; existing private-test selections and enable state survive.
     private OpenRgbLayout openRgbLayout = new(Enabled: false, Devices: []);
     private IReadOnlyList<OpenRgbDevice> openRgbInventory = [];
+    private bool openRgbInventoryKnown;
     private readonly LightMapper openRgbPreviewMapper = new();
     private readonly DispatcherTimer openRgbSaveTimer = new() { Interval = TimeSpan.FromMilliseconds(600) };
     private Task? openRgbDiscoveryTask;
@@ -26,10 +27,15 @@ public partial class MainWindow
     private void InitializeOpenRgb()
     {
         if (smoke)
+        {
             openRgbLayout = new(Devices: [new(new string('A', 64), "Demo keyboard", new(-.25, .6, -.3)),
                 new(new string('B', 64), "Demo mouse", new(.55, .6, -.3)),
                 new(new string('C', 64), "Demo controller", new(0, .45, -.6)),
                 new(new string('D', 64), "Demo PC lighting", new(.85, .5, -.5))]);
+            openRgbInventory = openRgbLayout.Devices!.Select((p, i) => new OpenRgbDevice((uint)i, p.Name, 0, p.DeviceKey,
+                [new("Direct", 1u << 5, 1, [])], 0, [new("RGB", 3, 0, null)], ["One", "Two", "Three"], new uint[3])).ToArray();
+            openRgbInventoryKnown = true;
+        }
         openRgbSaveTimer.Tick += (_, _) =>
         {
             openRgbSaveTimer.Stop();
@@ -47,6 +53,7 @@ public partial class MainWindow
     private async Task DiscoverOpenRgbAsync()
     {
         openRgbDiscoveryStatus = "Reading OpenRGB devices...";
+        openRgbInventoryKnown = false;
         try
         {
             var config = openRgbLayout;
@@ -56,6 +63,7 @@ public partial class MainWindow
             if (closing || config.Port != openRgbLayout.Port) return;
             var next = openRgbLayout.Discover(inventory);
             openRgbInventory = inventory;
+            openRgbInventoryKnown = true;
             CommitOpenRgb(next);
             openRgbDiscoveryStatus = $"Connected · {inventory.Count} devices · SDK {client.ProtocolVersion}";
         }
@@ -76,7 +84,12 @@ public partial class MainWindow
         var config = openRgbLayout;
         var key = command.GetProperty("key").GetString();
         if (key == "enabled") CommitOpenRgb(config with { Enabled = command.GetProperty("value").GetBoolean() });
-        else if (key == "port") CommitOpenRgb(config with { Port = command.GetProperty("value").GetInt32() });
+        else if (key == "port")
+        {
+            var next = config with { Port = command.GetProperty("value").GetInt32() };
+            CommitOpenRgb(next);
+            if (next.Port != config.Port) { openRgbInventoryKnown = false; openRgbInventory = []; }
+        }
         else if (key == "brightness") CommitOpenRgb(config with { Brightness = command.GetProperty("value").GetDouble() });
         else if (key == "sourceRadius") CommitOpenRgb(config with { SourceRadiusDegrees = command.GetProperty("value").GetDouble() });
         else if (key == "background") CommitOpenRgb(config with { BackgroundAmount = command.GetProperty("value").GetDouble() });
@@ -90,6 +103,30 @@ public partial class MainWindow
             CommitOpenRgb(config with { Devices = devices });
         }
         else throw new CrimsonHueException("Unknown OpenRGB setting.");
+    }
+
+    private bool CanResetOpenRgb => !closing && !busy && streamTask == null && openRgbDiscoveryTask?.IsCompleted != false;
+    private bool CanRemoveDisconnectedOpenRgb => CanResetOpenRgb && openRgbInventoryKnown &&
+        (openRgbLayout.Devices ?? []).Any(p => !openRgbInventory.Any(d => d.Identity == p.DeviceKey));
+
+    private void ResetOpenRgbSettings()
+    {
+        if (!CanResetOpenRgb) throw new CrimsonHueException("Stop lighting sync and wait for device reading before resetting OpenRGB.");
+        CommitOpenRgb(openRgbLayout.Reset(openRgbInventoryKnown ? openRgbInventory : []));
+        SaveSettings(); openRgbSaveTimer.Stop();
+        openRgbDiscoveryStatus = "OpenRGB settings reset · output disabled" +
+            (openRgbInventoryKnown ? "" : " · read devices to connect");
+    }
+
+    private void RemoveDisconnectedOpenRgbDevices()
+    {
+        if (!CanResetOpenRgb) throw new CrimsonHueException("Stop lighting sync and wait for device reading before removing saved devices.");
+        if (!openRgbInventoryKnown) throw new CrimsonHueException("Read OpenRGB devices successfully before removing disconnected entries.");
+        var next = openRgbLayout.RemoveDisconnected(openRgbInventory);
+        var removed = (openRgbLayout.Devices?.Count ?? 0) - (next.Devices?.Count ?? 0);
+        CommitOpenRgb(next);
+        SaveSettings(); openRgbSaveTimer.Stop();
+        openRgbDiscoveryStatus = $"Removed {removed} disconnected saved device(s)";
     }
 
     private object OpenRgbSnapshot()
@@ -111,6 +148,7 @@ public partial class MainWindow
         }
         return new { available = true, config.Enabled, config.Port, config.Brightness,
             config.SourceRadiusDegrees, config.BackgroundAmount,
+            canReset = CanResetOpenRgb, canRemoveDisconnected = CanRemoveDisconnectedOpenRgb,
             status = openRgbDiscoveryStatus, busy = openRgbDiscoveryTask?.IsCompleted == false,
             devices = (config.Devices ?? []).Select(p => {
                 var device = openRgbInventory.FirstOrDefault(d => d.Identity == p.DeviceKey);
