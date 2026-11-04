@@ -1,4 +1,20 @@
-# Current checkpoint — 2026-11-04, OpenRGB merged to main with current-game recovery
+# Current checkpoint — 2026-11-04, companion CDT automatic recovery candidate
+
+Owner requested in-plugin conditional post-update discovery with game-readiness
+and HUD progress. Implemented entirely in C:/DEV/CrimsonDesertTelemetry; Hue code,
+neutral API contract, output mapping and immutable1.0.5 ZIP remain unchanged.
+See CDT docs/RUNTIME_RECOVERY.md and its current HANDOVER. New companion is
+C:/DEV/CrimsonDesertTelemetry/artifacts/mod-manager/
+CrimsonDesertTelemetry-v2.2.8-recovery.1-ModManagers.zip,
+SHA25624D6AB73C6E34540A5051531584FF5A26F0327DC6E34875BB26175AF88CD0506.
+This supersedes the earlier build26423880-integrated.1 handoff; pair with existing
+dist/CrimsonHue-1.0.5-asi-win-x64.zip. CDT85 managed/42 native tests, both archived
+EXE recovery replays, package validation and shared HUD progress render pass.
+New installation/live acceptance remains pending. No assistant installation,
+game input, package replacement or publication. Owner installs with game closed;
+end handoff and resume only after their installation/restart report, without polls.
+
+# Previous checkpoint — 2026-11-04, OpenRGB merged to main with current-game recovery
 
 GitHub main pushed through2d1f00a, CDT throughce16f13. CDT CI41806973251 succeeded
 using its default validated native26361232 contract; new26423880 local evidence is
