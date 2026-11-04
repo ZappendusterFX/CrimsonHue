@@ -1,4 +1,33 @@
-# Current checkpoint — 2026-11-04, CrimsonHue 1.0.7 and CDT 2.2.9 published
+# Current checkpoint — 2026-11-04, independent Hue/OpenRGB/Tuya candidate complete
+
+Owner requested removing the implicit Hue requirement and adding Tuya as a third
+output; confirmed all three should also run concurrently. Implemented independent
+selection/tasks/failure isolation, protected atomic Tuya configuration and shared
+HUD setup/placement/per-lamp status. Hue bridge is optional for OpenRGB or Tuya.
+Tuya is compatible Wi-Fi3.5 RGB only, bounded per-lamp latest-color workers,
+300ms minimum spacing after write completion, 2.5s backoff and conditional owned
+state restoration. Credentials never enter CDT HUD/presets or packages.
+
+Private immutable pair, NOT published/installed:
+dist/CrimsonHue-1.0.8-outputs.1-asi-win-x64.zip (3,102,437 bytes), source0284cb5,
+SHA256 4A415B51B25CD098D18FBF368E27A2AF180DDD1C7F03978AD859526FC870B579.
+CDT artifacts/mod-manager/CrimsonDesertTelemetry-v2.2.10-outputs.1-ModManagers.zip,
+SHA256 15557E07FBACF886113BA4297E57D9C23836ACCB4126366369EEC072490AC620.
+Both have adjacent .sha256 and artifacts/independent-outputs-receipt.json.
+
+214/214 Core, exact packaged controller and WPF setup, four shared D3D12 pages
+(OpenRGB-only/Tuya-only repeated on packaged ASI), CDT45/45 native and both
+package validators pass. Shared panel synced and instructions byte-identical.
+See docs/INDEPENDENT-OUTPUTS-VALIDATION.md. README/guides/Nexus drafts distinguish
+candidate behavior from stable1.0.7/2.2.9; no public/Nexus upload this turn.
+No physical output, private key import, live concurrency or game/input acceptance.
+The controller Skills bug remains unresolved. No deployed files changed.
+
+Next OWNER ONLY: stop sync, close game and install both candidate ZIPs through DMM;
+then report restart for standalone/combined acceptance. Do not install, poll or
+wait for that owner action. Previous releases and unrelated CDT files preserved.
+
+# Previous checkpoint — 2026-11-04, CrimsonHue 1.0.7 and CDT 2.2.9 published
 
 Owner requested two stable GitHub releases and refreshed descriptions/Nexus copy.
 Published Latest: https://github.com/ZappendusterFX/CrimsonHue/releases/tag/v1.0.7
