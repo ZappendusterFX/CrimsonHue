@@ -1,5 +1,10 @@
 # Current checkpoint — 2026-11-04, OpenRGB merged to main with current-game recovery
 
+GitHub main pushed through2d1f00a, CDT throughce16f13. CDT CI41806973251 succeeded
+using its default validated native26361232 contract; new26423880 local evidence is
+separate. No tags, public assets or Nexus writes. Both validated ZIPs are ready for
+owner installation/restart; end handoff without polling for it.
+
 Owner requests merging both OpenRGB branches on main while recovering overnight
 game update26423880. Local main fast-forwarded; native telemetry recovery belongs
 to CDT and is documented there. Hue1.0.5 now includes optional OpenRGB without a
