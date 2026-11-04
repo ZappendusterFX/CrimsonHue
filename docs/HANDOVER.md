@@ -1,4 +1,30 @@
-# Current checkpoint — 2026-11-04, owner confirms Skills stall persists with menu.2
+# Current checkpoint — 2026-11-04, controller-only Skills symptom and matching public reports
+
+Owner clarifies Skills bug occurs ONLY WITH CONTROLLER, then suggests a game bug.
+Do not interpret the initial "ja" as confirmation of the requested Stop comparison;
+output-stopped reproduction is still unconfirmed. No runtime edits/packages.
+Focused review finds no shipping XInput/GameInput/DirectInput controller backend or
+synthetic game input. Hidden HUD forwards controller HID messages once; previous
+capture/drain=false measurement remains valid, not proof about every transient.
+Simultaneous real/emulated mouse-hover versus controller navigation remains possible.
+
+Public first-person reports read2026-11-04 closely match different symptom parts:
+- https://www.reddit.com/r/CrimsonDesert/comments/1thh8m7/issue_with_skill_tree_on_controller/
+  Skills node selection flickers with controller; one respondent reports fullscreen
+  instead of borderless resolved their flicker. Anecdotal workaround, not verified here.
+- https://www.reddit.com/r/CrimsonDesert/comments/1xk2xz7/lag_in_the_skills_menu/
+  Severe Skills-only lag/delays, other gameplay normal, multiple respondents.
+- https://www.reddit.com/r/CrimsonDesert/comments/1xl1wev/problems_with_the_skill_tree/
+  Skill-switch lag and erratic analog selection, similar respondents.
+- https://www.nexusmods.com/crimsondesert/mods/3466 author describes a partial
+  Skill Menu lag fix with optional recompressed previews; states2.02/2.03 support,
+  not current-build validation. Not downloaded/recommended as a validated package.
+These reports support a game/controller issue but do NOT prove local cause or
+that CDT/Hue are excluded. No further speculative RGB/input fix. A reversible
+fullscreen-vs-borderless trial is available if owner wants; no assistant settings
+change, installation or polling. Preserve the useful configurable menu-light feature.
+
+# Previous checkpoint — 2026-11-04, owner confirms Skills stall persists with menu.2
 
 Owner reports the original Skills-menu stutter/rapid hover sounds remain. Menu
 lighting is NOT a fix for that bug. Earlier OpenRGB/Razer attribution stays withdrawn.
