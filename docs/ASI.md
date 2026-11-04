@@ -1,12 +1,13 @@
-# CrimsonHue 1.0.6 — mixer hosted by CDT
+# CrimsonHue 1.0.7 — mixer hosted by CDT
 
-Menu-mode preview **Hue 1.0.7-menu.2 / CDT 2.2.9-menu.2** adds configurable menu
-lighting and independent CDT acquisition pause. Both private packages are needed
-for this test. Menu color/brightness live in the Lighting page; see USER-GUIDE.md.
-Color/hex, brightness, Save and an optional Gold80% preset are directly in the HUD.
-Existing settings are never automatically changed.
-CDT distinguishes intentional pause from light failures in its notifications.
-Synthetic validation is separate from owner installation and live acceptance.
+**Hue 1.0.7 / CDT 2.2.9** adds configurable menu lighting and independent CDT
+acquisition pause. Menu color/hex, brightness, Save and an optional Gold preset
+are directly in the HUD's Lighting page; see [the setup guide](USER-GUIDE.md#menu-lighting).
+Warm white at 20% remains the default; existing settings are preserved.
+Fresh gameplay data blends back in over 500 ms after resume. CDT distinguishes
+intentional capture pauses from light failures and avoids repeated ready notices
+on menu resume. This does not fix the reported Skills-menu stutter or repeated
+controller hover sounds, which persisted in the owner's menu-mode test.
 
 Optional OpenRGB output is included in the regular release.
 Enable it in its own HUD tab, read devices and place them in the 3D room.
@@ -16,7 +17,7 @@ enable state, selections and positions are retained. Coverage defaults to 90°,
 background to 25% of shared fill and output limit to 25%. Source RGB and the shared
 Hue profile are unchanged. Demo/smoke never send physical output.
 
-Use **CrimsonDesertTelemetry 2.2.8** for the current game and shared OpenRGB HUD.
+Use **CrimsonDesertTelemetry 2.2.9** for menu mode and the current shared HUD.
 Its update recovery runs only when needed, after valid game-world data is present,
 with progress in the shared HUD. This can handle compatible address shifts;
 changed engine layouts can still require a CDT update. Hue consumes only the
@@ -45,10 +46,10 @@ No separate EXE, process or visible WPF settings window is used.
    documented .NET 8 ASP.NET Core Runtime x64. Newer runtimes alone do not meet
    these .NET 8 requirements.
 2. Close Crimson Desert and stop any old desktop CrimsonHue sync. Use
-   **CrimsonDesertTelemetry 2.2.8** for this release's current-game support and
-   shared OpenRGB panel. Install both packages with the game closed.
+   **CrimsonDesertTelemetry 2.2.9** for menu mode and the current shared panel.
+   Install both packages with the game closed.
 3. For a new installation, import both ZIPs through DMM using the existing x64
-   ASI loader. Use Hue 1.0.6 and CDT 2.2.8; both retain the previous movement,
+   ASI loader. Use Hue 1.0.7 and CDT 2.2.9; both retain the previous movement,
    lantern and changing-effect improvements. CrimsonHue's
    package contains one `CrimsonHue/CrimsonHue.asi` plus documentation/notices;
    it embeds its five application/dependency files. No loose DLL, JSON, CFG, EXE,
@@ -106,7 +107,7 @@ to a conservative complete-pair signature in CDT metadata, independent of its
 game-build label, with ordinary spotlight behavior on incomplete or ambiguous input. Room calibration can assign
 horizontal as well as vertical segment regions; imported Hue identities stay intact.
 The included lantern recognition supports the observed cone profiles and swinging
-motion. The complete current release pair is Hue 1.0.6 with CDT 2.2.8.
+motion. The complete current release pair is Hue 1.0.7 with CDT 2.2.9.
 
 CDT's physics rays measure collision, not optical visibility. Glass or a closed
 collision shell around a visible cage lamp can exclude it before mapping. The
@@ -175,6 +176,6 @@ reproduction tools, not acceptance tests for this architecture. HookRaceTests
 proved that interleaved independent MinHook installation can lose one overlay.
 The shared renderer removes that mechanism. Synthetic success is separate from
 real game/input, DMM import and physical-lamp acceptance. The owner has used
-private builds in-game with physical lamps, including the first parallel OpenRGB
-trial. The exact public 1.0.6 ZIP has not been installed or game-tested as part
+private builds in-game with physical lamps, including parallel OpenRGB and menu
+lighting. The exact public 1.0.7 ZIP has not been installed or game-tested as part
 of release verification. See HANDOVER.md and the repository's OPENRGB.md.

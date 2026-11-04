@@ -1,25 +1,25 @@
 # CrimsonHue
 
-**Private menu-mode preview: 1.0.7-menu.2 with CDT 2.2.9-menu.2.**
-When CDT reports a fresh simulation pause, lighting sync keeps a steady
-room light. Set its brightness and color under **Lighting → Menu lighting**
-in the Lighting tab. CDT suspends new light/ambient/visibility acquisition while
-paused. Fresh gameplay data fades back in over 500 ms after resume.
-This pair is built for owner testing; improvement of the Skills-menu stalls and
-physical lamp output still need acceptance. Install both packages with the game
-closed. Older CDT releases retain normal lighting but provide no menu mode.
-The HUD offers a color picker, hex input, brightness, Save and an optional
-**Gold preset** (80%, RGB 1/0.65/0.08). Existing values are never automatically
-changed. The paired CDT update recognizes intentional capture pauses without
-a light-error notification.
-
 A Windows ASI plugin that turns Crimson Desert's live local-light
 telemetry into spatial room lighting through Hue Entertainment and optional OpenRGB.
 
-**CrimsonHue 1.0.6** adds optional **OpenRGB output alongside Hue**, with device
-selection, individual 3D placement and independent light coverage/background
-controls. Use **CrimsonDesertTelemetry 2.2.8** for the current game and shared
-panel. [1.0.6 release notes](docs/releases/v1.0.6.md).
+**CrimsonHue 1.0.7** adds configurable **Menu lighting** and OpenRGB reset controls.
+Use **CrimsonDesertTelemetry 2.2.9** for menu-pause detection, capture suspension
+and the current shared panel. [1.0.7 release notes](docs/releases/v1.0.7.md).
+
+When CDT confirms a fresh simulation pause, sync keeps a steady room light while
+CDT suspends new light, ambient and visibility acquisition. Set the color and
+brightness under **Lighting → Menu lighting**, using its color picker, hex input
+and Save button. The optional **Gold preset** selects 80% and RGB 1/0.65/0.08;
+the default remains warm white at 20%, and existing settings are preserved.
+Fresh gameplay data fades back in over 500 ms after resume. Overall brightness
+and the OpenRGB output limit still apply. Older CDT releases retain normal
+lighting but provide no menu mode.
+
+Menu lighting does **not** fix the reported Skills-menu stutter or repeated
+controller hover sounds; those persisted in the owner's menu-mode test.
+OpenRGB remains optional, with device selection, individual 3D placement and
+independent light coverage/background controls.
 
 CDT draws the optional interactive Hue mixer in
 its existing D3D12 renderer; `CrimsonHue.asi` is the headless lamp controller and
@@ -88,7 +88,7 @@ physical lamp brightness.
 
 ## Start
 
-1. Install **CrimsonDesertTelemetry 2.2.8** with its server, rendered and upstream
+1. Install **CrimsonDesertTelemetry 2.2.9** with its server, rendered and upstream
    ManyLights capture, and source visibility enabled.
 2. Install [**.NET 8 Desktop Runtime x64**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
    With the game closed, import this ZIP through DMM, or put its
@@ -152,7 +152,7 @@ Streaming never starts automatically when the ASI loads.
 - .NET 8 **Desktop Runtime x64**, including its WindowsDesktop/WPF framework.
   The plain .NET Runtime or ASP.NET Runtime alone does not supply WPF. .NET 9/10
   alone does not fulfill the .NET 8 requirement.
-- CrimsonDesertTelemetry **2.2.8** for the current game and OpenRGB panel,
+- CrimsonDesertTelemetry **2.2.9** for menu mode and the current shared panel,
   schema 1.6, on the same PC for all-around,
   confirmed-visible lights. Older schema 1.4/1.5 installations still use the
   original rendered-only feed without physics visibility filtering.
@@ -175,7 +175,7 @@ installs none. Users need the running CDT service, not its source repository.
 An ASI depends on the game's process lifetime: process termination can prevent
 bridge cleanup. See [ASI limits](docs/ASI.md#graphics-and-lifetime).
 
-Game compatibility and update recovery belong to CDT. CDT 2.2.8 can find changed
+Game compatibility and update recovery belong to CDT. CDT can find changed
 addresses when necessary, after valid game-world data is available, and shows
 progress in the shared HUD. Changed engine layouts can still need a CDT update.
 CrimsonHue consumes the neutral API; it does not block lighting on a game-build label.
@@ -445,7 +445,7 @@ requiring CrimsonDesertTelemetry and .NET 8 Desktop Runtime x64. The single
 `CrimsonHue/` archive root contains one ASI plus guides and notices. The extracted
 application cache lives in the current user's LocalAppData, outside DMM/game
 directories. An EXE-free archive does not establish Nexus moderation or antivirus
-acceptance. [Historical Nexus copy](docs/NEXUS.md) preserves the 1.0.0 listing;
+acceptance. [Nexus listing copy](docs/NEXUS.md) contains the current ready-to-paste text;
 [ASI guide](docs/ASI.md) covers installation and lifecycle, and
 [HANDOVER.md](docs/HANDOVER.md) records verification.
 

@@ -1,9 +1,9 @@
-# CrimsonHue 1.0.6 — setup and tuning guide
+# CrimsonHue 1.0.7 — setup and tuning guide
 
-## Private menu-mode preview
+## Menu lighting
 
-Use Hue **1.0.7-menu.2** together with CDT **2.2.9-menu.2** for this test.
-While lighting sync is running, a detected game pause switches to steady room
+Use Hue **1.0.7** together with CDT **2.2.9** for menu lighting.
+While lighting sync is running, a freshly confirmed game pause switches to steady room
 lighting. **Lighting → Menu lighting** exposes brightness, a color swatch/picker
 and editable hex color. **Gold preset** selects vivid gold at 80% (RGB 1, 0.65,
 0.08); choose it only if desired. **Reset menu lighting** restores the original
@@ -17,8 +17,15 @@ new light, ambient and visibility capture. The pause observer stays alive.
 After returning to play, fresh capture data blends back in over 500 ms. The
 bridge and OpenRGB connections remain open. Stop still restores prior states;
 Demo stays preview-only. Without fresh activity telemetry, ordinary stale-data
-safety applies instead of indefinitely holding a menu color. This preview has
-not yet been accepted in game or on real lamps.
+safety applies instead of indefinitely holding a menu color. Previous local and
+ambient capture data are discarded before gameplay lighting resumes. Older CDT
+releases retain ordinary lighting but provide no automatic menu mode.
+
+This feature keeps lighting steady during a simulation pause; it does not
+identify individual menu screens. It does **not** fix the reported Skills-menu
+stutter or repeated controller hover sounds. Those persisted in the owner's
+menu-mode test. The exact public ZIP remains separate from that private-build
+game and lamp evidence.
 
 CrimsonHue maps live Crimson Desert light telemetry to the channels of an
 existing Hue Entertainment area. Its headless ASI uses CDT's in-game mixer panel. Its
@@ -33,14 +40,14 @@ background amount. Output starts at 25%. Common Start/Stop controls both; Hue
 bridge/area setup is still required. Exit other apps controlling the same RGB
 devices. [OpenRGB setup and limits](#openrgb-alongside-hue) are below.
 
-Use **CrimsonDesertTelemetry 2.2.8** for the current game and shared panel. CDT's
+Use **CrimsonDesertTelemetry 2.2.9** for menu mode and the current shared panel. CDT's
 automatic update recovery starts only when needed and when valid game-world data
 is present. It shows progress and refuses incompatible data. Changed engine
 layouts can still require a CDT update; Hue itself does not gate game versions.
 
 ## What to install
 
-1. Install **CrimsonDesertTelemetry 2.2.8** separately in the game.
+1. Install **CrimsonDesertTelemetry 2.2.9** separately in the game.
    This supplies the current shared Hue/OpenRGB panel. Download the required ZIPs
    from their GitHub releases. Enable CDT's server, rendered and upstream ManyLights
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
@@ -54,7 +61,7 @@ layouts can still require a CDT update; Hue itself does not gate game versions.
    installed separately. Start the game; the in-game mixer opens automatically.
    **CDT, an ASI loader, the game, bridge firmware and
    saved credentials are not in this ZIP.** See [ASI guide](ASI.md).
-   Upgrade to Hue 1.0.6 and CDT 2.2.8 together. Existing response values, room
+   Upgrade to Hue 1.0.7 and CDT 2.2.9 together. Existing response values, room
    calibration, bridge pairing and saved OpenRGB placements stay intact.
 3. Use Windows 10/11 x64 and a Hue-compatible bridge with HTTPS API v2,
    Entertainment DTLS 1.2/PSK, color lamps and an existing Entertainment area.
@@ -131,8 +138,8 @@ index; layouts stay outside shareable mixer presets. Eligible RGB zones are used
 keyboard matrix holes are skipped, gamepads use their Lightbar, and empty RGB
 headers are not resized. Unsupported devices/zones may be unavailable.
 
-Development candidate 1.0.7-reset.1, with CDT 2.2.9-reset.1, adds two controls
-above the device list. **Reset OpenRGB settings** switches this output off, restores
+Two reset controls are available above the device list.
+**Reset OpenRGB settings** switches this output off, restores
 25% output, 90° coverage and 25% background, and rebuilds current devices at the
 default front position. Saved disconnected entries are removed. The SDK port,
 Hue pairing, Hue room and common lighting profile are preserved. **Remove
@@ -140,8 +147,8 @@ disconnected devices** only removes saved entries absent from the last successfu
 **Read devices** result, preserving connected-device positions and response values.
 Both require stopped lighting; cleanup additionally requires a successful device
 read on the current port. **Reset view** still resets only the viewing angle.
-These candidates add reset controls; they do not fix the reported skill-menu stall
-or implement automatic menu lighting.
+These controls manage saved OpenRGB configuration; they are not a fix for the
+reported Skills-menu stall.
 
 On Stop, previous modes and colors are restored while the connection and ownership
 checks allow it. A crash, inaccessible SDK server or another app controlling the
