@@ -1,4 +1,29 @@
-# Current checkpoint — 2026-11-04, 30-second skill-window recording prepared
+# Current checkpoint — 2026-11-04, skill-window recording captured repeated freshness clears
+
+On owner's go, prepared wrapper recorded the requested 30 seconds, 17:52:55-
+17:53:25 CET, game PID 34956. All jobs completed, no job errors: 1,788 raw and
+1,786 Ambient envelopes, 149 valid passive Hue UI snapshots / zero rejected reads,
+29 performance samples (one GPU-counter timeout, explicitly retained). Evidence:
+artifacts/skill-window-20261104-175254-16527d2443fa4098882048038332a44b/.
+
+Offline analysis finds six rendered/upstream unavailable/bridge-stale episodes
+(94 raw envelopes), first at +6.546s, with distinct-capture receive gaps up to
+1.012s. Ten sampled UI states explicitly report output cleared and all eight Hue
+channel RGBs black, with OpenRGB also cleared; intervening states resume both.
+CDT's 500ms local capture age limit explains the clear/restart behavior. Ambient
+was separately unavailable for 12 envelopes. All raw envelopes still say playing;
+the neutral API does not identify the skill menu. Camera/player geometry stays
+stable after the initial seconds; actual mixer configuration stays unchanged.
+
+This reproduces repeated freshness-loss/black/resume output transitions, not the
+earlier permanent physics stop or OpenRGB disconnect. Native log is byte-identical
+before/after; no restart-required visibility reason. Underlying capture stalls
+and precise owner menu timings remain unproven; counters are not Present/FPS and
+this is not an optical measurement. No code/settings/deployment changes this run.
+analysis.json/outage-analysis.json preserve the derived timeline. Next: report the
+completed recording and concrete freshness failure; no further game action needed.
+
+# Previous checkpoint — 2026-11-04, 30-second skill-window recording prepared
 
 Owner reports erratic behavior when opening the skill window during LightSync and
 asks to PREPARE a 30-second recording. No reproduction recording has started.
