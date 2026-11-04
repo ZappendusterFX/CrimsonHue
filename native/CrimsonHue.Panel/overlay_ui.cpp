@@ -392,8 +392,9 @@ void Lighting(const Json& view) {
         ImGui::SeparatorText("Menu lighting");
         Wrap("A steady room light while the game is paused. Overall brightness still applies.");
         float brightness = static_cast<float>(menu->value("brightness", .2) * 100.0);
+        ImGui::TextUnformatted("Menu brightness");
         ImGui::SetNextItemWidth(-1);
-        if (ImGui::SliderFloat("Menu brightness", &brightness, 0, 100, "%.0f%%"))
+        if (ImGui::SliderFloat("##menuBrightness", &brightness, 0, 100, "%.0f%%"))
             Command({{"action", "menuLighting"}, {"brightness", brightness / 100.0f}});
         const auto color = menu->value("color", Json::object());
         float rgb[]{color.value("x", 1.0f), color.value("y", .65f), color.value("z", .35f)};
