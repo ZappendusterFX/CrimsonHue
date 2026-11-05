@@ -1,15 +1,11 @@
 # CrimsonHue
 
 A Windows ASI plugin that turns Crimson Desert's live local-light
-telemetry into spatial room lighting through Hue Entertainment and optional OpenRGB.
+telemetry into spatial room lighting through Philips Hue Entertainment, OpenRGB and Tuya LAN.
 
-**Unpublished candidate: independent Hue, OpenRGB and Tuya outputs.** The next
-test pair is **CrimsonHue 1.0.8-outputs.1 / CDT 2.2.10-outputs.1**. This candidate
-is intended for owner testing; no live Tuya lamp acceptance is claimed. It is
-separate from the published **1.0.7 / 2.2.9** pair described below.
+**New in 2.0.0:** choose any combination of Hue, OpenRGB and Tuya LAN under **Setup → Lighting outputs**. [Release notes](docs/releases/v2.0.0.md).
 
-In the candidate, **Setup → Lighting outputs** selects Hue, OpenRGB and Tuya LAN
-independently. OpenRGB-only and Tuya-only need no Hue bridge. Fresh setups select
+The outputs work independently. OpenRGB-only and Tuya-only need no Hue bridge. Fresh setups select
 no output; existing saved Hue pairing keeps Hue enabled. Common Start/Stop controls
 the configured selections, and a failed output does not cancel healthy outputs.
 The new **Tuya LAN** tab supports compatible Wi-Fi **3.5** RGB devices, individual
@@ -20,11 +16,10 @@ tests TCP reachability only. Tuya starts with a 25% output cap, sends changed
 colors no faster than every 300 ms per lamp and retains only the latest desired
 color. Stop restores a queried prior state only when current ownership can be
 confirmed; otherwise the last lamp state can remain. See the
-[candidate setup and limits](docs/USER-GUIDE.md#independent-output-candidate-unpublished).
+[setup and limits](docs/USER-GUIDE.md#independent-lighting-outputs).
 
 **CrimsonHue 1.0.7** adds configurable **Menu lighting** and OpenRGB reset controls.
-Use **CrimsonDesertTelemetry 2.2.9** for menu-pause detection, capture suspension
-and the current shared panel. [1.0.7 release notes](docs/releases/v1.0.7.md).
+Use **CrimsonDesertTelemetry 2.2.10** for the current shared panel, menu-pause detection and capture suspension. [1.0.7 release notes](docs/releases/v1.0.7.md).
 
 When CDT confirms a fresh simulation pause, sync keeps a steady room light while
 CDT suspends new light, ambient and visibility acquisition. Set the color and
@@ -42,7 +37,7 @@ independent light coverage/background controls.
 
 CDT draws the optional interactive Hue mixer in
 its existing D3D12 renderer; `CrimsonHue.asi` is the headless lamp controller and
-installs no graphics hooks. There is no separate settings window or process.
+installs no graphics hooks. The mixer runs in-game. Tuya connection details are entered in a separate Windows dialog.
 The ZIP contains one ASI and documentation. Application dependencies are
 embedded; install **.NET 8 Desktop Runtime x64** separately.
 
@@ -62,11 +57,7 @@ segments, including horizontal arrangements. Recommended spatial defaults use a
 The title-bar **X**, **Hide settings** and **Ctrl+Shift+H** hide the mixer while
 sync continues. Physical output starts only when explicitly requested.
 
-In stable **1.0.7**, OpenRGB has its own tab in the mixer. Start its SDK server on localhost port 6742,
-enable OpenRGB, read devices, select them and place each device around your seat.
-The common **Start lighting sync** runs Hue and OpenRGB together; the existing
-Hue bridge and Entertainment area are still required. OpenRGB starts disabled
-for new installations. See the [OpenRGB setup guide](docs/USER-GUIDE.md#openrgb-alongside-hue).
+OpenRGB has its own mixer tab. Start its SDK server (usually localhost port 6742), read devices, select them and place them around your seat. See the [OpenRGB setup guide](docs/USER-GUIDE.md#openrgb-setup).
 
 The local smoothing and swinging-lantern improvements from
 [1.0.4](docs/releases/v1.0.4.md) remain included. Read the
@@ -107,17 +98,14 @@ physical lamp brightness.
 
 ## Start
 
-These steps describe stable **1.0.7 / CDT 2.2.9**. The unpublished candidate's
-independent-output setup is linked above.
-
-1. Install **CrimsonDesertTelemetry 2.2.9** with its server, rendered and upstream
+1. Install **CrimsonDesertTelemetry 2.2.10** with its server, rendered and upstream
    ManyLights capture, and source visibility enabled.
 2. Install [**.NET 8 Desktop Runtime x64**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
    With the game closed, import this ZIP through DMM, or put its
    `CrimsonHue/CrimsonHue.asi` in the same ASI loading directory as CDT.
    Only the ASI needs deploying. Start the game; the in-game mixer opens.
    The ZIP contains no runtime installer or ASI loader.
-3. In **Setup**, enter your bridge's local IPv4 address and click **Find bridge**.
+3. In **Setup → Lighting outputs**, select your outputs. For [OpenRGB](docs/USER-GUIDE.md#openrgb-setup) or [Tuya LAN](docs/USER-GUIDE.md#add-a-tuya-lamp), configure the corresponding tab. Hue users continue with the bridge steps below. Enter your bridge's local IPv4 address and click **Find bridge**.
    The button applies the address directly. Replace any prefilled example with
    your own bridge address.
 4. Check the displayed bridge identity. Press the bridge's link button (for diyHue,
@@ -170,8 +158,6 @@ Streaming never starts automatically when the ASI loads.
 
 ## Requirements and scope
 
-The following requirements describe the published **1.0.7** package.
-
 - Windows 10/11 x64.
 - .NET 8 **Desktop Runtime x64**, including its WindowsDesktop/WPF framework.
   The plain .NET Runtime or ASP.NET Runtime alone does not supply WPF. .NET 9/10
@@ -180,11 +166,12 @@ The following requirements describe the published **1.0.7** package.
   schema 1.6, on the same PC for all-around,
   confirmed-visible lights. Older schema 1.4/1.5 installations still use the
   original rendered-only feed without physics visibility filtering.
-- A Hue-compatible bridge with HTTPS API v2, Entertainment DTLS 1.2/PSK on UDP 2100,
+- For Hue: a Hue-compatible bridge with HTTPS API v2, Entertainment DTLS 1.2/PSK on UDP 2100,
   color lights and an existing Entertainment area.
-- Optional OpenRGB: its local SDK server and compatible RGB devices. Each selected
+- For OpenRGB: its local SDK server and compatible RGB devices. Each selected
   device receives the color calculated for its configured room position. This is
   one position per device, not separate room positions for individual keys or LEDs.
+- For Tuya: a compatible Wi-Fi protocol 3.5 RGB lamp, its local IP or hostname, device ID and local key.
 - Development hardware includes diyHue/LEDVANCE and a physical Hue Bridge BSB002
   with Hue Play bars and wall washers. The owner reports positive in-game results
   with 1.0.4 on the development setup. Other hardware remains separate from

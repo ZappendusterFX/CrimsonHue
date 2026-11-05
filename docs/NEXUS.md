@@ -1,19 +1,6 @@
-# Nexus listing draft — upcoming CrimsonHue 1.0.8 (unpublished)
+# Nexus listing copy — CrimsonHue 2.0.0
 
-**Preparation only; do not publish this copy as the stable release.** The next
-private test pair is **1.0.8-outputs.1 / CDT 2.2.10-outputs.1**, intended for owner
-testing. No live Tuya acceptance is claimed. Public **1.0.7 / CDT 2.2.9**
-still requires Hue for OpenRGB and has no Tuya backend. Fields below target a
-future public **1.0.8 / CDT 2.2.10** pair, not an uploaded or available release.
-
-Nexus publishing stays with the owner. Once released, use the same immutable
-`CrimsonHue-1.0.8-asi-win-x64.zip` as GitHub. CDT, the ASI loader, .NET runtimes,
-game files, saved settings and credentials are not included.
-
-- Current GitHub downloads: https://github.com/ZappendusterFX/CrimsonHue/releases
-- Candidate guide: https://github.com/ZappendusterFX/CrimsonHue/blob/main/docs/USER-GUIDE.md#independent-output-candidate-unpublished
-- Required companion candidate: CDT 2.2.10-outputs.1; future public target 2.2.10.
-- Category: Crimson Desert / Utilities
+Prepared for manual Nexus publication. Use the same CrimsonHue-2.0.0-asi-win-x64.zip as GitHub and pair it with CDT 2.2.10.
 
 ## Short fields
 
@@ -53,13 +40,13 @@ CrimsonHue - ASI
 ### Version
 
 ```text
-1.0.8
+2.0.0
 ```
 
 ### File description
 
 ```text
-CrimsonHue 1.0.8 with independent Hue, OpenRGB and Tuya Wi-Fi 3.5 outputs. Requires CDT 2.2.10 and .NET 8 Desktop Runtime x64. Hue hardware is optional for OpenRGB or Tuya. Install the matching pair with the game closed.
+CrimsonHue 2.0.0 with independent Hue, OpenRGB and Tuya Wi-Fi 3.5 outputs. Requires CDT 2.2.10 and .NET 8 Desktop Runtime x64. Hue hardware is optional for OpenRGB or Tuya. Install the matching pair with the game closed.
 ```
 
 ### Short changelog
@@ -68,16 +55,16 @@ CrimsonHue 1.0.8 with independent Hue, OpenRGB and Tuya Wi-Fi 3.5 outputs. Requi
 Adds independent Hue/OpenRGB/Tuya selection, Tuya 3.5 spatial and menu lighting, protected local setup and bounded per-lamp output. OpenRGB-only needs no Hue bridge. Prior-state restoration is conditional. The controller Skills-menu issue remains open.
 ```
 
-## Main description — unpublished BBCode draft
+## Main description — BBCode
 
 ```bbcode
 [size=5][b]CrimsonHue - Spatial Room Lighting[/b][/size]
 
-[b]Unpublished 1.0.8 description draft.[/b] The current pair, CrimsonHue 1.0.8-outputs.1 / CDT 2.2.10-outputs.1, is intended for owner testing. No live Tuya lamp acceptance is claimed. Published 1.0.7 / CDT 2.2.9 still requires Hue setup for OpenRGB and has no Tuya output.
+[b]CrimsonHue 2.0.0[/b] supports three independent lighting outputs. Use any combination of Philips Hue Entertainment, OpenRGB and compatible Tuya Wi-Fi 3.5 RGB lamps.
 
 Turn Crimson Desert's live engine-light telemetry into spatial room lighting through independently selected Hue Entertainment, OpenRGB and compatible Tuya Wi-Fi 3.5 RGB devices. Nearby sources follow their direction around your setup, including sources outside the game image, with a separate adjustable background layer.
 
-The candidate runs as an ASI inside the game. CDT hosts its mixer in the existing renderer; no separate CrimsonHue process is needed. Tuya credentials are entered in a separate Windows dialog. CDT is a required separate package and supplies telemetry, pause detection and the shared panel, while CrimsonHue controls the lights.
+CrimsonHue runs as an ASI inside the game. CDT hosts its mixer in the existing renderer; no separate CrimsonHue process is needed. Tuya credentials are entered in a separate Windows dialog. CDT is a required separate package and supplies telemetry, pause detection and the shared panel, while CrimsonHue controls the lights.
 
 [size=4][b]Features[/b][/size]
 [list]
@@ -98,7 +85,7 @@ The candidate runs as an ASI inside the game. CDT hosts its mixer in the existin
 [size=4][b]Requirements[/b][/size]
 [list]
 [*]Windows 10/11 x64 and a Crimson Desert build supported by CDT. CDT owns game compatibility and build validation; CrimsonHue consumes its neutral API without a game-build gate.
-[*]Matching CDT 2.2.10-outputs.1 candidate, installed separately with its documented .NET 8 ASP.NET Core Runtime x64 requirement. Future public target: CDT 2.2.10. The stable 2.2.9 shared panel does not expose independent output/Tuya controls.
+[*]CDT 2.2.10, installed separately with .NET 8 ASP.NET Core Runtime x64.
 [*][url=https://dotnet.microsoft.com/en-us/download/dotnet/8.0].NET 8 Desktop Runtime x64[/url] for CrimsonHue. Plain .NET/ASP.NET runtimes and .NET 9/10 alone do not replace it.
 [*]One compatible x64 ASI loader.
 [*]For Hue only: a Hue-compatible HTTPS API v2 bridge with Entertainment support, color lights and an existing Entertainment area configured in the Hue app.
@@ -124,7 +111,7 @@ CDT detects stopped simulation progress after approximately 500 ms and suspends 
 [b]Menu lighting does not fix the reported Skills-menu stutter or repeated controller hover sounds.[/b] Those persisted in the owner's earlier menu-mode test. Pause detection does not identify individual menu screens. The quiet pause/resume notifications introduced in CDT 2.2.9 remain included.
 
 [size=4][b]OpenRGB setup[/b][/size]
-OpenRGB is disabled by default for new users. Start its local SDK server, normally localhost:6742, then enable OpenRGB in its mixer tab and choose Read devices. This reads the SDK inventory; it does not rescan hardware. Select devices and drag them in the 3D room, adjust Height, and right-drag to rotate the view. Exit other software writing the same RGB devices. Common Start/Stop controls both Hue and OpenRGB.
+OpenRGB is disabled by default for new users. Start its local SDK server, normally localhost:6742, then enable OpenRGB in its mixer tab and choose Read devices. This reads the SDK inventory; it does not rescan hardware. Select devices and drag them in the 3D room, adjust Height, and right-drag to rotate the view. Exit other software writing the same RGB devices. Common Start/Stop controls the configured selected outputs.
 
 Each selected device receives one color for its configured position; keys and LEDs do not have separate room positions. Eligible RGB zones are used, keyboard matrix holes are skipped, gamepads use their Lightbar, and empty headers are not resized. Output limit starts at 25%, Light coverage at 90 degrees and Background light at 25% of the shared background amount. Selections and placements save locally by stable hardware identity, outside shareable mixer presets.
 
@@ -150,14 +137,11 @@ A failed output leaves healthy outputs running. Stop, resolve its connection/con
 
 The controller ends with the game's process. Crashes, forced termination or an unreachable bridge can prevent release/restoration. Stop before quitting. Hot unload/reload is unsupported; restart the game after changing installed modules.
 
-[url=https://github.com/ZappendusterFX/CrimsonHue/blob/main/docs/USER-GUIDE.md]Setup and candidate limits[/url] | [url=https://github.com/ZappendusterFX/CrimsonHue/releases]Published downloads[/url] | [url=https://github.com/ZappendusterFX/CrimsonHue]Source and issues[/url]
+[url=https://github.com/ZappendusterFX/CrimsonHue/blob/main/docs/USER-GUIDE.md]Setup and device limits[/url] | [url=https://github.com/ZappendusterFX/CrimsonHue/releases]Published downloads[/url] | [url=https://github.com/ZappendusterFX/CrimsonHue]Source and issues[/url]
 
 Independent project, not affiliated with Signify, Philips Hue or Pearl Abyss. Third-party notices are included in the download.
 ```
 
 ## Full changelog
 
-Future 1.0.8 release notes and validation must be finalized before publication.
-The stable history remains in [releases/v1.0.7.md](releases/v1.0.7.md). Do not reuse
-its checksums or acceptance statements for the new candidate. No Nexus upload is
-performed by preparing this document.
+See the [CrimsonHue 2.0.0 release notes](releases/v2.0.0.md).

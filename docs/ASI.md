@@ -1,13 +1,8 @@
-# CrimsonHue 1.0.7 — mixer hosted by CDT
+# CrimsonHue 2.0.0 — mixer hosted by CDT
 
-## Unpublished independent-output candidate
+## Independent lighting outputs
 
-The next private pair is **Hue 1.0.8-outputs.1 / CDT 2.2.10-outputs.1**.
-It is intended for owner testing. The stable **1.0.7 / 2.2.9** behavior below remains
-the published baseline; it still requires Hue setup for OpenRGB and has no Tuya
-output. Do not use the new controls with the old shared panel.
-
-The candidate keeps one headless `CrimsonHue.asi` and CDT's existing renderer.
+CrimsonHue 2.0.0 uses one headless ASI with CDT 2.2.10’s shared renderer.
 Setup selects Hue, OpenRGB and Tuya independently; no Hue bridge is required for
 OpenRGB-only or Tuya-only. New setups start with no outputs selected. Existing Hue
 pairing migrates to Hue enabled; saved optional-output choices remain local.
@@ -28,12 +23,11 @@ color writes and a 2.5-second failure backoff. These limits are not measured lam
 refresh rates. Cleanup queries the current state and restores a supported prior
 state only if the output still matches its own commands. Unconfirmed prior state,
 ownership changes or unreachable devices can leave the last state in place.
-Demo and synthetic smoke stay dry. No live Tuya acceptance is established by the
-implementation or package tests. [Candidate setup](USER-GUIDE.md#independent-output-candidate-unpublished).
+Demo and synthetic smoke stay dry. [Setup](USER-GUIDE.md#independent-lighting-outputs).
 
-## Published 1.0.7 behavior
+## Menu lighting and OpenRGB
 
-**Hue 1.0.7 / CDT 2.2.9** adds configurable menu lighting and independent CDT
+**Hue 1.0.7 / CDT 2.2.9** added configurable menu lighting and independent CDT
 acquisition pause. Menu color/hex, brightness, Save and an optional Gold preset
 are directly in the HUD's Lighting page; see [the setup guide](USER-GUIDE.md#menu-lighting).
 Warm white at 20% remains the default; existing settings are preserved.
@@ -42,15 +36,9 @@ intentional capture pauses from light failures and avoids repeated ready notices
 on menu resume. This does not fix the reported Skills-menu stutter or repeated
 controller hover sounds, which persisted in the owner's menu-mode test.
 
-Optional OpenRGB output is included in the regular release.
-Enable it in its own HUD tab, read devices and place them in the 3D room.
-It runs alongside Hue with the common Start/Stop and still needs the existing
-Hue bridge/area setup. New users start with OpenRGB disabled; saved private-test
-enable state, selections and positions are retained. Coverage defaults to 90°,
-background to 25% of shared fill and output limit to 25%. Source RGB and the shared
-Hue profile are unchanged. Demo/smoke never send physical output.
+OpenRGB works alone or alongside other selected outputs. Coverage defaults to 90°, background to 25% of shared fill and output limit to 25%. Demo and smoke tests send no physical output.
 
-Use **CrimsonDesertTelemetry 2.2.9** for menu mode and the current shared HUD.
+Use **CrimsonDesertTelemetry 2.2.10** for menu mode and the current shared HUD.
 Its update recovery runs only when needed, after valid game-world data is present,
 with progress in the shared HUD. This can handle compatible address shifts;
 changed engine layouts can still require a CDT update. Hue consumes only the
@@ -60,18 +48,17 @@ Drag a device across the room, adjust Height for vertical position and right-dra
 to orbit the view. Connection/output limit contains port and brightness. Placements
 are stored by hashed hardware identity, independently of transient SDK IDs, Hue
 areas and shareable lighting presets. New devices default to front, output 25%.
-The existing bridge/area is still needed for the common Start button.
 
 SDK server: localhost:6742. Each selected device receives one mapped color for
-its own configured position. See [OpenRGB setup](USER-GUIDE.md#openrgb-alongside-hue).
-Hide/close keeps both outputs running; Stop cancels both and awaits cleanup.
+its own configured position. See [OpenRGB setup](USER-GUIDE.md#openrgb-setup).
+Hide/close keeps selected outputs running; Stop cancels them and awaits cleanup.
 The app's Demo and the packaged synthetic smoke never create OpenRGB output.
 
 CDT draws the interactive CrimsonHue mixer in its existing D3D12/ImGui frame.
 `CrimsonHue.asi` hosts the existing C# lamp controller on a hidden WPF STA. It
 installs no graphics hooks and owns no D3D12 device, swapchain or ImGui context.
 Telemetry still arrives exclusively through CDT's neutral HTTP/WebSocket API.
-No separate EXE, process or visible WPF settings window is used.
+The mixer uses no separate EXE or process. Tuya connection setup opens a Windows dialog.
 
 ## Installation and use
 
@@ -79,10 +66,10 @@ No separate EXE, process or visible WPF settings window is used.
    documented .NET 8 ASP.NET Core Runtime x64. Newer runtimes alone do not meet
    these .NET 8 requirements.
 2. Close Crimson Desert and stop any old desktop CrimsonHue sync. Use
-   **CrimsonDesertTelemetry 2.2.9** for menu mode and the current shared panel.
+   **CrimsonDesertTelemetry 2.2.10** for menu mode and the current shared panel.
    Install both packages with the game closed.
 3. For a new installation, import both ZIPs through DMM using the existing x64
-   ASI loader. Use Hue 1.0.7 and CDT 2.2.9; both retain the previous movement,
+   ASI loader. Use CrimsonHue 2.0.0 and CDT 2.2.10; both retain the previous movement,
    lantern and changing-effect improvements. CrimsonHue's
    package contains one `CrimsonHue/CrimsonHue.asi` plus documentation/notices;
    it embeds its five application/dependency files. No loose DLL, JSON, CFG, EXE,
@@ -92,7 +79,7 @@ No separate EXE, process or visible WPF settings window is used.
    focus. CDT owns this shortcut and panel input. The binding remains editable
    in **Setup → Overlay shortcut** and is saved in CrimsonHue's user settings.
    Avoid CDT's F8–F11 bindings, which also react with modifiers held.
-5. In Setup, enter the bridge IP and click **Find bridge**. Its guided steps
+5. In Setup, select your [lighting outputs](USER-GUIDE.md#independent-lighting-outputs). For Hue, enter the bridge IP and click **Find bridge**. Its guided steps
    explain the round bridge button and **Trust bridge & pair** for new pairings.
    A matching saved pairing is reused. Wait for green **HUE BRIDGE: CONNECTED**;
    this confirms authenticated area loading. Failed connections show a distinct
@@ -140,7 +127,7 @@ to a conservative complete-pair signature in CDT metadata, independent of its
 game-build label, with ordinary spotlight behavior on incomplete or ambiguous input. Room calibration can assign
 horizontal as well as vertical segment regions; imported Hue identities stay intact.
 The included lantern recognition supports the observed cone profiles and swinging
-motion. The complete current release pair is Hue 1.0.7 with CDT 2.2.9.
+motion. The complete current release pair is CrimsonHue 2.0.0 with CDT 2.2.10.
 
 CDT's physics rays measure collision, not optical visibility. Glass or a closed
 collision shell around a visible cage lamp can exclude it before mapping. The

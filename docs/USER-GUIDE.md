@@ -1,16 +1,12 @@
-# CrimsonHue 1.0.7 — setup and tuning guide
+# CrimsonHue 2.0.0 — setup and tuning guide
 
-## Independent-output candidate (unpublished)
+## Independent lighting outputs
 
-This section describes **CrimsonHue 1.0.8-outputs.1** paired with
-**CrimsonDesertTelemetry 2.2.10-outputs.1**. It is intended for owner testing;
-no live Tuya lamp test is claimed. The published pair remains **1.0.7 / 2.2.9**:
-that stable version requires Hue setup for OpenRGB and has no Tuya backend.
-The stable setup guide continues at [Menu lighting](#menu-lighting).
+Pair **CrimsonHue 2.0.0** with **CrimsonDesertTelemetry 2.2.10**.
 
 ### Choose outputs
 
-In the candidate's **Setup → Lighting outputs**, select any combination of
+In **Setup → Lighting outputs**, select any combination of
 **Philips Hue Entertainment**, **OpenRGB** and **Tuya LAN (3.5)**. Hue is optional
 for the other two. A fresh installation selects none. An existing saved Hue
 pairing keeps Hue enabled; saved OpenRGB choices are preserved.
@@ -33,7 +29,7 @@ preview-only, and loading the mod never starts physical output.
 1. Open **Tuya LAN → Add device**. A separate Windows dialog accepts the lamp
    name, local host/IP, Tuya device ID and local key. **Edit device** updates an
    existing entry; leaving its key blank retains the saved key. Obtain these
-   values through the device's setup. CrimsonHue does not request a cloud login.
+   values through the device's setup. If a key comes from JSON, paste the decoded value without surrounding quotes. A sequence such as \uXXXX represents one character.
 2. Use the **3.5** profile for a compatible Wi-Fi RGB lamp. The optional profile
    fields default to TCP port **6668**, power DPS **20**, mode **21**, HSV color
    **24**, white brightness **22**, color temperature **23** and scene **25**.
@@ -80,7 +76,7 @@ performance, current-game acceptance or additional protocol support is implied.
 
 ## Menu lighting
 
-Use Hue **1.0.7** together with CDT **2.2.9** for menu lighting.
+Use Hue **2.0.0** together with CDT **2.2.10** for menu lighting.
 While lighting sync is running, a freshly confirmed game pause switches to steady room
 lighting. **Lighting → Menu lighting** exposes brightness, a color swatch/picker
 and editable hex color. **Gold preset** selects vivid gold at 80% (RGB 1, 0.65,
@@ -110,23 +106,17 @@ existing Hue Entertainment area. Its headless ASI uses CDT's in-game mixer panel
 output is an artistic lighting estimate, not a sample of the displayed pixels
 or a measurement of the physical lamps.
 
-Optional **OpenRGB** runs alongside Hue through its local SDK server. In the
-OpenRGB tab, enable it, read devices, select them and place them in the 3D room.
-Drag changes floor position; Height changes vertical position; right-drag rotates
-the view. Light coverage starts at 90° and Background light at 25% of the shared
-background amount. Output starts at 25%. Common Start/Stop controls both; Hue
-bridge/area setup is still required. Exit other apps controlling the same RGB
-devices. [OpenRGB setup and limits](#openrgb-alongside-hue) are below.
+OpenRGB runs by itself or with other outputs through its local SDK server. Enable it, read and select devices, then place them in its 3D room. See [OpenRGB setup and limits](#openrgb-setup).
 
-Use **CrimsonDesertTelemetry 2.2.9** for menu mode and the current shared panel. CDT's
+Use **CrimsonDesertTelemetry 2.2.10** for menu mode and the current shared panel. CDT's
 automatic update recovery starts only when needed and when valid game-world data
 is present. It shows progress and refuses incompatible data. Changed engine
 layouts can still require a CDT update; Hue itself does not gate game versions.
 
 ## What to install
 
-1. Install **CrimsonDesertTelemetry 2.2.9** separately in the game.
-   This supplies the current shared Hue/OpenRGB panel. Download the required ZIPs
+1. Install **CrimsonDesertTelemetry 2.2.10** separately in the game.
+   This supplies the current shared lighting panel. Download the required ZIPs
    from their GitHub releases. Enable CDT's server, rendered and upstream ManyLights
    capture, source visibility, and Ambient feed. Keep CDT running with the game.
    For all-around light sources, CrimsonHue needs CDT's fresh confirmed-clear
@@ -139,16 +129,16 @@ layouts can still require a CDT update; Hue itself does not gate game versions.
    installed separately. Start the game; the in-game mixer opens automatically.
    **CDT, an ASI loader, the game, bridge firmware and
    saved credentials are not in this ZIP.** See [ASI guide](ASI.md).
-   Upgrade to Hue 1.0.7 and CDT 2.2.9 together. Existing response values, room
+   Upgrade to CrimsonHue 2.0.0 and CDT 2.2.10 together. Existing response values, room
    calibration, bridge pairing and saved OpenRGB placements stay intact.
-3. Use Windows 10/11 x64 and a Hue-compatible bridge with HTTPS API v2,
+3. Select your outputs in **Setup**. Follow [OpenRGB setup](#openrgb-setup) and [Tuya setup](#add-a-tuya-lamp) as applicable. For Hue, use Windows 10/11 x64 and a Hue-compatible bridge with HTTPS API v2,
    Entertainment DTLS 1.2/PSK, color lamps and an existing Entertainment area.
    Set the area and channel positions in the Hue app first. diyHue is the
    development target. A physical Hue Bridge BSB002 with two Hue Play wall washers
    has passed pairing and read-only area/light-state import. The owner reports
    physical Entertainment output with Play bars and wall washers, and positive
    in-game results with the 1.0.4 update. Other hardware remains separately unverified.
-4. In **Setup**, enter the bridge's own private IPv4 address and click
+4. For Hue, in **Setup**, enter the bridge's own private IPv4 address and click
    **Find bridge**; it applies the address directly. For a new pairing, press the round link button **on the
    physical Hue Bridge**, then click **Trust bridge & pair** within 30 seconds.
    A saved pairing is reused only when address and certificate match.
@@ -184,12 +174,11 @@ Process termination can prevent restoration; the ASI cannot keep running after
 the game exits. Synthetic verification does not establish real-game input,
 physical brightness, HDR-display or mod-manager behavior for the exact release ZIP.
 
-## OpenRGB alongside Hue
+## OpenRGB setup
 
 OpenRGB is optional and starts disabled on a new installation. It uses its local
 SDK server, normally `127.0.0.1:6742`; no cloud service or extra CrimsonHue process
-is needed. Hue's bridge and Entertainment area are still required by the common
-Start action. OpenRGB-only use without Hue setup is not offered by this release.
+is needed. You can run OpenRGB with Hue disabled and without a bridge.
 
 1. Start OpenRGB's SDK server and exit other software writing the same RGB devices,
    such as an active Synapse/Chroma lighting session.
@@ -207,7 +196,7 @@ Start action. OpenRGB-only use without Hue setup is not offered by this release.
    effects, while lower background preserves their color against neutral fill.
    The **Output limit** starts at 25%. Shared brightness, smoothing, source weights
    and own-lantern controls still apply. Hue's room mapping is unchanged.
-5. Use the common **Start lighting sync** to run both outputs. **Stop** stops both;
+5. Use **Start lighting sync** to start the configured, selected outputs. **Stop** stops them;
    hiding the panel keeps them running. Stop before leaving the game.
 
 Selections, placements and OpenRGB controls save locally, including disconnected
