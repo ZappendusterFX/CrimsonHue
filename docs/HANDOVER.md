@@ -1,4 +1,24 @@
-# Current checkpoint — 2026-11-05, existing controller ready after game update
+# Current checkpoint — 2026-11-05, CrimsonHue 2.0.0 published on GitHub
+
+Owner chose CrimsonHue 2.0.0 and CDT 2.2.10. Both stable Latest releases are
+public; README/setup guides, release notes, Nexus copy and GitHub About text
+reflect independent Hue, OpenRGB and compatible Tuya LAN 3.5 outputs. Nexus
+copy is prepared for the owner. The paired releases use tags v2.0.0 (b670f3b)
+and v2.2.10 (36b8fe5).
+
+Immutable production ZIP: `dist/CrimsonHue-2.0.0-asi-win-x64.zip` (3,101,882 bytes),
+SHA256 `CF58FB1F9AEE190F05EEB7EEA6E57108C7B702A5456FA9C75A570A66C6914223`.
+Public ZIP and SHA256SUMS independently downloaded and verified. 214 Core tests,
+exact folder/ZIP and packaged-controller checks, and all four shared renderer
+smokes passed. See `docs/releases/v2.0.0-validation.md` and ignored
+`artifacts/release-2.0.0-github-publication.json`.
+
+Live recovery on Steam build 26448710 was verified on the previous installed
+candidate. Exact public ZIPs were not installed. For the published pair, owner
+installation remains the next optional action. Controller Skills behavior and
+full concurrent physical output acceptance remain separate.
+
+# Previous checkpoint — 2026-11-05, existing controller ready after game update
 
 Owner reported successful CDT recovery after Steam build26448710 arrived.
 Read-only audit confirmed the exact installed Hue1.0.8-outputs.1 ASI, managed
