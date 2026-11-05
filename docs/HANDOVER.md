@@ -1,4 +1,20 @@
-# Current checkpoint — 2026-11-04, owner installed candidates; three Tuya keys imported
+# Current checkpoint — 2026-11-05, existing controller ready after game update
+
+Owner reported successful CDT recovery after Steam build26448710 arrived.
+Read-only audit confirmed the exact installed Hue1.0.8-outputs.1 ASI, managed
+controller ready, and paired CDT2.2.10-outputs.1 publishing advancing live feeds
+on the recovered build. Observed the game's bridge HTTPS and OpenRGB SDK TCP
+connections and verified three configured, selected Tuya lamps with protected
+keys. This did not test physical light output or concurrent lamp acceptance.
+
+Owner had previously reported that the initial protected import was not visible
+in the HUD and switched to manual add. One lamp was reported working. The final
+lamp's raw JSON key contained an escape; the decoded value passed the existing
+validator and was provided locally for pasting. Current protected store has all
+three. No settings, runtime code or release changes in the update audit. See
+CDT docs/HANDOVER.md for recovery and live feed evidence.
+
+# Previous checkpoint — 2026-11-04, owner installed candidates; three Tuya keys imported
 
 Owner reported being in game after installing the independent-output pair.
 Read-only loaded-module checks matched BOTH ASIs to the exact packaged candidates
